@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  --color-brand-bg: #031B1C;
+  --color-brand-section: #102434;
+  --color-brand-card: #163447;
+  --color-brand-hover: #1E4761;
+  --color-brand-border: rgba(255, 255, 255, 0.06); 
+  --color-brand-accent: #5DA9FF;
+
+  --color-brand-blue: #5DA9FF;
+  --color-brand-cyan: #67E8F9;
+  --color-brand-purple: #8B5CF6;
+  --color-brand-emerald: #22C55E;
+  --color-brand-amber: #F59E0B;
+  --color-brand-coral: #FF6B6B;
+
+  --color-brand-text-primary: #ebf1f5;
+  --color-brand-text-secondary: #94a9b2;
+  --color-brand-text-muted: #94a9b2;
+
+  --animate-spin-slow: spin 8s linear infinite;
+}
+
+@layer utilities {
+  .glow-accent {
+    box-shadow: 0 0 25px rgba(148, 169, 178, 0.35);
+  }
+  .glow-inner {
+    box-shadow: inset 0 0 20px rgba(148, 169, 178, 0.15);
+  }
+  .glass-card {
+    @apply bg-brand-card/40 backdrop-blur-xl border border-brand-border/20;
+  }
+  .shadow-huge {
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 18px 36px -18px rgba(0, 0, 0, 0.6);
+  }
+  .text-glow {
+    text-shadow: 0 0 15px rgba(148, 169, 178, 0.4);
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(93, 169, 255, 0.3);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(93, 169, 255, 0.5);
+  }
+}
+
+@layer base {
+  body {
+    @apply antialiased text-brand-text-primary font-sans;
+    background: linear-gradient(135deg, #031B1C 0%, #062C2C 35%, #102434 100%);
+    background-attachment: fixed;
+  }
+
+  @media print {
+    .no-print, nav, footer, button {
+      display: none !important;
+    }
+    
+    body {
+      background: white !important;
+      color: black !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    /* Force background colors for charts and score bars */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    @page {
+      size: landscape;
+      margin: 0;
+    }
+    
+    .aspect-video {
+      aspect-ratio: auto !important;
+      height: auto !important;
+    }
+  }
+}
+
+.print-only {
+  display: none;
+}

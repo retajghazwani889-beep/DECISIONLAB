@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'retajghazwani889@gmail.com';
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 150 &&
+             data.onboardingCompleted is bool &&
+             (data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    function isValidVentureAnalysis(data) {
+      return data.keys().hasAll(['id', 'userId', 'ideaDescription', 'status', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.id is string && data.id.size() <= 128 &&
+             data.status in ['pending', 'processing', 'completed', 'failed'] &&
+             data.ideaDescription is string && data.ideaDescription.size() <= 5000 &&
+             (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function isValidIntelligenceSession(data) {
+      return data.keys().hasAll(['userId', 'messages', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.messages is list && data.messages.size() <= 200 &&
+             (data.createdAt == request.time || data.createdAt is timestamp) &&
+             (data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    // --- Matches ---
+
+    // 1. User Profiles
+    match /profiles/{userId} {
+      allow get: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow create: if isOwner(userId) && isVerified() && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && (
+        isAdmin() || (
+          isValidUserProfile(incoming()) &&
+          incoming().updatedAt == request.time &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'onboardingCompleted', 'updatedAt', 'startupName', 'roleDescription', 
+            'companyName', 'companyLogo', 'industry', 'companyDescription', 
+            'startupStage', 'pitchSummary', 'founderInfo', 'teamMembers', 
+            'location', 'businessType', 'productType', 'pitchDeckUrl', 
+            'teamStructure', 'sectors', 'companyAnalysis', 'pitchDeck', 
+            'subscriptionStatus'
+          ])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Venture Analyses
+    match /analyses/{analysisId} {
+      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(analysisId) && isValidVentureAnalysis(incoming());
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 3. Intelligence Sessions
+    match /sessions/{sessionId} {
+      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(sessionId) && isValidIntelligenceSession(incoming());
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 4. Pitch Decks
+    match /decks/{deckId} {
+      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(deckId);
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+  }
+}
