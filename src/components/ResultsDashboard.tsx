@@ -12,7 +12,6 @@ import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { safeLocalStorage as localStorage } from '../lib/storage';
 import { generateCompanyAnalysis } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -1393,134 +1392,16 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
       </AnimatePresence>
 
       {/* 4. WORKSPACE SYSTEM - TWO COLUMN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 relative z-10 pt-4">
+      <div className="grid grid-cols-1 gap-10 relative z-10 pt-4">
         
-        {/* LEFT COLUMN: 'MY PROJECTS' PANEL (Sidebar) */}
-        <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-2 no-print scrollbar-thin">
-          <div className="bg-brand-section/40 p-6 rounded-[2rem] border border-brand-border/15 shadow-huge relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-brand-accent/30 to-brand-purple/30" />
-            
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/5">
-              <span className="text-xs font-black uppercase text-slate-100 tracking-wider flex items-center gap-2">
-                <Briefcase size={14} className="text-brand-accent" />
-                My Projects
-              </span>
-              <span className="text-[10px] font-mono font-black text-brand-accent px-2 py-0.5 bg-brand-accent/10 border border-brand-accent/20 rounded">
-                {savedProjects.length || 1}
-              </span>
-            </div>
 
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-              {savedProjects.length > 0 ? (
-                savedProjects.map((item) => {
-                  const isSelected = item.id === currentAnalysis.id;
-                  const score = (item.scores as any)?.overall || (item.scores as any)?.ideaStrength?.score || 85;
-                  const companyName = (item.startupProfile?.companyName || 'Custom Venture').replace(/\./g, '');
-                  const industry = (item.startupProfile?.industry || 'Modern Software').replace(/\./g, '');
-                  const stage = (item.startupProfile?.stage || 'Idea Stage').replace(/\./g, '');
-                  const lastUpdated = item.updatedAt;
-                  const statusStr = item.status === 'completed' ? 'Fully Validated' : 'Analyzing';
-
-                  const formatUpdated = (val: any) => {
-                    if (!val) return 'Just now';
-                    try {
-                      let date: Date;
-                      if (val.seconds) {
-                        date = new Date(val.seconds * 1000);
-                      } else {
-                        date = new Date(val);
-                      }
-                      const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
-                      return date.toLocaleDateString('en-US', options).replace(/,/g, '');
-                    } catch (_) {
-                      return 'Recent';
-                    }
-                  };
-
-                  return (
-                    <motion.div
-                      key={item.id}
-                      whileHover={{ scale: 1.01 }}
-                      onClick={() => {
-                        if (!isSelected) {
-                          navigate(`/dashboard/startup/${item.id}`);
-                        }
-                      }}
-                      className={cn(
-                        "p-4 rounded-xl border transition-all cursor-pointer text-left relative overflow-hidden group/card",
-                        isSelected
-                          ? "bg-brand-accent/5 border-brand-accent shadow-[0_0_20px_rgba(77,163,255,0.05)]"
-                          : "bg-brand-card/30 border-brand-border/10 hover:border-brand-border/40 hover:bg-brand-card/50"
-                      )}
-                    >
-                      {isSelected && (
-                        <div className="absolute top-0 right-0 w-1.5 h-full bg-brand-accent" />
-                      )}
-                      
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-black text-slate-100 uppercase tracking-tight group-hover/card:text-brand-accent transition-colors truncate">
-                            {companyName}
-                          </h4>
-                          <p className="text-[10px] text-brand-text-secondary/80 lowercase mt-0.5 font-medium truncate font-sans">
-                            {industry}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <span className="text-xs font-black text-brand-accent font-mono">{score}</span>
-                          <div className="text-[8px] text-brand-text-secondary/50 font-black uppercase tracking-wider">Score</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 text-[9px] font-bold text-brand-text-muted">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-brand-text-secondary uppercase tracking-[0.1em] text-[8px]">Stage</span>
-                          <span className="text-slate-300 truncate max-w-[80px] text-[8px] uppercase font-black">{stage}</span>
-                        </div>
-                        <div className="flex flex-col gap-0.5 text-right font-sans">
-                          <span className="text-brand-text-secondary uppercase tracking-[0.1em] text-[8px]">Updated</span>
-                          <span className="text-slate-300 text-[8px]">{formatUpdated(lastUpdated)}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between text-[8px] uppercase tracking-wider font-mono">
-                        <span className="text-brand-text-secondary">Status:</span>
-                        <span className={cn(
-                          "font-black px-1.5 py-0.5 rounded",
-                          item.status === 'completed' ? "text-emerald-400 bg-emerald-500/10" : "text-amber-400 bg-amber-500/10"
-                        )}>
-                          {statusStr}
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <div className="p-4 rounded-xl border border-brand-border/10 bg-brand-card/20 text-center">
-                  <span className="text-[11px] text-brand-text-muted font-bold font-mono uppercase">EduMatch AI</span>
-                  <p className="text-[10px] text-brand-text-secondary mt-1 max-w-[150px] mx-auto">No other active projects cached yet.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 pt-5 border-t border-white/5">
-              <Link
-                to="/"
-                className="w-full py-3.5 bg-brand-card/40 border border-white/5 text-[10px] font-black uppercase text-[#5ce1e6] tracking-widest rounded-xl hover:bg-brand-hover hover:border-brand-accent/35 transition-all flex items-center justify-center gap-2"
-              >
-                + Analyze New Idea
-              </Link>
-            </div>
-          </div>
-        </aside>
-
-        {/* RIGHT COLUMN: MAIN WORKSPACE OR SUITE PANELS */}
-        <div className="lg:col-span-3 space-y-12">
+        {/* MAIN WORKSPACE (full width) */}
+        <div className="space-y-12">
 
           <div id="command-center-tabs" className="flex flex-wrap items-center justify-start gap-3 border-b border-white/5 pb-8 no-print relative z-10">
         {[
           { id: 'overview', label: '01 / Startup Overview', icon: <LayoutGrid size={15} /> },
-          { id: 'analysis', label: '02 / Startup Summary', icon: <BarChart3 size={15} /> },
+          { id: 'analysis', label: '02 / Key Insights', icon: <BarChart3 size={15} /> },
           { id: 'risk', label: '03 / Risks', icon: <ShieldAlert size={15} /> },
           { id: 'growth', label: '04 / Growth Opportunities', icon: <TrendingUp size={15} /> },
           { id: 'investors', label: '05 / Investors', icon: <Handshake size={15} /> },
@@ -1647,7 +1528,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none" />
                 <div className="relative">
-                  <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Startup Summary</h3>
+                  <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Key Insights</h3>
                   <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Overall evaluation of your startup idea</p>
                 </div>
               </section>
@@ -2186,28 +2067,6 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
                   </div>
                 </div>
               </section>
-
-              {/* Suggested Matchmaking Network (formerly under layout) */}
-              <section className="bg-[#09121d] p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative">
-                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-brand-emerald/5 blur-[120px] rounded-full pointer-events-none" />
-                <div className="relative">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div>
-                      <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tight font-display mb-2">Investor Matchmaking Network</h3>
-                      <p className="text-sm text-brand-text-muted font-bold">Interactive mapping of high-conviction investor matches matching seed parameters</p>
-                    </div>
-                    <div className="px-6 py-4 bg-[#0a1522] border border-brand-border rounded-xl flex items-center gap-3 shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full bg-brand-emerald animate-pulse" />
-                      <span className="text-[10px] font-black text-brand-text-primary uppercase tracking-widest leading-none">Ready</span>
-                    </div>
-                  </div>
-
-                  <InvestorRelationshipNetwork 
-                    investors={currentAnalysis.investorMatching || []} 
-                    startupName={displayProfile.companyName || 'Venture'} 
-                  />
-                </div>
-              </section>
             </div>
           )}
         </motion.div>
@@ -2229,7 +2088,42 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
       >
         {/* Cover */}
         <div style={{ paddingBottom: '2rem', borderBottom: '2px solid #e5e5e5' }}>
-          <p style={{ color: '#2563eb' }} className="text-xs font-black uppercase tracking-[0.3em] mb-2">DecisionLab Executive Report</p>
+          {/* DecisionLab logo on the exported report. Recolored for a white
+              background: the nav version uses a white "L" and white "Decision"
+              wordmark (built for the dark navbar) which would be invisible on
+              white, so here the "L" and "Decision" are dark and only "Lab"
+              stays blue. Solid stroke (not gradient) + no glow filters so the
+              PDF engine (html2canvas) renders it reliably every time. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+            <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* OUTER D FRAME */}
+              <path
+                d="M 26 16 H 55 C 76 16 88 31 88 50 C 88 69 76 84 55 84 H 26 Z"
+                stroke="#3B82F6"
+                strokeWidth="11.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              {/* INNER L — dark so it shows on the white report background */}
+              <path
+                d="M 47 12 V 52 H 93"
+                stroke="#0F2540"
+                strokeWidth="9.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div style={{ lineHeight: 1 }}>
+              <span style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.02em', color: '#171717' }}>
+                Decision<span style={{ color: '#3B82F6' }}>Lab</span>
+              </span>
+              <p style={{ marginTop: '4px', color: '#93A4B5', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.4em', fontWeight: 500 }}>
+                ANALYZE · VALIDATE · GROW
+              </p>
+            </div>
+          </div>
+          <p style={{ color: '#2563eb' }} className="text-xs font-black uppercase tracking-[0.3em] mb-2">Executive Report</p>
           <h1 style={{ color: '#171717' }} className="text-4xl font-black uppercase tracking-tight">{displayProfile.companyName || 'Startup Name'}</h1>
           <p style={{ color: '#737373' }} className="text-sm mt-2">{displayProfile.industry} • {displayProfile.city}, {displayProfile.country} • {displayProfile.stage}</p>
         </div>

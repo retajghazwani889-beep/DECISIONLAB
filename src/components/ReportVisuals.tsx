@@ -84,6 +84,18 @@ export const StartupScoreRadar = ({ scores }: { scores: any }) => {
 export const RiskHeatmap = ({ risks }: { risks: any }) => {
   if (!risks) return null;
 
+  // Explicit hex colors so red / amber / green always render reliably on the
+  // deployed build (the old code used var(--color-brand-*) CSS variables that
+  // sometimes don't resolve in production, which made the colors look wrong).
+  const RISK_RED = '#ff6b6b';
+  const RISK_AMBER = '#f59e0b';
+  const RISK_GREEN = '#22c55e';
+
+  const severityHex = (severity: string) =>
+    severity === 'High' ? RISK_RED :
+    severity === 'Medium' ? RISK_AMBER :
+    RISK_GREEN;
+
   const riskItems = [
     { id: 'Market', data: risks.market || risks.Market },
     { id: 'Execution', data: risks.execution || risks.Execution },
@@ -92,14 +104,19 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
   ].filter(item => item.data);
 
   return (
-    <div className="relative w-full aspect-square md:aspect-video bg-brand-bg/30 rounded-[3rem] p-8 border border-white/5 shadow-inner overflow-visible">
-      <div className="absolute left-0 top-0 h-full w-12 flex flex-col justify-between py-12 px-2 pointer-events-none">
-        <span className="text-[10px] font-black text-brand-text-muted uppercase vertical-text tracking-widest opacity-40">Market Risks</span>
-        <span className="text-[10px] font-black text-brand-text-muted uppercase vertical-text tracking-widest opacity-40">Stability</span>
+    <div className="relative w-full aspect-square md:aspect-video bg-brand-bg/30 rounded-[3rem] p-8 pl-28 pb-16 border border-white/5 shadow-inner overflow-visible">
+      {/* Vertical axis labels — horizontal full words (no rotation, no narrow
+          column) so "HIGH IMPACT" / "LOW IMPACT" read normally instead of
+          breaking one letter per line. */}
+      <div className="absolute left-0 top-0 h-full w-28 flex flex-col justify-between py-10 pl-4 pr-3 pointer-events-none">
+        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50 leading-tight text-right">High Impact</span>
+        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50 leading-tight text-right">Low Impact</span>
       </div>
-      <div className="absolute left-0 bottom-0 w-full h-12 flex justify-between px-12 py-2 pointer-events-none">
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-40">Low</span>
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-40">Fixes</span>
+
+      {/* Horizontal axis labels — full words along the bottom. */}
+      <div className="absolute left-28 right-8 bottom-0 h-14 flex justify-between items-center px-2 pointer-events-none">
+        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50">Less Likely</span>
+        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50">More Likely</span>
       </div>
 
       <div className="relative w-full h-full flex items-center justify-center">
@@ -113,9 +130,9 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
                 key={i} 
                 className="rounded-sm" 
                 style={{ 
-                  backgroundColor: intensity > 0.7 ? 'var(--color-brand-coral)' : 
-                                   intensity > 0.4 ? 'var(--color-brand-amber)' : 
-                                   'var(--color-brand-emerald)',
+                  backgroundColor: intensity > 0.7 ? RISK_RED : 
+                                   intensity > 0.4 ? RISK_AMBER : 
+                                   RISK_GREEN,
                   opacity: intensity + 0.1
                 }} 
               />
@@ -131,10 +148,8 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
             const left = ((likelihood - 1) / 9) * 100;
             const top = 100 - ((impact - 1) / 9) * 100;
 
-            const severityColor = item.data.severity === 'High' ? 'text-brand-coral' : 
-                                  item.data.severity === 'Medium' ? 'text-brand-amber' : 
-                                  'text-brand-emerald';
-            
+            const dotHex = severityHex(item.data.severity);
+
             const shadowColor = item.data.severity === 'High' ? 'rgba(255,107,107,0.5)' : 
                                 item.data.severity === 'Medium' ? 'rgba(245,158,11,0.4)' : 
                                 'rgba(34,197,94,0.3)';
@@ -158,15 +173,13 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
                   <motion.div 
                     animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
                     transition={{ duration: 2, repeat: Infinity, delay: idx * 0.5 }}
-                    className={cn("absolute -inset-4 rounded-full blur-[2px]", severityColor.replace('text-', 'bg-'))}
+                    className="absolute -inset-4 rounded-full blur-[2px]"
+                    style={{ backgroundColor: dotHex }}
                   />
                   
                   <div 
-                    className={cn(
-                      "w-4 h-4 md:w-6 md:h-6 rounded-full border-2 border-white shadow-xl flex items-center justify-center transition-all group-hover/point:scale-125",
-                      severityColor.replace('text-', 'bg-')
-                    )}
-                    style={{ boxShadow: `0 0 15px ${shadowColor}` }}
+                    className="w-4 h-4 md:w-6 md:h-6 rounded-full border-2 border-white shadow-xl flex items-center justify-center transition-all group-hover/point:scale-125"
+                    style={{ backgroundColor: dotHex, boxShadow: `0 0 15px ${shadowColor}` }}
                   >
                     <div className="w-1 h-1 bg-white rounded-full" />
                   </div>
@@ -185,7 +198,7 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
                   )}>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">{item.id} Risk</h4>
-                      <span className={cn("text-[10px] font-black uppercase", severityColor)}>{item.data.severity}</span>
+                      <span className="text-[10px] font-black uppercase" style={{ color: dotHex }}>{item.data.severity}</span>
                     </div>
                     <div className="flex gap-4 mb-4">
                       <div className="flex-1">
