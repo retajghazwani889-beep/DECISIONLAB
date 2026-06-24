@@ -1,15 +1,16 @@
 import { PitchDeckSlide, SlideElement } from '../types';
+import PptxGenJS from "pptxgenjs";
 
 /**
  * Intelligent Layout Engine v3.0
  * Converts a basic slide data structure into a set of balanced, editorial elements.
  */
-export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string = 'Institutional VC'): SlideElement[] => {
+export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string = 'Clean Investor'): SlideElement[] => {
   const elements: SlideElement[] = [];
   const layout = slide.layout || 'split';
   
   // Theme-based style properties
-  const isDark = ['Institutional VC', 'Minimal Dark', 'Fintech Editorial', 'Classic Pitch', 'Gradient Modern'].includes(template);
+  const isDark = ['Clean Investor', 'Dark Executive', 'Luxury Black'].includes(template);
   const textColor = isDark ? '#FFFFFF' : '#1E293B';
   const accentColor = slide.colorAccent || '#5DA9FF';
   const fontFamily = ['Executive Corporate', 'Elegant Editorial'].includes(template) ? 'Georgia, serif' : 'Inter, sans-serif';
@@ -23,7 +24,7 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
     y: 8,
     w: layout === 'centered' ? 90 : 85,
     h: 12,
-    fontSize: 56,
+    fontSize: 32, // Adjusted scale relative to coordinate engine mapping
     fontWeight: '900',
     fontFamily,
     color: textColor,
@@ -46,7 +47,7 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
 
   // 3. Main Narrative (Intelligent Auto-Scaling)
   const contentWidth = layout === 'centered' ? 80 : 45;
-  const contentFontSize = calculateFitFontSize(slide.content, contentWidth * 12.8, 30 * 7.2, 32);
+  const contentFontSize = calculateFitFontSize(slide.content, contentWidth * 12.8, 30 * 7.2, 16);
 
   elements.push({
     id: `el-${slide.id}-content`,
@@ -68,20 +69,22 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
   // 4. Points/Bullets (Grid vs List)
   const maxPoints = 5;
   slide.points.slice(0, maxPoints).forEach((point, i) => {
+    // Clear custom clean layout matching to separate point boundaries cleanly
+    const formattedText = point.startsWith('•') ? point : `• ${point}`;
     elements.push({
       id: `el-${slide.id}-point-${i}`,
       type: 'point',
-      content: `• ${point}`,
-      x: layout === 'centered' ? 15 : 6,
-      y: (layout === 'centered' ? 55 : 58) + (i * 6),
+      content: formattedText,
+      x: layout === 'centered' ? 15 : 5,
+      y: (layout === 'centered' ? 55 : 56) + (i * 6),
       w: layout === 'centered' ? 70 : 44,
       h: 5,
-      fontSize: 18,
+      fontSize: 13,
       fontWeight: '400',
       fontFamily,
       color: textColor,
       textAlign: layout === 'centered' ? 'center' : 'left',
-      opacity: 0.7,
+      opacity: 0.8,
       zIndex: 5
     });
   });
@@ -111,12 +114,13 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
           id: `el-${slide.id}-chip`,
           type: 'text',
           content: 'CORE STRATEGY',
-          x: 58,
-          y: 72,
+          x: 55,
+          y: 11,
           w: 15,
           h: 4,
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: '900',
+          fontFamily,
           color: accentColor,
           textAlign: 'left',
           zIndex: 15
@@ -131,13 +135,14 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
       type: 'text',
       content: slide.metric.label.toUpperCase(),
       x: layout === 'centered' ? 40 : 55,
-      y: layout === 'centered' ? 82 : 82,
-      w: 20,
+      y: 82,
+      w: 35,
       h: 4,
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: '900',
+      fontFamily,
       color: textColor,
-      opacity: 0.4,
+      opacity: 0.5,
       textAlign: layout === 'centered' ? 'center' : 'left',
       zIndex: 15
     });
@@ -147,11 +152,12 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
       type: 'text',
       content: slide.metric.value,
       x: layout === 'centered' ? 35 : 55,
-      y: layout === 'centered' ? 86 : 86,
-      w: 30,
+      y: 85,
+      w: 35,
       h: 10,
-      fontSize: 48,
+      fontSize: 32,
       fontWeight: '900',
+      fontFamily,
       color: accentColor,
       textAlign: layout === 'centered' ? 'center' : 'left',
       zIndex: 15
@@ -169,7 +175,91 @@ export const calculateFitFontSize = (text: string, containerW: number, container
   const area = containerW * containerH;
   const charCount = text.length;
   
-  // Very rough heuristic for font sizing
   const idealSize = Math.sqrt(area / (charCount * 0.6));
-  return Math.min(baseSize, Math.max(12, idealSize));
+  return Math.min(baseSize, Math.max(11, idealSize));
 };
+
+/**
+ * Generates and downloads a real PPTX presentation using the dynamic slide elements matrix map
+ */
+export async function generatePitchDeck(
+  projectName: string, 
+  slidesArray: PitchDeckSlide[], 
+  selectedTheme: string
+) {
+  const pptx = new PptxGenJS();
+
+  // Establish real 16:9 widescreen context template guidelines
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "DecisionLab";
+  pptx.company = "DecisionLab";
+  pptx.subject = projectName;
+  pptx.title = `${projectName} Pitch Deck`;
+
+  // Standard width mappings: 13.33 inches x 7.5 inches for widescreen setups
+  const SLIDE_WIDTH = 13.33;
+  const SLIDE_HEIGHT = 7.5;
+
+  const themes: any = {
+    cleanInvestor: { bg: "FFFFFF", text: "111111", accent: "3B82F6" },
+    darkExecutive: { bg: "071C2B", text: "FFFFFF", accent: "60A5FA" },
+    editorialVC: { bg: "F5F5F0", text: "111111", accent: "0F172A" },
+  };
+
+  const currentTheme = themes[selectedTheme] || themes.cleanInvestor;
+
+  // Compile individual elements on structural iterations loop dynamically
+  slidesArray.forEach((slideData) => {
+    const pptxSlide = pptx.addSlide();
+    pptxSlide.background = { color: currentTheme.bg };
+
+    // Derive active elements blueprint coordinates
+    const elements = deriveElementsFromLayout(slideData, selectedTheme);
+
+    elements.forEach((el) => {
+      // Scale standard viewport numbers directly into exact inches coordinates 
+      const xInches = (el.x / 100) * SLIDE_WIDTH;
+      const yInches = (el.y / 100) * SLIDE_HEIGHT;
+      const wInches = (el.w / 100) * SLIDE_WIDTH;
+      const hInches = el.h ? (el.h / 100) * SLIDE_HEIGHT : 0.5;
+
+      if (el.type === 'title' || el.type === 'text' || el.type === 'point') {
+        pptxSlide.addText(el.content, {
+          x: xInches,
+          y: yInches,
+          w: wInches,
+          h: hInches,
+          fontFace: el.fontFamily?.split(',')[0] || "Arial",
+          fontSize: el.fontSize || 14,
+          bold: el.fontWeight ? parseInt(el.fontWeight) >= 700 : false,
+          color: el.color?.replace('#', '') || currentTheme.text,
+          align: el.textAlign || 'left',
+          valign: 'top',
+        });
+      } 
+      else if (el.type === 'image') {
+        pptxSlide.addImage({
+          path: el.content,
+          x: xInches,
+          y: yInches,
+          w: wInches,
+          h: hInches,
+        });
+      } 
+      else if (el.type === 'shape' && el.content === 'line') {
+        pptxSlide.addShape(pptx.ShapeType.rect, {
+          x: xInches,
+          y: yInches,
+          w: wInches,
+          h: hInches > 0.05 ? hInches : 0.04,
+          fill: { color: el.color?.replace('#', '') || currentTheme.accent }
+        });
+      }
+    });
+  });
+
+  // Compile and export to desktop filesystem immediately
+  await pptx.writeFile({
+    fileName: `${projectName.toLowerCase().replace(/\s+/g, '-')}-pitchdeck.pptx`,
+  });
+}

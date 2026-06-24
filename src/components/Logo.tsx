@@ -1,75 +1,87 @@
-import React from 'react';
-import { cn } from '../lib/utils';
-
-interface LogoProps {
-  className?: string;
-  size?: number;
-  showText?: boolean;
-  showTagline?: boolean;
-}
-
-export default function Logo({ className, size = 32, showText = false, showTagline = false }: LogoProps) {
+export default function Logo() {
   return (
-    <div className={cn("flex items-center gap-4", className)}>
-      <div 
-        className="relative flex items-center justify-center overflow-hidden rounded-xl bg-brand-section border border-brand-accent/20 shadow-2xl transition-all duration-500 group-hover:scale-105"
-        style={{ width: size * 1.5, height: size * 1.5 }}
-      >
-        <div className="absolute inset-0 bg-brand-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        <svg 
-          width={size} 
-          height={size} 
-          viewBox="0 0 40 40" 
-          fill="none" 
+    <div className="flex items-center gap-3">
+      <div className="relative w-[58px] h-[58px] flex items-center justify-center">
+        <svg
+          width="54"
+          height="54"
+          viewBox="0 0 100 100"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="relative z-10"
         >
-          {/* Integrated D + L Monogram */}
-          {/* Vertical Pillar (Shared) */}
-          <rect x="8" y="8" width="4" height="24" rx="1" fill="currentColor" />
-          
-          {/* "D" Curve */}
-          <path 
-            d="M12 8H22C27.5228 8 32 12.4772 32 18C32 23.5228 27.5228 28 22 28H12V8Z" 
-            fill="currentColor" 
-            fillOpacity="0.15"
-          />
-          <path 
-            d="M12 8H22C27.5228 8 32 12.4772 32 18C32 23.5228 27.5228 28 22 28H12" 
-            stroke="currentColor" 
-            strokeWidth="3.5" 
+          <defs>
+            <linearGradient
+              id="decisionlab-blue"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="100%" stopColor="#60A5FA" />
+            </linearGradient>
+
+            <filter
+              id="blueGlow"
+              x="-50%"
+              y="-50%"
+              width="200%"
+              height="200%"
+            >
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            <filter
+              id="whiteGlow"
+              x="-50%"
+              y="-50%"
+              width="200%"
+              height="200%"
+            >
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* OUTER D FRAME */}
+          <path
+            d="M 26 16 H 55 C 76 16 88 31 88 50 C 88 69 76 84 55 84 H 26 Z"
+            stroke="url(#decisionlab-blue)"
+            strokeWidth="11.5"
             strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            filter="url(#blueGlow)"
           />
-          
-          {/* "L" Horizontal Extension (Integrated into D's bottom) */}
-          <path 
-            d="M12 32H28" 
-            stroke="var(--color-brand-accent)" 
-            strokeWidth="3.5" 
-            strokeLinecap="round" 
+
+          {/* INNER WHITE L */}
+          <path
+            d="M 47 12 V 52 H 93"
+            stroke="#FFFFFF"
+            strokeWidth="9.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#whiteGlow)"
           />
-          
-          {/* Intersection Detail */}
-          <circle cx="10" cy="32" r="2" fill="var(--color-brand-accent)" />
         </svg>
       </div>
 
-      {(showText || showTagline) && (
-        <div className="flex flex-col">
-          {showText && (
-            <span className="text-2xl tracking-tighter text-brand-text-primary font-display leading-none">
-              <span className="font-black">Decision</span>
-              <span className="font-medium text-brand-accent">Lab</span>
-            </span>
-          )}
-          {showTagline && (
-            <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-text-secondary mt-1.5 opacity-60">
-              Analyze. Validate. Grow.
-            </span>
-          )}
-        </div>
-      )}
+      <div className="leading-none">
+        <h1 className="text-white font-semibold text-[44px] tracking-tight">
+          Decision<span className="text-[#60A5FA]">Lab</span>
+        </h1>
+
+        <p className="mt-1 text-[#93A4B5] text-[10px] uppercase tracking-[0.45em] font-medium">
+          ANALYZE · VALIDATE · GROW
+        </p>
+      </div>
     </div>
   );
 }

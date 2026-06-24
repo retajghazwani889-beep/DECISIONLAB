@@ -15,6 +15,15 @@ import {
 import { Link } from 'react-router-dom';
 
 const AboutPage: React.FC = () => {
+  const [activeStep, setActiveStep] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 6);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* 1. HERO SECTION */}
@@ -29,18 +38,17 @@ const AboutPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="inline-block text-xs md:text-sm font-black tracking-[0.8em] text-brand-accent uppercase mb-8 opacity-80">
-              Venture Analysis Protocol
+            <span className="inline-block text-[10px] md:text-[12px] font-black tracking-[0.8em] text-brand-accent uppercase mb-8 opacity-80">
+              About Us
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
-              Built for founders making <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-text-primary via-brand-text-primary to-brand-accent/60">
-                consequential decisions.
+              Built for founders <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-text-primary via-brand-text-primary to-brand-accent/60 font-medium" style={{ fontFamily: 'system-ui' }}>
+                making decisions
               </span>
             </h1>
-            <p className="max-w-2xl mx-auto text-xs md:text-sm text-brand-text-secondary leading-relaxed font-medium mb-12 opacity-90">
-              DecisionLab is a venture analysis and strategic insights platform designed for startups, 
-              founders, and institutional operators who demand disciplined execution and absolute clarity.
+            <p className="max-w-2xl mx-auto text-xl md:text-2xl text-slate-200 leading-relaxed font-medium mb-12 opacity-95 tracking-[0.02em]">
+              DecisionLab helps startups grow by providing clear data and simple plans
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link to="/analyze">
@@ -49,7 +57,7 @@ const AboutPage: React.FC = () => {
                   whileTap={{ scale: 0.98 }}
                   className="px-10 py-5 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.15em] text-sm rounded-full shadow-[0_0_30px_rgba(93,169,255,0.3)] hover:shadow-[0_0_50px_rgba(93,169,255,0.5)] transition-all duration-300"
                 >
-                  Start Analysis
+                  Start Now
                 </motion.button>
               </Link>
             </div>
@@ -67,22 +75,18 @@ const AboutPage: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <span className="text-xs font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
-                The Philosophy
+              <span className="text-[10px] font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
+                About Us
               </span>
               <h2 className="text-4xl md:text-5xl font-black text-brand-text-primary mb-8 tracking-tight font-display leading-[1.15]">
-                Why current execution <br /> is fragmented.
+                Why building <br /> is hard
               </h2>
-              <div className="space-y-6 text-sm text-brand-text-secondary leading-[1.8] font-medium opacity-90">
+              <div className="space-y-6 text-xl text-slate-200 leading-[1.8] font-medium opacity-95 tracking-[0.02em]">
                 <p>
-                  Most startups fail not because of a lack of ideas, but because of a lack of structural clarity. 
-                  In the early stages, every decision is a critical path variable that either reinforces the 
-                  foundation or introduces systemic risk.
+                  Most startups fail from a lack of focus where every choice counts
                 </p>
                 <p>
-                  Fragmented decision-making lead to "execution drift"—where daily operations lose alignment 
-                  with the core value hypothesis. DecisionLab exists to bridge the gap between abstract 
-                  vision and institutional-grade output.
+                  We help founders stay on track by turning ideas into real plans
                 </p>
               </div>
             </motion.div>
@@ -96,15 +100,15 @@ const AboutPage: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/5 to-transparent pointer-events-none" />
               <div className="grid grid-cols-2 gap-6 relative z-10">
                 {[
-                  { label: "Execution Logic", value: "88%", icon: Zap },
-                  { label: "Market Fit", value: "High", icon: Target },
-                  { label: "Risk Mitigation", value: "Verified", icon: Shield },
-                  { label: "Capital Eficiency", value: "Auto", icon: BarChart3 }
+                  { label: "Execution", value: "88%", icon: Zap },
+                  { label: "Market Match", value: "High", icon: Target },
+                  { label: "Risk Safety", value: "Verified", icon: Shield },
+                  { label: "Capital Efficiency", value: "Auto", icon: BarChart3 }
                 ].map((stat, i) => (
                   <div key={i} className="p-8 rounded-3xl bg-brand-bg/50 border border-white/5">
                     <stat.icon className="w-6 h-6 text-brand-accent mb-4 opacity-70" />
                     <div className="text-2xl font-black text-brand-text-primary mb-1">{stat.value}</div>
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-secondary opacity-60">{stat.label}</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-secondary opacity-60">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -114,52 +118,52 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* 3. WHAT DECISIONLAB DOES */}
-      <section className="py-24 px-6">
+      <section className="py-24 px-6 bg-[#102434]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <span className="text-xs font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
+            <span className="text-[10px] font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
               Capabilities
             </span>
-            <h2 className="text-4xl md:text-5xl font-black text-brand-text-primary mb-6 tracking-tight font-display">
-              Modular Analysis.
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight font-display text-center uppercase">
+              What we do
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                title: "Venture Analysis",
-                desc: "Multidimensional appraisal of core business logic, evaluating competitive advantage and unit economics.",
+                title: "Business Review",
+                desc: "Check your logic and market fit",
                 icon: BarChart3,
                 color: "brand-accent"
               },
               {
-                title: "Strategic Mapping",
-                desc: "Interactive roadmaps that synchronize milestones with market windows and capital requirements.",
+                title: "Goal Planning",
+                desc: "Roadmaps that link goals with growth",
                 icon: Target,
                 color: "brand-purple"
               },
               {
-                title: "Market Validation",
-                desc: "Real-time extraction of market signals to confirm or invalidate growth hypotheses.",
+                title: "Market Facts",
+                desc: "Real-world data to prove your plan",
                 icon: Search,
                 color: "brand-cyan"
               },
               {
-                title: "Tactical Execution",
-                desc: "Translating high-level strategy into discrete, high-leverage execution units for the entire team.",
+                title: "Team Focus",
+                desc: "Turn plans into tasks for your team",
                 icon: Zap,
                 color: "brand-emerald"
               },
               {
-                title: "Investor Preparation",
-                desc: "Structuring venture data to withstand institutional-grade due diligence and investor scrutiny.",
+                title: "Investor Prep",
+                desc: "Get your data ready for meeting VC",
                 icon: Shield,
                 color: "brand-amber"
               },
               {
-                title: "Risk Exposure Systems",
-                desc: "Mapping systemic vulnerabilities before they manifest as critical execution bottlenecks.",
+                title: "Risk Review",
+                desc: "Find weak spots before they hit",
                 icon: Rocket,
                 color: "brand-coral"
               }
@@ -176,10 +180,10 @@ const AboutPage: React.FC = () => {
                 <div className={`w-12 h-12 rounded-2xl bg-${module.color}/10 flex items-center justify-center mb-8 border border-${module.color}/20 group-hover:scale-110 transition-transform duration-500`}>
                   <module.icon className={`w-6 h-6 text-${module.color}`} />
                 </div>
-                <h3 className="text-sm font-black text-brand-text-primary uppercase mb-4 tracking-tight">
+                <h3 className="text-2xl md:text-3xl font-black text-white uppercase mb-4 tracking-tight">
                   {module.title}
                 </h3>
-                <p className="text-brand-text-secondary leading-relaxed font-medium opacity-80">
+                <p className="text-base md:text-lg font-medium text-white leading-relaxed tracking-[0.02em] opacity-100">
                   {module.desc}
                 </p>
               </motion.div>
@@ -189,38 +193,157 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* 4. HOW IT WORKS (Workflow) */}
-      <section className="py-24 px-6 bg-brand-section/30 overflow-hidden">
-        <div className="max-w-7xl mx-auto relative">
-          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-accent/20 to-transparent -translate-y-1/2 hidden lg:block" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 relative z-10">
+      <section className="py-24 px-6 bg-[#102434] overflow-hidden relative border-y border-white/5">
+        {/* Subtle grid pattern and technical constellations */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="roadGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#5da9ff" strokeWidth="0.5" opacity="0.2" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#roadGrid)" />
+            <circle cx="15%" cy="30%" r="1.5" fill="#5da9ff" opacity="0.6" />
+            <circle cx="85%" cy="25%" r="1" fill="#5da9ff" opacity="0.4" />
+            <circle cx="45%" cy="80%" r="2" fill="#5da9ff" opacity="0.5" />
+            <circle cx="65%" cy="70%" r="1" fill="#5da9ff" opacity="0.3" />
+            <line x1="15%" y1="30%" x2="45%" y2="80%" stroke="#5da9ff" strokeWidth="0.5" opacity="0.1" />
+            <line x1="85%" y1="25%" x2="65%" y2="70%" stroke="#5da9ff" strokeWidth="0.5" opacity="0.08" />
+          </svg>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative min-h-[520px]">
+          {/* Futuristic Data Stream connecting steps on desktop */}
+          <div className="absolute inset-0 pointer-events-none z-0 hidden lg:block">
+            <svg 
+              className="w-full h-full" 
+              viewBox="0 0 1200 320" 
+              preserveAspectRatio="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <style>{`
+                @keyframes dataPulse {
+                  to {
+                    stroke-dashoffset: -100;
+                  }
+                }
+                .animate-data-stream {
+                  animation: dataPulse 4s linear infinite;
+                }
+              `}</style>
+              
+              {[
+                { d: "M 100,165 C 200,165 200,60 300,60", id: 0 },
+                { d: "M 300,60 C 400,60 400,270 500,270", id: 1 },
+                { d: "M 500,270 C 600,270 600,60 700,60", id: 2 },
+                { d: "M 700,60 C 800,60 800,270 900,270", id: 3 },
+                { d: "M 900,270 C 1000,270 1000,165 1100,165", id: 4 }
+              ].map((segment, pathIdx) => {
+                // Segment is active if stream has passed this connection
+                const isSegmentActive = pathIdx < activeStep;
+                return (
+                  <g key={segment.id}>
+                    {/* Underlying blur glow for active pathway */}
+                    <path
+                      d={segment.d}
+                      fill="none"
+                      stroke={isSegmentActive ? "#5da9ff" : "#1e4761"}
+                      strokeWidth={isSegmentActive ? 12 : 2}
+                      className="transition-all duration-700 opacity-20"
+                      style={{
+                        filter: isSegmentActive ? "blur(8px)" : "none"
+                      }}
+                    />
+                    {/* Base pathway line */}
+                    <path
+                      d={segment.d}
+                      fill="none"
+                      stroke={isSegmentActive ? "#5da9ff" : "#1e4761"}
+                      strokeWidth={1.5}
+                      className="transition-all duration-700"
+                      opacity={isSegmentActive ? 1 : 0.25}
+                    />
+                    {/* Moving pulse overlay */}
+                    {isSegmentActive && (
+                      <path
+                        d={segment.d}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                        strokeDasharray="15 80"
+                        className="animate-data-stream"
+                        opacity="0.8"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* Interactive Steps Content Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-12 relative z-10 pt-16">
             {[
-              { label: "Ingest", desc: "Seed data collection" },
-              { label: "Synthesize", desc: "Cross-modular processing" },
-              { label: "Visualize", desc: "High-density reporting" },
-              { label: "Blueprint", desc: "Execution structuring" },
-              { label: "Refine", desc: "Iterative alignment" },
-              { label: "Deploy", desc: "Market entry ready" }
-            ].map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center text-center lg:items-start lg:text-left"
-              >
-                <div className="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent/40 flex items-center justify-center mb-6 z-20 shadow-[0_0_20px_rgba(93,169,255,0.2)]">
-                  <span className="text-xs font-black text-brand-accent">{i + 1}</span>
-                </div>
-                <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-widest mb-2">
-                  {step.label}
-                </h4>
-                <p className="text-xs font-medium text-brand-text-secondary opacity-60">
-                  {step.desc}
-                </p>
-              </motion.div>
-            ))}
+              { label: "ADD", desc: "Share your business data" },
+              { label: "CHECK", desc: "Cross-check every point" },
+              { label: "VIEW", desc: "Clear data review" },
+              { label: "MAP", desc: "Build your roadmap" },
+              { label: "FIX", desc: "Refine only where needed" },
+              { label: "FINISH", desc: "Ready for market entry" }
+            ].map((step, i) => {
+              const isStepActive = i === activeStep;
+              const offsetClass = 
+                i === 0 ? "lg:pt-24" :
+                i === 1 ? "lg:pt-2" :
+                i === 2 ? "lg:pt-48" :
+                i === 3 ? "lg:pt-2" :
+                i === 4 ? "lg:pt-48" :
+                "lg:pt-24";
+
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  onMouseEnter={() => setActiveStep(i)}
+                  onClick={() => setActiveStep(i)}
+                  className={`flex flex-col items-center text-center lg:items-center relative transition-all duration-500 cursor-pointer select-none group/step ${offsetClass}`}
+                >
+                  {/* 3D glass-morphic sphere container */}
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center relative z-20 transition-all duration-500 mb-6 ${
+                    isStepActive 
+                      ? "bg-gradient-to-b from-[#102434]/50 to-[#102434]/80 backdrop-blur-xl border-2 border-[#5da9ff] shadow-[0_0_25px_rgba(93,169,255,0.45),inset_0_4px_12px_rgba(255,255,255,0.08),inset_0_-4px_12px_rgba(93,169,255,0.15)] scale-110" 
+                      : "bg-gradient-to-b from-[#102434]/20 to-[#102434]/40 backdrop-blur-sm border border-[#1e4761]/40 scale-100 group-hover/step:border-[#5da9ff]/40"
+                  }`}>
+                    {/* Pulsing core / Custom vision glow inside */}
+                    <div className={`w-4 h-4 rounded-full transition-all duration-500 flex items-center justify-center ${
+                      isStepActive 
+                        ? "bg-[#5da9ff] animate-pulse shadow-[0_0_20px_rgba(93,169,255,1)]" 
+                        : "bg-[#1e4761]/60"
+                    }`}>
+                      {isStepActive && (
+                        <div className="absolute inset-0 rounded-full border border-white/20 animate-ping opacity-30 pointer-events-none" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step Title & Subtext */}
+                  <div className="relative z-10 px-2 lg:h-[180px]">
+                    <span className="text-[10px] font-bold font-mono text-[#5da9ff]/80 block mb-1 tracking-wider uppercase">
+                      PHASE 0{i + 1}
+                    </span>
+                    <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-3 leading-none">
+                      {step.label}
+                    </h4>
+                    <p className="text-sm md:text-base font-medium text-white opacity-95 leading-snug tracking-[0.02em] max-w-[170px] mx-auto uppercase">
+                      {step.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -236,16 +359,14 @@ const AboutPage: React.FC = () => {
           >
             <div className="w-16 h-1 w-2.5 bg-brand-accent mx-auto rounded-full opacity-50" />
             <h2 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
-              "Tactics without strategy is the noise before defeat."
+              "Tactics without strategy is noise"
             </h2>
-            <div className="max-w-2xl mx-auto space-y-8 text-sm md:text-2xl text-brand-text-secondary font-medium italic opacity-80 leading-relaxed">
+            <div className="max-w-2xl mx-auto space-y-8 text-2xl md:text-3xl text-slate-200 font-medium italic opacity-95 leading-relaxed tracking-[0.02em]">
               <p>
-                DecisionLab was founded on a singular conviction: that disciplined founders deserve 
-                institutional-grade tools. We believe that clarity is the ultimate competitive advantage.
+                DecisionLab was built for founders who believe clarity is the key to winning
               </p>
               <p>
-                Execution is not just about moving fast—it's about moving in the correct direction 
-                with surgical precision.
+                Success is about moving in the right way to help you stay on course
               </p>
             </div>
           </motion.div>
@@ -260,7 +381,7 @@ const AboutPage: React.FC = () => {
             
             <div className="relative z-10">
               <h2 className="text-4xl md:text-6xl font-black text-brand-text-primary mb-12 tracking-tight group-hover:translate-y-[-4px] transition-transform duration-500">
-                Validate before <br className="md:hidden" /> you scale.
+                Validate before <br className="md:hidden" /> you scale
               </h2>
               <Link to="/analyze">
                 <motion.button
@@ -268,7 +389,7 @@ const AboutPage: React.FC = () => {
                   whileTap={{ scale: 0.95 }}
                   className="px-12 py-6 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.2em] text-sm rounded-full shadow-huge hover:shadow-[0_0_60px_rgba(93,169,255,0.4)] transition-all duration-300"
                 >
-                  Enter the Command Center
+                  Enter the Dashboard
                 </motion.button>
               </Link>
             </div>

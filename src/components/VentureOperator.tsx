@@ -23,7 +23,6 @@ import {
   MessageSquare,
   Database
 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
@@ -55,43 +54,49 @@ const VentureOperator: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bootMessages = [
-    "INITIALIZING VENTURE_OPERATOR_CORE 8.41",
-    "ESTABLISHING SECURE_TUNNEL [A-TYPE]",
-    "SYNCHRONIZING INSTITUTIONAL_DATA_NODES",
-    "DECRYPTION_PROTOCOL: ACTIVE",
-    "SIGNAL_STRENGTH: 100%",
-    "SYSTEM_READY: STRATEGIC_OPERATOR_ONLINE"
+    "LOADING SECURE CHANNEL",
+    "POLLING MARKET DATA",
+    "STABILIZING CONNECTION",
+    "READY"
   ];
 
-  // Fetch user sessions
-  useEffect(() => {
+  const fetchSessions = async () => {
     if (!user) {
       setSessions([]);
       return;
     }
-
-    const q = query(
-      collection(db, 'sessions'),
-      where('userId', '==', user.uid),
-      orderBy('updatedAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    try {
+      const q = query(
+        collection(db, 'sessions'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
       const sessionData = snapshot.docs.map(doc => ({
         ...doc.data(),
         sessionId: doc.id
       })) as IntelligenceSession[];
+      // Client-side sort to support composite-indexes failure gracefully
+      sessionData.sort((a, b) => {
+        const timeA = a.updatedAt ? (typeof (a.updatedAt as any).toDate === 'function' ? (a.updatedAt as any).toDate().getTime() : new Date(a.updatedAt).getTime()) : 0;
+        const timeB = b.updatedAt ? (typeof (b.updatedAt as any).toDate === 'function' ? (b.updatedAt as any).toDate().getTime() : new Date(b.updatedAt).getTime()) : 0;
+        return timeB - timeA;
+      });
       setSessions(sessionData);
-    });
+    } catch (err) {
+      console.warn("Fetch sessions failed:", err);
+    }
+  };
 
-    return () => unsubscribe();
+  // Fetch user sessions
+  useEffect(() => {
+    fetchSessions();
   }, [user]);
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: `Strategic Decision Operator online. I am synced with DecisionLab's venture analysis core. How can I assist with your executive decisioning today?`,
+        content: `Operator online. I can assist with market intelligence and strategic analysis. How can I help today?`,
         timestamp: new Date()
       }]);
     }
@@ -123,7 +128,7 @@ const VentureOperator: React.FC = () => {
     setCurrentSessionId(null);
     setMessages([{
       role: 'assistant',
-      content: "Session reset. Strategic Decision Operator ready for new inquiry.",
+      content: "Reset. Ready for your next query.",
       timestamp: new Date()
     }]);
   };
@@ -157,34 +162,22 @@ const VentureOperator: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `
-        You are the "Venture Operator" for DecisionLab. 
-        CORE PROTOCOL: Respond with absolute executive brevity. No filler. No storytelling. No conversational pleasantries.
-        
-        STRUCTURE:
-        1. [DIRECT_RESPONSE]: 1 concise sentence.
-        2. [STRATEGIC_INSIGHT]: 1-2 sharp bullet points using institutional terminology.
-        3. [RECOMMENDED_MOTION]: 1 high-leverage action.
-
-        TONE: Institutional, sharp, confident, analytical.
-        LANG: Venture-focused.
-        
-        System Context: DecisionLab venture analysis core.
-        User Command: ${userMessage.content}
-      `;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          systemInstruction: "You are an institutional venture analyst. Output must be structured as: Direct Answer, Strategic Insight, and Recommendation. Total brevity mandatory."
-        }
+      const response = await fetch('/api/gemini/venture-operator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage.content })
       });
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
 
       const assistantMessage: IntelligenceMessage = {
         role: 'assistant',
-        content: response.text || "I'm sorry, I encountered a signal disruption. Please re-state your inquiry.",
+        content: data.text || "I'm sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
         modules: Math.random() > 0.6 ? [
             { type: 'meter', data: { value: Math.floor(Math.random() * 40) + 60, label: 'Execution Readiness' } }
@@ -205,18 +198,20 @@ const VentureOperator: React.FC = () => {
             updatedAt: serverTimestamp()
           });
           setCurrentSessionId(docRef.id);
+          fetchSessions();
         } else {
           await updateDoc(doc(db, 'sessions', currentSessionId), {
             messages: finalMessages,
             updatedAt: serverTimestamp()
           });
+          fetchSessions();
         }
       }
     } catch (error) {
-      console.error("Signal Error:", error);
+      console.error("Error:", error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Error establishing analysis uplink. Please verify connectivity or system credentials.",
+        content: "Error connecting. Please check your connection.",
         timestamp: new Date()
       }]);
     } finally {
@@ -235,13 +230,13 @@ const VentureOperator: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleOpen}
-            className="fixed bottom-10 right-10 z-[200] w-20 h-20 rounded-full bg-brand-bg md:w-24 md:h-24 p-[2px] shadow-[0_0_40px_rgba(93,169,255,0.3)] group overflow-hidden"
+            className="fixed bottom-10 right-10 z-[200] w-20 h-20 rounded-full bg-[#102434] md:w-24 md:h-24 p-[2px] shadow-[0_0_40px_rgba(93,169,255,0.85)] border-2 border-[#5da9ff] animate-pulse group overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/20 via-brand-accent/5 to-transparent animate-pulse" />
-            <div className="w-full h-full rounded-full bg-brand-bg flex flex-col items-center justify-center relative overflow-hidden group-hover:bg-brand-hover transition-colors duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#5da9ff]/20 via-[#5da9ff]/5 to-transparent animate-pulse" />
+            <div className="w-full h-full rounded-full bg-[#102434] flex flex-col items-center justify-center relative overflow-hidden group-hover:bg-[#152d3f] transition-colors duration-500">
                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(93,169,255,1)_0%,transparent_70%)] group-hover:opacity-40 transition-opacity" />
-               <Zap className="w-8 h-8 text-brand-accent relative z-10 group-hover:scale-110 transition-transform duration-500" />
-               <span className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-accent/80 mt-2 relative z-10">Operator</span>
+               <Zap className="w-8 h-8 text-[#5da9ff] drop-shadow-[0_0_12px_rgba(93,169,255,0.8)] relative z-10 group-hover:scale-110 transition-transform duration-500" fill="currentColor" />
+               <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#5da9ff]/90 mt-2 relative z-10">Operator</span>
             </div>
           </motion.button>
         )}
@@ -274,19 +269,18 @@ const VentureOperator: React.FC = () => {
                     <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                   </div>
                   <div className="flex flex-col">
-                    <h2 className="text-sm font-black text-brand-text-primary uppercase tracking-[0.2em] font-display flex items-center gap-4">
-                      Strategic Decision Desk
-                      <span className="px-3 py-1 rounded-md bg-brand-accent/10 text-xs text-brand-accent border border-brand-accent/20 animate-pulse">Live Uplink</span>
+                    <h2 className="text-xl font-black text-brand-text-primary uppercase tracking-[0.2em] font-display flex items-center gap-4">
+                      Strategic Desk
+                      <span className="px-3 py-1 rounded-md bg-brand-accent/10 text-[10px] text-brand-accent border border-brand-accent/20 animate-pulse">Online</span>
                     </h2>
                     <div className="flex flex-wrap items-center gap-4 mt-2">
                        <div className="flex items-center gap-2">
-                          <Activity className="w-3 h-3 text-brand-accent/60" />
-                          <span className="text-xs font-bold uppercase text-brand-text-secondary tracking-widest">Signal: Stable</span>
+                          <span className="text-[10px] font-bold uppercase text-brand-text-secondary tracking-widest">Active</span>
                        </div>
                        <div className="w-1 h-3 bg-white/10" />
                        <div className="flex items-center gap-2 text-emerald-500/80">
                           <Lock className="w-3 h-3" />
-                          <span className="text-xs font-bold uppercase tracking-widest">{user ? `Authenticated: ${profile?.roleType || 'Venture Partner'}` : 'Guest Session'}</span>
+                          <span className="text-[12px] font-semibold uppercase tracking-[0.02em] whitespace-nowrap">{user ? `Authenticated: ${profile?.roleType || 'Member'}` : 'Guest'}</span>
                        </div>
                     </div>
                   </div>
@@ -294,7 +288,7 @@ const VentureOperator: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={startNewSession}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl border border-brand-accent/20 bg-brand-accent/5 text-xs font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 transition-all"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl border border-brand-accent/20 bg-brand-accent/5 text-[10px] font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 transition-all"
                   >
                     <Plus className="w-4 h-4" /> New Session
                   </button>
@@ -351,16 +345,16 @@ const VentureOperator: React.FC = () => {
                         )}
                       >
                         <div className="flex items-center gap-3 mb-6 opacity-60">
-                          <span className="text-sm font-black uppercase tracking-[0.3em]">
-                            {m.role === 'assistant' ? 'Operator_Output' : 'Executive_Command'}
+                          <span className="text-[12px] font-black uppercase tracking-[0.3em]">
+                            {m.role === 'assistant' ? 'Operator' : 'User'}
                           </span>
                         </div>
 
                         <div className={cn(
                           "p-10 md:p-12 rounded-[3rem] tracking-tight leading-[1.6]",
                           m.role === 'user' 
-                            ? "bg-brand-accent text-brand-bg font-black text-sm shadow-[0_0_50px_rgba(93,169,255,0.25)]" 
-                            : "bg-brand-card/60 border border-brand-accent/20 text-brand-text-primary text-sm backdrop-blur-xl whitespace-pre-wrap font-medium"
+                            ? "bg-brand-accent text-brand-bg font-black text-xl shadow-[0_0_50px_rgba(93,169,255,0.25)]" 
+                            : "bg-brand-card/60 border border-brand-accent/20 text-brand-text-primary text-xl backdrop-blur-xl whitespace-pre-wrap font-medium"
                         )}>
                           {m.content}
 
@@ -376,7 +370,7 @@ const VentureOperator: React.FC = () => {
                                       <div className="flex justify-between items-end">
                                         <div className="flex items-center gap-4">
                                           <Target className="w-5 h-5 text-brand-accent" />
-                                          <span className="text-sm font-black uppercase tracking-[0.3em] text-brand-accent/80">{mod.data.label}</span>
+                                          <span className="text-[12px] font-black uppercase tracking-[0.3em] text-brand-accent/80">{mod.data.label}</span>
                                         </div>
                                         <span className="font-mono text-4xl text-brand-accent font-black tracking-tighter">{mod.data.value}%</span>
                                       </div>
@@ -415,7 +409,7 @@ const VentureOperator: React.FC = () => {
 
                 <div className="hidden xl:flex w-[400px] border-l border-brand-accent/10 flex-col bg-brand-bg/20 p-10 space-y-10 overflow-y-auto custom-scrollbar">
                    <div>
-                      <h3 className="text-sm font-black text-brand-accent uppercase tracking-[0.4em] mb-10 flex items-center gap-4">
+                      <h3 className="text-[12px] font-black text-brand-accent uppercase tracking-[0.4em] mb-10 flex items-center gap-4">
                          <History className="w-4 h-4" />
                          Venture Session Archive
                       </h3>
@@ -437,7 +431,7 @@ const VentureOperator: React.FC = () => {
                                   {session.title || "Untitled Session"}
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <div className="text-xs font-bold text-brand-text-secondary uppercase tracking-widest opacity-60">
+                                  <div className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest opacity-60">
                                     {session.messages.length} Signals
                                   </div>
                                   <ArrowRight className={cn("w-4 h-4 transition-all", currentSessionId === session.sessionId ? "text-brand-accent opacity-100" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 cursor-pointer")} />
@@ -447,7 +441,7 @@ const VentureOperator: React.FC = () => {
                           ) : (
                             <div className="p-10 text-center border border-dashed border-white/10 rounded-[2rem]">
                               <MessageSquare className="w-8 h-8 text-white/10 mx-auto mb-4" />
-                              <div className="text-xs font-black uppercase tracking-widest text-brand-text-secondary opacity-40">No Sessions Archived</div>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-brand-text-secondary opacity-40">No Sessions Archived</div>
                             </div>
                           )}
                         </div>
@@ -455,7 +449,7 @@ const VentureOperator: React.FC = () => {
                         <div className="p-10 rounded-[2.5rem] bg-brand-accent/5 border border-brand-accent/10 text-center">
                           <Lock className="w-10 h-10 text-brand-accent mx-auto mb-6 opacity-40" />
                           <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight mb-2">Vault Locked</h4>
-                          <p className="text-xs font-bold text-brand-text-secondary uppercase tracking-widest leading-relaxed opacity-60">
+                          <p className="text-[11px] font-bold text-brand-text-secondary uppercase tracking-widest leading-relaxed opacity-60">
                             Initialize your account to persist strategic analysis sessions and access session memory.
                           </p>
                         </div>
@@ -468,8 +462,8 @@ const VentureOperator: React.FC = () => {
                             <Database className="w-5 h-5 text-brand-accent" />
                          </div>
                          <div>
-                            <div className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Venture Analysis</div>
-                            <div className="text-xs font-bold text-brand-accent uppercase tracking-[0.2em] mt-1">Status: Operational</div>
+                            <div className="text-[12px] font-black text-brand-text-primary uppercase tracking-tight">Venture Analysis</div>
+                            <div className="text-[10px] font-bold text-brand-accent uppercase tracking-[0.2em] mt-1">Status: Operational</div>
                          </div>
                       </div>
                       <div className="space-y-3">
@@ -493,8 +487,8 @@ const VentureOperator: React.FC = () => {
                     <input 
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="Input strategic inquiry command..."
-                      className="flex-1 bg-transparent border-none outline-none px-8 text-brand-text-primary placeholder:text-brand-text-muted font-black text-sm md:text-2xl"
+                      placeholder="Ask a question..."
+                      className="flex-1 bg-transparent border-none outline-none px-8 text-brand-text-primary placeholder:text-brand-text-muted font-black text-xl md:text-2xl"
                     />
                     <motion.button 
                       whileHover={{ scale: 1.05 }}
@@ -502,7 +496,7 @@ const VentureOperator: React.FC = () => {
                       type="submit"
                       disabled={isProcessing}
                       className={cn(
-                          "flex items-center gap-4 px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all",
+                          "flex items-center gap-4 px-10 py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all",
                           isProcessing 
                                ? "bg-white/5 text-brand-text-muted cursor-not-allowed" 
                                : "bg-brand-accent text-brand-bg shadow-huge shadow-brand-accent/20"
@@ -526,7 +520,7 @@ const VentureOperator: React.FC = () => {
                           onClick={() => setInputValue(chip)}
                           whileHover={{ scale: 1.05, y: -2 }}
                           whileTap={{ scale: 0.95 }}
-                          className="px-8 py-4 rounded-2xl bg-brand-accent/5 border border-brand-accent/10 text-xs font-black uppercase tracking-[0.2em] text-brand-accent/70 hover:text-brand-accent hover:border-brand-accent/40 transition-all font-display"
+                          className="px-8 py-4 rounded-2xl bg-brand-accent/5 border border-brand-accent/10 text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent/70 hover:text-brand-accent hover:border-brand-accent/40 transition-all font-display"
                         >
                           {chip}
                         </motion.button>

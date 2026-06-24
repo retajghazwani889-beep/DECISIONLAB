@@ -83,6 +83,37 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "projectName", "slides"]
+    },
+    "SavedComparison": {
+      "title": "Saved Comparison",
+      "description": "Stored venture comparisons",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "ids": { "type": "array" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "ids", "name"]
+    },
+    "UserProject": {
+      "title": "User Project",
+      "description": "Startup projects initiated by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "industry": { "type": "string" },
+        "country": { "type": "string" },
+        "stage": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "lastUpdated": { "type": "object" }
+      },
+      "required": ["id", "name"]
     }
   },
   "firestore": {
@@ -98,9 +129,17 @@
       "schema": "IntelligenceSession",
       "description": "Stored intelligence desk sessions"
     },
-    "/decks/{deckId}": {
+    "/pitchDecks/{projectId}": {
       "schema": "PitchDeck",
       "description": "Stored pitch decks architected by the system"
+    },
+    "/savedComparisons/{comparisonId}": {
+      "schema": "SavedComparison",
+      "description": "Saved comparative analyses"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "UserProject",
+      "description": "User specific projects inside nested directory structure"
     }
   }
 }

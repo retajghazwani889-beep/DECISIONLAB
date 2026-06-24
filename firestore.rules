@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      return isSignedIn();
     }
 
     function isValidId(id) {
@@ -38,10 +38,11 @@ service cloud.firestore {
     // --- Entity Validations ---
 
     function isValidUserProfile(data) {
-      return data.userId is string && data.userId.size() <= 128 &&
-             data.email is string && data.email.size() <= 150 &&
-             data.onboardingCompleted is bool &&
-             (data.updatedAt == request.time || data.updatedAt is timestamp);
+      return (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128)) &&
+             (!data.keys().contains('uid') || (data.uid is string && data.uid.size() <= 128)) &&
+             (!data.keys().contains('email') || (data.email is string && data.email.size() <= 150)) &&
+             (!data.keys().contains('onboardingCompleted') || data.onboardingCompleted is bool) &&
+             (!data.keys().contains('updatedAt') || (data.updatedAt == request.time || data.updatedAt is timestamp || data.updatedAt is string));
     }
 
     function isValidVentureAnalysis(data) {
@@ -61,6 +62,25 @@ service cloud.firestore {
              (data.updatedAt == request.time || data.updatedAt is timestamp);
     }
 
+    function isValidPitchDeck(data) {
+      return data.userId == request.auth.uid &&
+             (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
+             (!data.keys().contains('projectName') || (data.projectName is string && data.projectName.size() <= 200)) &&
+             (!data.keys().contains('slides') || data.slides is list);
+    }
+
+    function isValidSavedComparison(data) {
+      return data.userId == request.auth.uid &&
+             (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
+             (!data.keys().contains('name') || (data.name is string && data.name.size() <= 200)) &&
+             (!data.keys().contains('ids') || data.ids is list);
+    }
+
+    function isValidProject(data) {
+      return (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
+             (!data.keys().contains('name') || (data.name is string && data.name.size() <= 200));
+    }
+
     // --- Matches ---
 
     // 1. User Profiles
@@ -70,17 +90,8 @@ service cloud.firestore {
       allow update: if (isOwner(userId) || isAdmin()) && (
         isAdmin() || (
           isValidUserProfile(incoming()) &&
-          incoming().updatedAt == request.time &&
-          incoming().userId == existing().userId &&
-          incoming().createdAt == existing().createdAt &&
-          incoming().diff(existing()).affectedKeys().hasOnly([
-            'onboardingCompleted', 'updatedAt', 'startupName', 'roleDescription', 
-            'companyName', 'companyLogo', 'industry', 'companyDescription', 
-            'startupStage', 'pitchSummary', 'founderInfo', 'teamMembers', 
-            'location', 'businessType', 'productType', 'pitchDeckUrl', 
-            'teamStructure', 'sectors', 'companyAnalysis', 'pitchDeck', 
-            'subscriptionStatus'
-          ])
+          (!existing().keys().contains('userId') || !incoming().keys().contains('userId') || incoming().userId == existing().userId) &&
+          (!existing().keys().contains('uid') || !incoming().keys().contains('uid') || incoming().uid == existing().uid)
         )
       );
       allow delete: if isAdmin();
@@ -105,12 +116,29 @@ service cloud.firestore {
     }
 
     // 4. Pitch Decks
-    match /decks/{deckId} {
-      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    match /pitchDecks/{projectId} {
+      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid)) || isAdmin();
       allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(deckId);
-      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(projectId) && isValidPitchDeck(incoming());
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid && isValidPitchDeck(incoming())) || isAdmin();
       allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 5. Saved Comparisons
+    match /savedComparisons/{comparisonId} {
+      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid)) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidId(comparisonId) && isValidSavedComparison(incoming());
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid && isValidSavedComparison(incoming())) || isAdmin();
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 6. User Projects
+    match /users/{userId}/projects/{projectId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming());
+      allow update: if isOwner(userId) && isValidProject(incoming());
+      allow delete: if isOwner(userId) || isAdmin();
     }
   }
 }

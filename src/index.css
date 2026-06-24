@@ -1,10 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=DM+Sans:wght@400;500;700&family=Urbanist:wght@400;600;700&family=Poppins:wght@355;400;500;600;700&family=Montserrat:wght@400;500;600;700;850&family=Manrope:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Playfair Display", serif;
+  --font-urbanist: "Urbanist", sans-serif;
+  --font-dmsans: "DM Sans", sans-serif;
 
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
@@ -18,12 +21,12 @@
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
 
-  --color-brand-bg: #031B1C;
+  --color-brand-bg: #102434;
   --color-brand-section: #102434;
-  --color-brand-card: #163447;
-  --color-brand-hover: #1E4761;
+  --color-brand-card: #152d3f;
+  --color-brand-hover: #1c3b52;
   --color-brand-border: rgba(255, 255, 255, 0.06); 
-  --color-brand-accent: #5DA9FF;
+  --color-brand-accent: #2e597c;
 
   --color-brand-blue: #5DA9FF;
   --color-brand-cyan: #67E8F9;
@@ -75,44 +78,204 @@
 @layer base {
   body {
     @apply antialiased text-brand-text-primary font-sans;
-    background: linear-gradient(135deg, #031B1C 0%, #062C2C 35%, #102434 100%);
-    background-attachment: fixed;
+    background: #102434;
   }
 
   @media print {
-    .no-print, nav, footer, button {
+    /* Hide all typical screen dashboard layouts and non-print controls */
+    #root > div:not(.print-deck-container),
+    .no-print,
+    nav,
+    footer,
+    button,
+    select,
+    input {
       display: none !important;
     }
-    
+
     body {
-      background: white !important;
-      color: black !important;
+      background: #ffffff !important;
+      color: #000000 !important;
       margin: 0 !important;
       padding: 0 !important;
     }
 
-    .print-only {
+    .print-deck-container {
       display: block !important;
+      width: 1280px !important;
+      overflow: visible !important;
     }
 
-    /* Force background colors for charts and score bars */
+    /* Force background colors for charts and styled content layers */
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
 
     @page {
-      size: landscape;
-      margin: 0;
+      size: 1280px 720px landscape !important;
+      margin: 0 !important;
     }
-    
-    .aspect-video {
-      aspect-ratio: auto !important;
-      height: auto !important;
+
+    .print-slide-page {
+      width: 1280px !important;
+      height: 720px !important;
+      page-break-after: always !important;
+      break-after: page !important;
+      display: block !important;
+      position: relative !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      box-sizing: border-box !important;
     }
   }
 }
 
-.print-only {
-  display: none;
+
+/* ==== DECISIONLAB VIEWPORT / OVERLAY FIX ==== */
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  background: #102434;
 }
+
+.frosted-slate-blue {
+  background: linear-gradient(135deg, rgba(30, 71, 97, 0.72) 0%, rgba(20, 52, 71, 0.9) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 8px 20px -3px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.btn-premium-start {
+  background: linear-gradient(135deg, rgba(30, 71, 97, 0.95) 0%, rgba(20, 52, 71, 1) 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.22) !important; /* silver/chrome style */
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.12), 0 10px 25px -5px rgba(10, 22, 33, 0.5);
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-premium-start:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.25), 0 14px 28px -4px rgba(10, 22, 33, 0.65);
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.btn-premium-start:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.05), 0 6px 14px -3px rgba(10, 22, 33, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Main Dashboard Containers */
+.app-container,
+.dashboard-wrapper,
+.main-dashboard,
+.workspace-container {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Prevent text clipping */
+h1,
+h2,
+h3,
+h4,
+p,
+span {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Cinematic Headline Scaling */
+.hero-title,
+.analysis-title,
+.export-title,
+.main-headline {
+  font-size: clamp(52px, 6vw, 110px);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  word-break: break-word;
+}
+
+/* Panels / Cards */
+.card,
+.metric-card,
+.panel,
+.dashboard-panel,
+.visual-card {
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* Prevent overlay stacking problems */
+.overlay,
+.overlay-ui,
+.floating-ui,
+.popup-layer {
+  z-index: 5;
+}
+
+/* Main content stays above background */
+.content-layer,
+.main-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* Prevent internal section overflow */
+.section,
+.analytics-panel,
+.visualization-panel,
+.slide-container {
+  overflow: hidden;
+}
+
+/* Responsive viewport scaling */
+.dashboard-scale {
+  width: 100%;
+  transform-origin: top center;
+}
+
+@media (max-width: 1440px) {
+  .dashboard-scale {
+    transform: scale(0.96);
+  }
+}
+
+@media (max-width: 1280px) {
+  .dashboard-scale {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashboard-scale {
+    transform: scale(0.84);
+  }
+}
+
+/* Images stay responsive */
+img,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+

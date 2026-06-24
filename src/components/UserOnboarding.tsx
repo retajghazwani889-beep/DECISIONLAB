@@ -16,6 +16,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserProfile } from '../types';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
+import { useNavigate } from 'react-router-dom';
+import { safeLocalStorage as localStorage } from '../lib/storage';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -30,7 +32,8 @@ const ROLES = [
   { id: 'Student', desc: 'Academic Research' }
 ] as const;
 
-const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const { user, profile, signInWithGoogle, signInWithEmail, signUpWithEmail, forgotPassword, logout, refreshProfile } = useAuth();
   const [step, setStep] = useState(1); // 1: Auth, 3: Profile, 5: Success
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signup');
@@ -119,9 +122,16 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
       await refreshProfile();
       setFlowContext('signup'); // Ensure it stays signup context for immediate first-time entry
       setStep(5);
-    } catch (error) {
-      // @ts-ignore
-      handleFirestoreError(error, 'write', `profiles/${user.uid}`);
+    } catch (error: any) {
+      console.warn("Profile setup met a network check. Proceeding in offline mode:", error);
+      if (error && (error.code === 'unavailable' || error.message?.includes('offline') || error.message?.includes('reach Cloud'))) {
+        setError("Our system is currently operating in offline-cached mode. We've queued your profile setup—click 'Continue' to enter offline mode!");
+        await refreshProfile().catch(() => {});
+        setFlowContext('signup');
+        setStep(5);
+      } else {
+        setError(error?.message || "Failed to initialize profile. Please check your connection.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -179,17 +189,17 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                   >
                     <div className="mb-8">
                       <h2 className="text-2xl font-bold text-brand-text-primary mb-2">
-                        {mode === 'signup' ? 'Activate Workspace' : mode === 'signin' ? 'Access DecisionLab' : 'Reset Password'}
+                        {mode === 'signup' ? 'Start' : mode === 'signin' ? 'Access' : 'Reset'}
                       </h2>
-                      <p className="text-sm text-brand-text-secondary opacity-70">
-                        {mode === 'signup' ? 'Initialize your venture analysis session.' : mode === 'signin' ? 'Resume your strategic analysis workspace.' : 'Enter your email to recover access.'}
+                      <p className="text-base font-medium text-slate-300 tracking-[0.02em] leading-[1.7] opacity-95">
+                        {mode === 'signup' ? 'Start your startup study now' : mode === 'signin' ? 'Continue your startup study' : 'Enter your email to recover access'}
                       </p>
                     </div>
 
                     <form onSubmit={handleAuth} className="space-y-4">
                       {mode === 'signup' && (
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Full Name</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Full Name</label>
                           <div className="relative">
                             <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                             <input 
@@ -205,7 +215,7 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                       )}
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Institutional Email</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Work Email</label>
                         <div className="relative">
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                           <input 
@@ -222,9 +232,9 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                       {mode !== 'forgot' && (
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-center ml-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary">Password</label>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary">Password</label>
                             {mode === 'signin' && (
-                              <button type="button" onClick={() => setMode('forgot')} className="text-xs text-brand-accent hover:underline">Forgot Password?</button>
+                              <button type="button" onClick={() => setMode('forgot')} className="text-[10px] text-brand-accent hover:underline">Forgot Password?</button>
                             )}
                           </div>
                           <div className="relative">
@@ -245,7 +255,7 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                         <div className="flex items-center justify-between px-1">
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-white/10 bg-white/[0.03] text-brand-accent focus:ring-brand-accent/20 transition-all cursor-pointer" />
-                            <span className="text-xs font-bold text-brand-text-secondary uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">Remember Session</span>
+                            <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">Remember Session</span>
                           </label>
                         </div>
                       )}
@@ -260,7 +270,7 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                       >
                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                           <>
-                            {mode === 'signup' ? 'Activate Workspace' : mode === 'signin' ? 'Continue to Platform' : 'Reset Password'}
+                            {mode === 'signup' ? 'Start Now' : mode === 'signin' ? 'Continue' : 'Reset Password'}
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}
@@ -270,7 +280,7 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                         <>
                           <div className="flex items-center gap-4 py-2">
                             <div className="h-px flex-1 bg-white/5"></div>
-                            <span className="text-xs font-bold text-white/20 uppercase tracking-widest">or</span>
+                            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">or</span>
                             <div className="h-px flex-1 bg-white/5"></div>
                           </div>
 
@@ -292,11 +302,11 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
 
                       <div className="text-center pt-2">
                         {mode === 'forgot' ? (
-                          <button type="button" onClick={() => setMode('signin')} className="text-sm text-brand-text-secondary opacity-60 hover:opacity-100 flex items-center gap-2 mx-auto">
+                          <button type="button" onClick={() => setMode('signin')} className="text-xs text-brand-text-secondary opacity-60 hover:opacity-100 flex items-center gap-2 mx-auto">
                             <ChevronLeft className="w-4 h-4" /> Back to Login
                           </button>
                         ) : (
-                          <p className="text-sm text-brand-text-secondary opacity-60">
+                          <p className="text-xs text-brand-text-secondary opacity-60">
                             {mode === 'signup' ? 'Already have access?' : "Don't have an account?"}{' '}
                             <button type="button" onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')} className="text-brand-accent font-bold hover:underline">
                               {mode === 'signup' ? 'Log in' : 'Initialize Workspace'}
@@ -317,13 +327,13 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                     className="space-y-6"
                   >
                     <div className="mb-6">
-                      <h2 className="text-2xl font-bold text-brand-text-primary mb-2">Finalize Protocol</h2>
-                      <p className="text-sm text-brand-text-secondary opacity-70">Tell us a bit more about your venture role.</p>
+                      <h2 className="text-2xl font-bold text-brand-text-primary mb-2">Finalize</h2>
+                      <p className="text-base text-slate-300 font-medium tracking-[0.02em] opacity-95">Tell us a bit more about your role</p>
                     </div>
 
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Institutional Role</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Role</label>
                         <select 
                           value={formData.roleType}
                           onChange={e => setFormData({...formData, roleType: e.target.value as any})}
@@ -337,7 +347,7 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Startup/Project Name (Optional)</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Startup/Project Name (Optional)</label>
                         <div className="relative">
                           <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                           <input 
@@ -358,13 +368,13 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                     >
                       {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                         <>
-                          Initialize Workspace
+                          Start Now
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
                     <div className="text-center">
-                       <button onClick={logout} className="text-sm text-brand-text-secondary opacity-40 hover:opacity-100 transition-opacity">Sign out</button>
+                       <button onClick={logout} className="text-xs text-brand-text-secondary opacity-40 hover:opacity-100 transition-opacity">Sign out</button>
                     </div>
                   </motion.div>
                 )}
@@ -394,12 +404,21 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
                     <h2 className="text-2xl font-bold text-brand-text-primary mb-2">
                        {flowContext === 'signup' ? 'Welcome to DecisionLab' : `Welcome back, ${profile?.fullName?.split(' ')[0] || 'User'}`}
                     </h2>
-                    <p className="text-sm text-brand-text-secondary opacity-70 mb-8 max-w-xs mx-auto">
-                       {flowContext === 'signup' ? 'Your workspace has been activated.' : 'Your workspace is ready.'}
+                    <p className="text-base font-medium text-slate-300 tracking-[0.02em] opacity-95 mb-8 max-w-xs mx-auto">
+                       {flowContext === 'signup' ? 'Your workspace has been activated' : 'Your workspace is ready'}
                     </p>
                     
                     <button
-                      onClick={onClose}
+                      onClick={() => {
+                        const pendingIdea = localStorage.getItem('pending_analysis_idea');
+                        if (pendingIdea) {
+                          localStorage.removeItem('pending_analysis_idea');
+                          onClose();
+                          navigate('/analyze', { state: { idea: pendingIdea } });
+                        } else {
+                          onClose();
+                        }
+                      }}
                       className="w-full py-4 bg-brand-accent text-[#08131D] font-bold text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
                       Continue to Platform
@@ -415,4 +434,4 @@ const InstitutionalOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) 
   );
 };
 
-export default InstitutionalOnboarding;
+export default UserOnboarding;

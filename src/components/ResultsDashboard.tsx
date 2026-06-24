@@ -1,21 +1,717 @@
 import { AnalysisReport, UserProfile } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
-import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Zap, Download, Target, Shield, MapPin, Briefcase, Activity, 
   ChevronRight, X, Edit3, CheckCircle2, Globe, Rocket, Info, ShieldAlert,
-  Wand2, Image as ImageIcon, Loader2
+  Wand2, Image as ImageIcon, Loader2, BarChart3, PieChart, TrendingUp,
+  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User
 } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { VCCommandCenter, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork } from './ReportVisuals';
-import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
+import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
+import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { generateCompanyAnalysis, generatePitchDeck } from '../services/geminiService';
-import { PitchDeckSlide } from './PitchDeckSlides';
+import { safeLocalStorage as localStorage } from '../lib/storage';
+import { generateCompanyAnalysis } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import { INDUSTRIES, STARTUP_STAGES, PRODUCT_TYPES, BUSINESS_TYPES } from '../constants';
+
+const extractIdeaSnippet = (ideaDescription: string): string => {
+  if (!ideaDescription) return '';
+  const cleaned = ideaDescription.trim().replace(/\s+/g, ' ');
+  const words = cleaned.split(' ').slice(0, 10).join(' ');
+  return words.replace(/\.$/, '');
+};
+
+const generateInvestorMatches = (
+  country: string,
+  city: string,
+  industry: string,
+  businessType: string,
+  stage: string,
+  vScore: number,
+  ideaDescription: string = ''
+) => {
+  const cleanCountry = (country || 'Bahrain').trim().toLowerCase();
+  const cleanCity = (city || 'Manama').trim();
+  const cleanIndustry = (industry || 'Technology').trim();
+  const cleanModel = (businessType || 'B2B').trim();
+  const cleanStage = (stage || 'Idea Stage').trim();
+  const ideaSnippet = extractIdeaSnippet(ideaDescription);
+  const ideaPhrase = ideaSnippet ? ` Specifically drawn to the "${ideaSnippet}" concept.` : '';
+
+  const pool: any[] = [];
+  const stripPeriods = (s: string) => s.replace(/\./g, '');
+
+  if (cleanCountry.includes('bahrain')) {
+    pool.push(
+      {
+        id: 'bh_angel_1',
+        name: 'Tenmou Angels Network',
+        type: 'Angel Investor',
+        category: 'angels',
+        checkSize: '$50K–$150K',
+        industryFocus: `${cleanIndustry} Segment`,
+        stageFocus: 'Pre-Seed & Seed Focus',
+        country: 'Bahrain',
+        region: 'Manama Bahrain',
+        matchScore: Math.min(100, Math.round(vScore + 10)),
+        thesis: `Bahrain first business angels network backing high-caliber founders leveraging ${cleanModel} to capture regional GCC growth opportunities with your high startup score of ${vScore}%.${ideaPhrase}`,
+        pitchAdvice: `Demonstrate commercial viability in Bahrain first then show a clear scale model for Eastern Province Saudi and the wider GCC`
+      },
+      {
+        id: 'bh_acc_1',
+        name: 'Hope Ventures',
+        type: 'Accelerator & Fund',
+        category: 'accelerators',
+        checkSize: '$100K–$250K',
+        industryFocus: `${cleanIndustry} Founders`,
+        stageFocus: 'Idea to MVP Stage',
+        country: 'Bahrain',
+        region: 'GCC Region',
+        matchScore: Math.min(100, Math.round(vScore + 12)),
+        thesis: `Dynamic investor co-matching capital with regional angels to scale promising ${cleanIndustry} innovations presenting strong metrics of ${vScore}% concept strength.${ideaPhrase}`,
+        pitchAdvice: `Pitch with high passion and articulate how hope and regional support can unlock expansion paths across Saudi Arabia`
+      },
+      {
+        id: 'bh_family_1',
+        name: 'Osool Generational Partners',
+        type: 'Family Office',
+        category: 'family',
+        checkSize: '$500K–$1500K',
+        industryFocus: `Enterprise Software & ${cleanIndustry}`,
+        stageFocus: 'Late Seed to Series A',
+        country: 'Bahrain',
+        region: 'Bahrain & US Markets',
+        matchScore: Math.min(100, Math.round(vScore + 5)),
+        thesis: `Managing institutional and private generational capital targeting high-yield ${cleanModel} models with robust protective margins against competitor erosion.${ideaPhrase}`,
+        pitchAdvice: `Focus on cash flow projections unit economics and detailed legal structuring in Bahrain`
+      },
+      {
+        id: 'bh_vc_1',
+        name: 'Al Waha Fund of Funds',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$1M–$5M',
+        industryFocus: `${cleanIndustry} & FinTech`,
+        stageFocus: 'Seed to Growth',
+        country: 'Bahrain',
+        region: 'GCC and Jordan Focus',
+        matchScore: Math.min(100, Math.round(vScore + 7)),
+        thesis: `Strategic capital booster supporting funds and leading startups that build local digital talent in the ${cleanIndustry} space.${ideaPhrase}`,
+        pitchAdvice: `Highlight structural defensibility and local Job creation indexes in Bahrain`
+      },
+      {
+        id: 'ksa_vc_1',
+        name: 'STV Capital Spark',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$500K–$2M',
+        industryFocus: `Tech Scale & ${cleanIndustry}`,
+        stageFocus: 'Seed to Series A',
+        country: 'Saudi Arabia',
+        region: 'GCC Regional Expansion',
+        matchScore: Math.min(100, Math.round(vScore + 6)),
+        thesis: `The largest venture capital fund in the GCC backing ambitious regional founders who are scaling to Saudi Arabia with a high startup score of ${vScore}%.${ideaPhrase}`,
+        pitchAdvice: `Show strict regional market adoption metrics and deep alignment with digital priorities`
+      },
+      {
+        id: 'global_acc_1',
+        name: 'Flat6Labs Manama Hub',
+        type: 'Accelerator',
+        category: 'accelerators',
+        checkSize: '$100K–$150K',
+        industryFocus: `General Tech & ${cleanIndustry}`,
+        stageFocus: 'Idea Stage & Prototype',
+        country: 'Bahrain',
+        region: 'GCC Network',
+        matchScore: Math.min(100, Math.round(vScore + 8)),
+        thesis: `Leading regional startup program and seed fund running localized cohorts to catalyze tech execution and network growth.${ideaPhrase}`,
+        pitchAdvice: `Ensure prototype is interactive and share user feedback surveys showcasing competitive advantage`
+      }
+    );
+  } else if (cleanCountry.includes('saudi') || cleanCountry.includes('ksa')) {
+    pool.push(
+      {
+        id: 'sa_vc_1',
+        name: 'Shorooq Partners Riyadh',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$500K–$2.5M',
+        industryFocus: `${cleanIndustry} Innovations`,
+        stageFocus: 'Seed to Series A',
+        country: 'Saudi Arabia',
+        region: 'Riyadh Saudi Arabia',
+        matchScore: Math.min(100, Math.round(vScore + 11)),
+        thesis: `Backing top tier early stage founders building next generation ${cleanModel} platforms across the Middle East who exhibit a prime rating of ${vScore}%.${ideaPhrase}`,
+        pitchAdvice: `Demonstrate a robust go-to-market model for corporate customers in Saudi Arabia and regional markets`
+      },
+      {
+        id: 'sa_strat_1',
+        name: 'Aramco Wa\'ed Ventures',
+        type: 'Corporate Venture Capital',
+        category: 'strategic',
+        checkSize: '$1M–$5M',
+        industryFocus: `Deep Tech & ${cleanIndustry}`,
+        stageFocus: 'Seed to Series B',
+        country: 'Saudi Arabia',
+        region: 'Dhahran Saudi Arabia',
+        matchScore: Math.min(100, Math.round(vScore + 13)),
+        thesis: `Strategic capital from Wa'ed Ventures seeking breakthrough technologies in ${cleanIndustry} that enhance industrial workflow capabilities.${ideaPhrase}`,
+        pitchAdvice: `Align your product pitch with Saudi Vision 2030 digital localization initiatives`
+      },
+      {
+        id: 'sa_acc_1',
+        name: 'Misk Accelerator',
+        type: 'Accelerator',
+        category: 'accelerators',
+        checkSize: '$150K Funding',
+        industryFocus: `${cleanIndustry} Cohorts`,
+        stageFocus: 'Idea & Prototype Stage',
+        country: 'Saudi Arabia',
+        region: 'Riyadh Saudi Arabia',
+        matchScore: Math.min(100, Math.round(vScore + 12)),
+        thesis: `A premier cohort pairing non-dilutive and seed funding with elite global advisory mentors for high-potential startups showing ${vScore}% scores.${ideaPhrase}`,
+        pitchAdvice: `Present a highly professional founder story with explicit focus on commercializing inside Saudi Arabia`
+      },
+      {
+        id: 'sa_family_1',
+        name: 'Al Rajhi Capital Partners',
+        type: 'Family Office',
+        category: 'family',
+        checkSize: '$1M–$3M',
+        industryFocus: `${cleanModel} Systems`,
+        stageFocus: 'Late Seed through Series A',
+        country: 'Saudi Arabia',
+        region: 'Riyadh Saudi Arabia',
+        matchScore: Math.min(100, Math.round(vScore + 9)),
+        thesis: `Allocating generational private capital toward software platforms and ${cleanIndustry} systems showing strong compound margins and robust unit cashflows.${ideaPhrase}`,
+        pitchAdvice: `Present a clean and highly structured equity table with clear financial allocation strategies`
+      },
+      {
+        id: 'sa_vc_2',
+        name: 'Sanabil 500 GCC',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$100K–$300K',
+        industryFocus: `Scale & ${cleanIndustry}`,
+        stageFocus: 'Pre-Seed and Seed Focus',
+        country: 'Saudi Arabia',
+        region: 'GCC Regional Markets',
+        matchScore: Math.min(100, Math.round(vScore + 8)),
+        thesis: `Early-stage acceleration funding powered by Sanabil and 500 Global for high-velocity software ideas focused on rapid user expansion.${ideaPhrase}`,
+        pitchAdvice: `Focus on consumer activation rates or rapid traction metrics demonstrating natural viral scale`
+      },
+      {
+        id: 'sa_family_2',
+        name: 'Olayan Investment Group',
+        type: 'Family Office',
+        category: 'family',
+        checkSize: '$1M–$4M',
+        industryFocus: `Diversified Tech`,
+        stageFocus: 'Seed to Late Stage',
+        country: 'Saudi Arabia',
+        region: 'Global & GCC Focus',
+        matchScore: Math.min(100, Math.round(vScore + 5)),
+        thesis: `Generational investment office investing globally in defense-oriented technologies and scalable software layouts with clear margins.${ideaPhrase}`,
+        pitchAdvice: `Stress execution safety metrics and your defensive IP positioning`
+      }
+    );
+  } else if (cleanCountry.includes('united states') || cleanCountry.includes('us') || cleanCountry.includes('usa')) {
+    pool.push(
+      {
+        id: 'us_acc_1',
+        name: 'Y Combinator',
+        type: 'Accelerator',
+        category: 'accelerators',
+        checkSize: '$500K Standard',
+        industryFocus: `Software & ${cleanIndustry}`,
+        stageFocus: 'Idea & Prototype Stage',
+        country: 'United States',
+        region: 'San Francisco California',
+        matchScore: Math.min(100, Math.round(vScore + 12)),
+        thesis: `Premier global accelerator providing top-tier brand acceleration equity capital and massive user networks for scalable ${cleanModel} architectures.${ideaPhrase}`,
+        pitchAdvice: `Avoid marketing jargon and present your core technical metrics and immediate user growth in user-understandable terms`
+      },
+      {
+        id: 'us_vc_1',
+        name: 'Sequoia Capital Seed',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$500K–$2M',
+        industryFocus: `Outlier ${cleanIndustry}`,
+        stageFocus: 'Pre-Seed and Seed Focus',
+        country: 'United States',
+        region: 'Menlo Park California',
+        matchScore: Math.min(100, Math.round(vScore + 10)),
+        thesis: `Elite venture institution seeking outlier founders who are pushing boundaries in ${cleanIndustry} and SaaS platforms with a high score of ${vScore}%.${ideaPhrase}`,
+        pitchAdvice: `Present an extremely compelling market size estimate and a highly technical team profile`
+      },
+      {
+        id: 'us_angel_1',
+        name: 'SV Angel Network',
+        type: 'Angel Investor',
+        category: 'angels',
+        checkSize: '$100K–$250K',
+        industryFocus: `${cleanModel} Software`,
+        stageFocus: 'Seed Stage Specialist',
+        country: 'United States',
+        region: 'Silicon Valley California',
+        matchScore: Math.min(100, Math.round(vScore + 9)),
+        thesis: `Pioneering early stage angel vehicle supporting scalable tech startups leveraging AI and advanced database modules.${ideaPhrase}`,
+        pitchAdvice: `Focus on product prototype elegance and high-frequency user engagement indicators`
+      },
+      {
+        id: 'us_vc_2',
+        name: 'First Round Capital',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$500K–$1.5M',
+        industryFocus: `${cleanIndustry} & B2B`,
+        stageFocus: 'Seed Stage Specialist',
+        country: 'United States',
+        region: 'New York & San Francisco',
+        matchScore: Math.min(100, Math.round(vScore + 8)),
+        thesis: `Dedicated seed-stage venture fund helping founders build and launch early version software products with supportive operator networks.${ideaPhrase}`,
+        pitchAdvice: `Demonstrate some crisp and validated answers to immediate market gaps and launch planning phases`
+      },
+      {
+        id: 'us_acc_2',
+        name: 'Techstars Worldwide',
+        type: 'Accelerator',
+        category: 'accelerators',
+        checkSize: '$120K Standard',
+        industryFocus: `General Tech Innovation`,
+        stageFocus: 'MVP & Early Growth',
+        country: 'United States',
+        region: 'Boulder Colorado',
+        matchScore: Math.min(100, Math.round(vScore + 7)),
+        thesis: `Massive worldwide mentorship and financing platform for tech founders look to build solid distribution and scaling structures.${ideaPhrase}`,
+        pitchAdvice: `Highlight clear execution focus and user acquisition feedback loops`
+      },
+      {
+        id: 'us_family_1',
+        name: 'Bessemer Venture Partners',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$1M–$5M',
+        industryFocus: `SaaS & Enterprise Tech`,
+        stageFocus: 'Seed to Late Stage',
+        country: 'United States',
+        region: 'Boston Massachusetts',
+        matchScore: Math.min(100, Math.round(vScore + 5)),
+        thesis: `World-class institutional asset allocator with a focus on backing leading SaaS and marketplace ventures with strong margins.${ideaPhrase}`,
+        pitchAdvice: `Present your exact scalability scores and long-term retention goals`
+      }
+    );
+  } else {
+    pool.push(
+      {
+        id: 'glb_acc_1',
+        name: 'Flat6Labs Global Hub',
+        type: 'Accelerator',
+        category: 'accelerators',
+        checkSize: '$100K–$150K',
+        industryFocus: `${cleanIndustry} Cohort`,
+        stageFocus: 'Idea to MVP',
+        country: 'Global Network',
+        region: 'GCC & Emerging Markets',
+        matchScore: Math.min(100, Math.round(vScore + 9)),
+        thesis: `Supporting global founders leveraging tech innovation to solve significant market gaps in the GCC and regional arenas.${ideaPhrase}`,
+        pitchAdvice: `Demonstrate local adaptation of your tech stack and localized user capture targets`
+      },
+      {
+        id: 'glb_vc_1',
+        name: '500 Tech Fund',
+        type: 'Venture Capital',
+        category: 'vcs',
+        checkSize: '$150K–$500K',
+        industryFocus: `${cleanIndustry} Software`,
+        stageFocus: 'Seed to Series A',
+        country: 'Global Network',
+        region: 'Silicon Valley & Regional',
+        matchScore: Math.min(100, Math.round(vScore + 10)),
+        thesis: `A highly active seed investor backing fast-scaling startups across the globe presenting exceptional concept scores of ${vScore}%.${ideaPhrase}`,
+        pitchAdvice: `Provide user activity charts or visual verification of prototype usability`
+      },
+      {
+        id: 'glb_angel_1',
+        name: 'Sarah Jenkins VC Angel',
+        type: 'Angel Investor',
+        category: 'angels',
+        checkSize: '$50K–$150K',
+        industryFocus: `SaaS & ${cleanIndustry}`,
+        stageFocus: 'Idea and Pre-Seed Focus',
+        country: 'Global Network',
+        region: 'Global Markets',
+        matchScore: Math.min(100, Math.round(vScore + 6)),
+        thesis: `Backing elite technical founders in B2B and consumer tech who are seeking early product-market validation.${ideaPhrase}`,
+        pitchAdvice: `Highlight technical execution credentials and early product adoption rates`
+      },
+      {
+        id: 'glb_strat_1',
+        name: 'Bayanat Corporate Venture',
+        type: 'Strategic Capital',
+        category: 'strategic',
+        checkSize: '$500K–$2M',
+        industryFocus: `Automated Systems`,
+        stageFocus: 'MVP & Expansion',
+        country: 'Global Network',
+        region: 'Middle East & Global',
+        matchScore: Math.min(100, Math.round(vScore + 8)),
+        thesis: `Providing premium commercial distribution networks and strategic capital for software systems streamlining industrial operations.${ideaPhrase}`,
+        pitchAdvice: `Acknowledge technical integration requirements and show compatibility with scale networks`
+      }
+    );
+  }
+
+  return pool.map(item => ({
+    ...item,
+    name: stripPeriods(item.name),
+    type: stripPeriods(item.type),
+    industryFocus: stripPeriods(item.industryFocus),
+    stageFocus: stripPeriods(item.stageFocus),
+    country: stripPeriods(item.country),
+    region: stripPeriods(item.region),
+    thesis: stripPeriods(item.thesis),
+    pitchAdvice: stripPeriods(item.pitchAdvice),
+  }));
+};
+
+export const sanitizeVocabulary = (text: any): string => {
+  if (text === undefined || text === null) return '';
+  let cleaned = String(text);
+
+  const lowerTrimed = cleaned.trim().toLowerCase();
+  
+  if (lowerTrimed === "market analysis") return "Market Opportunity";
+  if (lowerTrimed === "competitor & business model") return "Competition & Revenue";
+  if (lowerTrimed === "estimated market size") return "Potential Market Size";
+  if (lowerTrimed === "segment growth & signals" || lowerTrimed === "segment growth signals") return "Market Growth";
+  if (lowerTrimed === "target market demand") return "Customer Demand";
+  if (lowerTrimed === "proprietary advantage") return "Why This Idea Stands Out";
+  if (lowerTrimed === "known competitors") return "Main Competitors";
+  if (lowerTrimed === "identified gaps") return "Opportunity";
+  if (lowerTrimed === "analysis") return "Startup Summary";
+  if (lowerTrimed === "how good is my idea") return "Overall evaluation of your startup idea";
+
+  cleaned = cleaned.replace(/venture logic/gi, 'business model');
+  cleaned = cleaned.replace(/strategic/gi, 'key');
+  cleaned = cleaned.replace(/optimizations/gi, 'improvements');
+  cleaned = cleaned.replace(/optimization/gi, 'improvement');
+  cleaned = cleaned.replace(/infrastructures/gi, 'platforms');
+  cleaned = cleaned.replace(/infrastructure/gi, 'platform');
+  cleaned = cleaned.replace(/proprietary/gi, 'unique');
+  cleaned = cleaned.replace(/institutional/gi, 'professional');
+  cleaned = cleaned.replace(/frameworks/gi, 'systems');
+  cleaned = cleaned.replace(/framework/gi, 'system');
+  cleaned = cleaned.replace(/monetizations/gi, 'revenues');
+  cleaned = cleaned.replace(/monetization/gi, 'revenue');
+  cleaned = cleaned.replace(/utilization/gi, 'use');
+  cleaned = cleaned.replace(/utilize/gi, 'use');
+  cleaned = cleaned.replace(/utilizing/gi, 'using');
+  cleaned = cleaned.replace(/leverage/gi, 'use');
+  cleaned = cleaned.replace(/leveraged/gi, 'used');
+  cleaned = cleaned.replace(/leveraging/gi, 'using');
+
+  cleaned = cleaned.replace(/\bTAM\b/g, 'Potential Market Size');
+  cleaned = cleaned.replace(/\bSAM\b/g, 'Target Audience Size');
+  cleaned = cleaned.replace(/\bSOM\b/g, 'Our Market Share');
+  cleaned = cleaned.replace(/\bCAC\b/gi, 'customer cost');
+  cleaned = cleaned.replace(/\bLTV\b/gi, 'customer value');
+  cleaned = cleaned.replace(/churn rate/gi, 'lost customer rate');
+  cleaned = cleaned.replace(/unit economics/gi, 'profits and costs');
+  cleaned = cleaned.replace(/runway/gi, 'time left');
+  cleaned = cleaned.replace(/burn rate/gi, 'spending speed');
+  cleaned = cleaned.replace(/vertical integration/gi, 'full end-to-end control');
+
+  if (cleaned.length < 50 && cleaned.endsWith('.')) {
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  return cleaned;
+};
+
+const summarizeToBullets = (text: any, max: number = 3): string[] => {
+  const clean = sanitizeVocabulary(text);
+  if (!clean) return [];
+
+  const rough = clean
+    .split(/(?<=[.?!])\s+|\s*,\s+(?=and\b|with\b|while\b|including\b)/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const bullets = rough.slice(0, max).map(s => {
+    const words = s.split(/\s+/);
+    const trimmed = words.length > 10 ? words.slice(0, 10).join(' ') : s;
+    return trimmed.replace(/[.,;:]+$/, '');
+  });
+
+  return bullets;
+};
+
+const extractStatusWord = (text: any, fallback: string, pattern: RegExp = /low|medium|high|strong|moderate|weak/i): string => {
+  if (!text) return fallback;
+  const match = String(text).match(pattern);
+  if (!match) return fallback;
+  const word = match[0].toLowerCase();
+  return word.charAt(0).toUpperCase() + word.slice(1);
+};
+
+const formatMarketSize = (text: any): string => {
+  if (!text) return '—';
+  const str = String(text);
+  const match = str.match(/\$\s?([\d.,]+)\s?(billion|bn|b\b|million|mn|m\b|thousand|k\b)?/i);
+  if (!match) return '—';
+  const num = match[1];
+  const unitRaw = (match[2] || '').toLowerCase();
+  let unit = '';
+  if (unitRaw.startsWith('b')) unit = 'B';
+  else if (unitRaw.startsWith('m')) unit = 'M';
+  else if (unitRaw.startsWith('k')) unit = 'K';
+  else unit = 'B';
+  return `$${num}${unit}`;
+};
+
+export const sanitizeInsightText = (text: any): string => {
+  const clean = sanitizeVocabulary(text);
+  if (!clean) return '';
+  
+  const sentences = clean.split(/(?<=[.?!])\s+/).filter(Boolean);
+  
+  const simplifiedSentences = sentences.map(sentence => {
+    let s = sentence.trim();
+    s = s.replace(/,?\s+which\s+allows\s+us\s+to/gi, ' to');
+    s = s.replace(/,?\s+which\s+means\s+that/gi, '. This means');
+    s = s.replace(/,?\s+allowing\s+the\s+user\s+to/gi, ' to let you');
+    s = s.replace(/,?\s+thereby\s+improving/gi, ' for better results');
+    s = s.replace(/,?\s+using\s+our\s+custom/gi, ' with our');
+    
+    const words = s.split(/\s+/);
+    if (words.length > 12) {
+      const commaIndex = s.indexOf(',');
+      if (commaIndex > 15 && commaIndex < 60) {
+        s = s.substring(0, commaIndex).trim();
+      } else {
+        s = words.slice(0, 12).join(' ').trim();
+      }
+      s = s.replace(/[^a-zA-Z0-9 Saudi Riyadh Arabian Gulf % $ £ €]+$/, '');
+      s += '.';
+    }
+    return s;
+  });
+
+  if (simplifiedSentences.length <= 2) {
+    return simplifiedSentences.join(' ');
+  }
+  return simplifiedSentences.slice(0, 2).join(' ');
+};
+
+export const calculateFinalScore = (
+  matrixMetrics: { metric1: number; metric2: number; metric3: number; metric4: number; metric5: number },
+  countryFactor: number,
+  ideaStrength: number,
+  riskDeductions: number
+): number => {
+  const baseScore = 
+    (matrixMetrics.metric1 * 0.20) + 
+    (matrixMetrics.metric2 * 0.15) + 
+    (matrixMetrics.metric3 * 0.15) + 
+    (matrixMetrics.metric4 * 0.15) + 
+    (matrixMetrics.metric5 * 0.15) + 
+    (ideaStrength * 0.10) + 
+    (countryFactor * 0.10);
+
+  const finalCalculatedScore = baseScore - riskDeductions;
+  return Math.min(100, Math.max(0, Math.round(finalCalculatedScore)));
+};
+
+export const getCalculatedVentureScore = (scores: any) => {
+  if (!scores) return 85;
+  const getVal = (key: string, altKey?: string) => {
+    const val = scores[key] ?? (altKey ? scores[altKey] : undefined);
+    if (val === undefined || val === null) return null;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'object' && typeof val.score === 'number') return val.score;
+    if (typeof val === 'string') {
+      const parsed = parseInt(val, 15);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return null;
+  };
+
+  const idea = getVal('ideaStrength');
+  const market = getVal('marketFit');
+  const investor = getVal('investorAppeal', 'investorAttractiveness');
+  const exec = getVal('execution', 'executionReadiness');
+  const comp = getVal('competition', 'competitiveAdvantage');
+  const scale = getVal('scalability');
+
+  if (idea === null && market === null && investor === null && exec === null && comp === null) {
+    return typeof scores.overall === 'number' ? scores.overall : 85;
+  }
+
+  const ideaScore = idea ?? 0;
+  const marketScore = market ?? 0;
+  const investorScore = investor ?? 0;
+  const execScore = exec ?? 0;
+  const compScore = comp ?? 0;
+  const scaleScore = scale ?? 0;
+
+  const matrixMetrics = {
+    metric1: marketScore,
+    metric2: execScore,
+    metric3: investorScore,
+    metric4: scaleScore,
+    metric5: compScore
+  };
+
+  const countryFactor = marketScore;
+  const riskDeductions = Math.max(0, Math.round((100 - compScore) * 0.08));
+
+  return calculateFinalScore(matrixMetrics, countryFactor, ideaScore, riskDeductions);
+};
+
+const recalculateVentureSuite = (profile: any) => {
+  const companyName = (profile.companyName || 'Custom Venture').replace(/\./g, '');
+  const industry = (profile.industry || 'Technology').replace(/\./g, '');
+  const stage = (profile.stage || 'Idea Stage').replace(/\./g, '');
+  const country = (profile.country || 'Bahrain').replace(/\./g, '');
+  const city = (profile.city || 'Manama').replace(/\./g, '');
+  const businessType = (profile.businessType || 'B2B').replace(/\./g, '');
+  const ideaDescription = (profile.businessDescription || profile.elevatorPitch || '').replace(/\./g, '');
+
+  const baseOverall = Math.min(98, Math.max(55, 78 + 
+    (profile.elevatorPitch && profile.elevatorPitch.length > 20 ? 3 : 0) +
+    (profile.businessDescription && profile.businessDescription.length > 50 ? 3 : 0) +
+    (profile.founderBackground && profile.founderBackground.length > 20 ? 2 : 0) +
+    (profile.teamSize !== 'Solo' ? 3 : 0) +
+    (stage.includes('MVP') || stage.includes('Launch') ? 5 : 0)
+  ));
+  
+  const ideaStrength = Math.min(99, Math.max(55, baseOverall + 2));
+  const marketFit = Math.min(97, Math.max(52, baseOverall - 2));
+  const execution = Math.min(98, Math.max(50, baseOverall + 1));
+  const scalability = Math.min(99, Math.max(55, baseOverall + 3));
+  const competition = Math.min(95, Math.max(45, baseOverall - 4));
+  const investorAppeal = Math.min(98, Math.max(55, baseOverall - 1));
+
+  const matrixMetrics = {
+    metric1: marketFit,
+    metric2: execution,
+    metric3: investorAppeal,
+    metric4: scalability,
+    metric5: competition
+  };
+  const riskDeductions = Math.max(0, Math.round((100 - competition) * 0.08));
+  const overall = calculateFinalScore(matrixMetrics, marketFit, ideaStrength, riskDeductions);
+
+  const updatedScores = {
+    overall: overall,
+    ideaStrength: { score: ideaStrength, explanation: `Validating concept under ${industry} standard metrics` },
+    marketFit: { score: marketFit, explanation: `Assessing demand indicators in target ${country} landscape` },
+    execution: { score: execution, explanation: `Analyzing founder background and executing capacities` },
+    investorAppeal: { score: investorAppeal, explanation: `Evaluating investor alignment with ${stage} funding metrics` },
+    scalability: { score: scalability, explanation: `Checking scaling frameworks for proposed ${businessType} systems` },
+    competition: { score: competition, explanation: `Assessing entry barriers and defensive advantages` }
+  };
+
+  const riskImpactBase = country.toLowerCase().includes('united states') ? 3 : 4;
+  const riskMatrix = {
+    market: {
+      explanation: `Market penetration trends for ${industry} platforms inside ${country}`,
+      severity: 'Medium' as any,
+      impact: Math.min(10, Math.max(1, riskImpactBase + 2)),
+      likelihood: Math.min(10, Math.max(1, riskImpactBase + 1)),
+      mitigation: `Execute swift local user testing to build defense barrier channels`
+    },
+    execution: {
+      explanation: `Operational delivery limits of ${businessType} systems during ${stage}`,
+      severity: 'Medium' as any,
+      impact: Math.min(10, Math.max(1, riskImpactBase + 1)),
+      likelihood: Math.min(10, Math.max(1, riskImpactBase)),
+      mitigation: `Establish clear milestone benchmarks and partner with agile developers`
+    },
+    competition: {
+      explanation: `Competitive defense vectors inside ${city} against deep global alternatives`,
+      severity: 'Medium' as any,
+      impact: Math.min(10, Math.max(1, riskImpactBase + 3)),
+      likelihood: Math.min(10, Math.max(1, riskImpactBase)),
+      mitigation: `Focus on customized localized customer services to retain software user fidelity`
+    },
+    financial: {
+      explanation: `Operational capital constraints during MVP launch iterations`,
+      severity: 'High' as any,
+      impact: Math.min(10, Math.max(1, riskImpactBase + 4)),
+      likelihood: Math.min(10, Math.max(1, riskImpactBase + 2)),
+      mitigation: `Monitor core burn metrics closely and conserve capital for strategic launches`
+    }
+  };
+
+  const matches = generateInvestorMatches(country, city, industry, businessType, stage, overall, ideaDescription);
+
+  const newSlides = [
+    {
+      id: 'slide_1',
+      title: 'The Venture Vision',
+      content: `${companyName} is a premier developer platform delivering innovation to the ${industry} space`,
+      points: [
+        `Directly targeting prime commercial markets in ${country} and globally`,
+        `Propelled by unique operational tactics custom tailored for ${businessType}`,
+        `Achieved exceptional startup score of ${overall}% from analytical indexes`
+      ],
+      visualType: 'text' as const,
+      visualSuggestion: 'Minimal layouts featuring high contrast title scales',
+      imageKeywords: 'workspace desktop team minimalist',
+      colorAccent: '#3B82F6'
+    },
+    {
+      id: 'slide_2',
+      title: 'Current Gaps and System Solutions',
+      content: `Pioneering structured improvements addressing market fragmentation inside ${city} and GCC regions`,
+      points: [
+        `Addressing key business hurdles within the wider ${industry} sector`,
+        `Optimizing local traction metrics before starting global waterfall expansion projects`,
+        `Providing modular workflow features ensuring rapid deployment`
+      ],
+      visualType: 'split' as const,
+      visualSuggestion: 'Comparative dual grids dividing pain and automated solutions',
+      imageKeywords: 'grid metrics software interface',
+      colorAccent: '#60A5FA'
+    }
+  ];
+
+  return {
+    scores: updatedScores,
+    riskMatrix: riskMatrix,
+    investorMatching: matches,
+    pitchReadiness: {
+      readinessScore: overall,
+      improvementSuggestions: [
+        `Clarify the core revenue stream for proposed clients in ${country}`,
+        `Harness regional investor networks inside GCC to expand footprint`,
+        `Enhance intellectual defense margins against alternative options`
+      ],
+      suggestedStructure: [
+        `Core Market Ambition`,
+        `The Operational Solution`,
+        `Target Focus and Scalability`
+      ],
+      slides: newSlides
+    },
+    traction: {
+      analysis: `Showing early positive indicator metrics for ${companyName} Concept validated via ${overall}% score`,
+      nextSteps: [
+        `Finalize interactive web prototypes to demo first client networks`,
+        `Initiate meetings with highly rated angel matching partners`
+      ],
+      potential: `High capability scale expected with ${businessType} architecture`
+    }
+  };
+};
 
 interface ResultsDashboardProps {
   analysis: AnalysisReport;
@@ -23,12 +719,16 @@ interface ResultsDashboardProps {
 }
 
 export default function ResultsDashboard({ analysis, profile }: ResultsDashboardProps) {
+  const navigate = useNavigate();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [showPitchDeck, setShowPitchDeck] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState(analysis);
+  const [savedProjects, setSavedProjects] = useState<AnalysisReport[]>([]);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const exportContainerRef = useRef<HTMLDivElement>(null);
+  const reportPrintRef = useRef<HTMLDivElement>(null);
+  
   const defaultProfile = {
     companyName: '',
     country: '',
@@ -53,16 +753,242 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
   const [editedIdea, setEditedIdea] = useState(currentAnalysis.ideaDescription);
   const [isEditingIdea, setIsEditingIdea] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [investorCategory, setInvestorCategory] = useState<'all' | 'angels' | 'vcs' | 'accelerators' | 'strategic' | 'family'>('all');
+  const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') as any;
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'risk' | 'growth' | 'investors' | 'reports' | 'architect'>(() => {
+    if (initialTab && ['overview', 'analysis', 'risk', 'growth', 'investors', 'reports', 'architect'].includes(initialTab)) {
+      return initialTab;
+    }
+    const path = window.location.pathname;
+    if (path.endsWith('/overview')) return 'overview';
+    if (path.endsWith('/analysis')) return 'analysis';
+    if (path.endsWith('/risk')) return 'risk';
+    if (path.endsWith('/growth')) return 'growth';
+    if (path.endsWith('/investors')) return 'investors';
+    if (path.endsWith('/reports') || path.endsWith('/report')) return 'reports';
+    if (path.endsWith('/architect')) return 'architect';
+    return 'overview';
+  });
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'analysis', 'risk', 'growth', 'investors', 'reports', 'architect'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const downloadParam = searchParams.get('download');
+    if (downloadParam === 'true' && activeTab === 'reports') {
+      const timer = setTimeout(() => {
+        handleExportExecutiveReport();
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, activeTab]);
+
+  useEffect(() => {
+    setCurrentAnalysis(analysis);
+    setEditedProfile({
+      ...defaultProfile,
+      ...(analysis.startupProfile || {})
+    });
+    setEditedIdea(analysis.ideaDescription);
+  }, [analysis]);
+
+  const needsSyncRef = useRef<boolean>(false);
+  const currentAnalysisRef = useRef<any>(currentAnalysis);
+
+  useEffect(() => {
+    currentAnalysisRef.current = currentAnalysis;
+  }, [currentAnalysis]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (needsSyncRef.current) {
+        needsSyncRef.current = false;
+        const liveAnalysis = currentAnalysisRef.current;
+        if (liveAnalysis && liveAnalysis.id) {
+          console.log("Atomic flush: Performing non-blocking background save to database layer for", liveAnalysis.id);
+          try {
+            await updateDoc(doc(db, 'analyses', liveAnalysis.id), {
+              ...liveAnalysis,
+              updatedAt: serverTimestamp()
+            });
+            const cachedJson = localStorage.getItem('cached_analyses');
+            if (cachedJson) {
+              const list = JSON.parse(cachedJson) as any[];
+              const idx = list.findIndex(item => item.id === liveAnalysis.id);
+              if (idx > -1) {
+                list[idx] = { ...list[idx], ...liveAnalysis, updatedAt: new Date().toISOString() };
+                localStorage.setItem('cached_analyses', JSON.stringify(list));
+                setSavedProjects(list);
+              }
+            }
+          } catch (writeErr) {
+            console.warn("Background auto-save sync warning:", writeErr);
+          }
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (isEditingProfile && autoSyncEnabled) {
+      const recalculation = recalculateVentureSuite(editedProfile);
+      
+      const companyNameClean = (editedProfile.companyName || '').replace(/\./g, '');
+      const industryClean = (editedProfile.industry || '').replace(/\./g, '');
+      const descClean = (editedProfile.businessDescription || '').replace(/\./g, '');
+
+      const updatedAnalysis = {
+        ...currentAnalysis,
+        startupProfile: {
+          ...editedProfile,
+          companyName: companyNameClean,
+          industry: industryClean,
+          businessDescription: descClean
+        },
+        scores: recalculation.scores as any,
+        riskMatrix: recalculation.riskMatrix,
+        investorMatching: recalculation.investorMatching,
+        pitchReadiness: recalculation.pitchReadiness,
+        traction: recalculation.traction,
+        overallScore: recalculation.scores.overall,
+        analysisScore: recalculation.scores.overall,
+        riskScore: Math.round(
+          ((recalculation.riskMatrix.market.impact + recalculation.riskMatrix.market.likelihood) +
+           (recalculation.riskMatrix.execution.impact + recalculation.riskMatrix.execution.likelihood) +
+           (recalculation.riskMatrix.competition.impact + recalculation.riskMatrix.competition.likelihood) +
+           (recalculation.riskMatrix.financial.impact + recalculation.riskMatrix.financial.likelihood)) * 2.5
+        ),
+        growthScore: recalculation.scores.scalability.score
+      };
+
+      setCurrentAnalysis(updatedAnalysis);
+      needsSyncRef.current = true;
+    }
+  }, [editedProfile, isEditingProfile, autoSyncEnabled]);
+
+  useEffect(() => {
+    const loadSavedProjects = () => {
+      try {
+        const cached = localStorage.getItem('cached_analyses');
+        if (cached) {
+          const allAnalyses = JSON.parse(cached) as AnalysisReport[];
+          setSavedProjects(allAnalyses);
+        }
+      } catch (err) {
+        console.warn("Could not load saved projects:", err);
+      }
+    };
+    loadSavedProjects();
+  }, [currentAnalysis.id]);
+
+  useEffect(() => {
+    if (!db) return;
+    const fetchSavedStartups = async () => {
+      try {
+        const q = query(
+          collection(db, 'analyses'),
+          where('userId', '==', profile?.uid || currentAnalysis.userId)
+        );
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnalysisReport));
+        
+        data.sort((a, b) => {
+          const timeA = a.updatedAt ? (typeof (a.updatedAt as any).toDate === 'function' ? (a.updatedAt as any).toDate().getTime() : new Date(a.updatedAt).getTime()) : 0;
+          const timeB = b.updatedAt ? (typeof (b.updatedAt as any).toDate === 'function' ? (b.updatedAt as any).toDate().getTime() : new Date(b.updatedAt).getTime()) : 0;
+          return timeB - timeA;
+        });
+
+        if (data.length > 0) {
+          setSavedProjects(data);
+          localStorage.setItem('cached_analyses', JSON.stringify(data));
+        }
+      } catch (e) {
+        console.warn("Background fetch of startup list failed:", e);
+      }
+    };
+    fetchSavedStartups();
+  }, [profile, currentAnalysis.id]);
+
+  const updateLocalCache = (updatedItem: AnalysisReport) => {
+    try {
+      const cachedJson = localStorage.getItem('cached_analyses');
+      let list: any[] = cachedJson ? JSON.parse(cachedJson) : [];
+      if (!Array.isArray(list)) list = [];
+      const idx = list.findIndex(item => item.id === updatedItem.id);
+      
+      const serializableItem = {
+        ...updatedItem,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (idx > -1) {
+        list[idx] = { ...list[idx], ...serializableItem };
+      } else {
+        list.push(serializableItem);
+      }
+      localStorage.setItem('cached_analyses', JSON.stringify(list));
+      
+      setSavedProjects(list);
+    } catch (e) {
+      console.warn("Could not write local storage cache:", e);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSyncing(true);
     try {
+      const companyNameClean = (editedProfile.companyName || currentAnalysis.startupProfile?.companyName || '').replace(/\./g, '');
+      const industryClean = (editedProfile.industry || currentAnalysis.startupProfile?.industry || '').replace(/\./g, '');
+      const descClean = (editedProfile.businessDescription || currentAnalysis.startupProfile?.businessDescription || '').replace(/\./g, '');
+
+      let updatedItem: any = {
+        ...currentAnalysis,
+        startupProfile: {
+          ...editedProfile,
+          companyName: companyNameClean,
+          industry: industryClean,
+          businessDescription: descClean
+        }
+      };
+
+      if (autoSyncEnabled) {
+        const recalculation = recalculateVentureSuite(editedProfile);
+        
+        updatedItem = {
+          ...updatedItem,
+          scores: recalculation.scores as any,
+          riskMatrix: recalculation.riskMatrix,
+          investorMatching: recalculation.investorMatching,
+          pitchReadiness: recalculation.pitchReadiness,
+          traction: recalculation.traction,
+          overallScore: recalculation.scores.overall,
+          analysisScore: recalculation.scores.overall,
+          riskScore: Math.round(
+            ((recalculation.riskMatrix.market.impact + recalculation.riskMatrix.market.likelihood) +
+             (recalculation.riskMatrix.execution.impact + recalculation.riskMatrix.execution.likelihood) +
+             (recalculation.riskMatrix.competition.impact + recalculation.riskMatrix.competition.likelihood) +
+             (recalculation.riskMatrix.financial.impact + recalculation.riskMatrix.financial.likelihood)) * 2.5
+          ),
+          growthScore: recalculation.scores.scalability.score
+        };
+      }
+
       await updateDoc(doc(db, 'analyses', currentAnalysis.id), {
-        startupProfile: editedProfile,
+        ...updatedItem,
         updatedAt: serverTimestamp()
       });
-      setCurrentAnalysis(prev => ({ ...prev, startupProfile: editedProfile }));
+
+      setCurrentAnalysis(updatedItem);
+      updateLocalCache(updatedItem);
       setIsEditingProfile(false);
     } catch (err) {
       console.error("Failed to update profile:", err);
@@ -75,39 +1001,34 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
   const handleSyncAndReanalyze = async () => {
     setIsSyncing(true);
     try {
-      // 1. Update Profile First
       await updateDoc(doc(db, 'analyses', currentAnalysis.id), {
         startupProfile: editedProfile,
         ideaDescription: editedIdea,
         updatedAt: serverTimestamp()
       });
 
-      // 2. Trigger Venture Refinement for Analysis, Investors, and Roadmap
       const refinedResults = await generateCompanyAnalysis(editedProfile);
-      
-      // 3. Trigger Pitch Deck Update
-      const refinedDeck = await generatePitchDeck(editedProfile);
 
       const updateData = {
         ...refinedResults,
-        pitchReadiness: refinedDeck, 
         updatedAt: serverTimestamp()
       };
 
       await updateDoc(doc(db, 'analyses', currentAnalysis.id), updateData);
       
-      // 4. Update local state
-      setCurrentAnalysis(prev => ({
-        ...prev,
+      const updatedItem = {
+        ...currentAnalysis,
         ...refinedResults,
-        pitchReadiness: refinedDeck,
         startupProfile: editedProfile,
         ideaDescription: editedIdea
-      }));
+      };
+
+      setCurrentAnalysis(updatedItem);
+      updateLocalCache(updatedItem);
 
       setIsEditingProfile(false);
       setIsEditingIdea(false);
-      alert("Analysis suite refined successfully!");
+      alert("Analysis refined successfully!");
     } catch (err) {
       console.error("Refinement error:", err);
       alert("Failed to refine. Please check connection.");
@@ -116,6 +1037,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
     }
   };
 
+  // Used by the Pitch Deck Architect tab — captures slide elements only.
   const handleExportPDF = async () => {
     if (!currentAnalysis.pitchReadiness?.slides) return;
     setIsExporting(true);
@@ -127,26 +1049,94 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
         format: [1280, 720]
       });
 
-      for (let i = 0; i < currentAnalysis.pitchReadiness.slides.length; i++) {
-        const element = document.getElementById(`pitch-slide-${i}`);
-        if (element) {
-          const canvas = await html2canvas(element, {
-            scale: 2, // Higher quality
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#08131D'
-          });
-          const imgData = canvas.toDataURL('image/jpeg', 0.85);
-          
-          if (i > 0) pdf.addPage([1280, 720], 'landscape');
-          pdf.addImage(imgData, 'JPEG', 0, 0, 1280, 720);
+      await withOklchHtml2CanvasPatch(async () => {
+        for (let i = 0; i < currentAnalysis.pitchReadiness.slides.length; i++) {
+          const element = document.getElementById(`pitch-slide-${i}`);
+          if (element) {
+            const canvas = await html2canvas(element, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#08131D'
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.85);
+            
+            if (i > 0) pdf.addPage([1280, 720], 'landscape');
+            pdf.addImage(imgData, 'JPEG', 0, 0, 1280, 720);
+          }
         }
-      }
+      });
 
       pdf.save(`${displayProfile.companyName || 'Venture'}_Pitch_Deck.pdf`);
     } catch (err) {
       console.error("Export error:", err);
       alert("Failed to export pitch deck. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // FIX: previously used Tailwind color classes (text-neutral-900,
+  // border-neutral-200, bg-white, etc.) inside the printable block. Tailwind
+  // v4 compiles those into oklch() colors, and html2canvas cannot parse
+  // oklch() — that's exactly why the export silently failed with an error.
+  // The printable block below now sets every color via inline style with a
+  // plain hex value, so html2canvas never encounters an oklch() value.
+  const handleExportExecutiveReport = async () => {
+    if (!reportPrintRef.current) return;
+    setIsExporting(true);
+
+    try {
+      const node = reportPrintRef.current;
+      const canvas = await withOklchHtml2CanvasPatch(async () => {
+        return await html2canvas(node, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          windowWidth: node.scrollWidth || 800,
+          windowHeight: node.scrollHeight || 1200,
+        });
+      });
+
+      if (!canvas || !canvas.width || !canvas.height) {
+        throw new Error("Canvas generation returned an empty or invalid canvas.");
+      }
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (!imgWidth || isNaN(imgWidth) || !imgHeight || isNaN(imgHeight)) {
+        throw new Error("Computed image dimensions are invalid.");
+      }
+
+      let leftHeight = imgHeight;
+      let position = 0;
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+      let isFirstPage = true;
+      while (leftHeight > 0) {
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
+        isFirstPage = false;
+
+        // Render full image with a negative Y offset (position) on each subsequent page.
+        // jsPDF auto-clips everything that lies outside the current page boundary.
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        
+        leftHeight -= pageHeight;
+        position -= pageHeight;
+      }
+
+      pdf.save(`${displayProfile.companyName || 'Venture'}_Executive_Report.pdf`);
+    } catch (err) {
+      console.error("Executive report export error:", err);
+      alert("Failed to export report. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -201,7 +1191,8 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
   ];
 
   return (
-    <div className="space-y-16 animate-in fade-in duration-700 max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8 bg-brand-bg text-brand-text-primary">
+    <MotionConfig transition={{ duration: 0 }}>
+      <div className="space-y-16 max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8 bg-brand-bg text-brand-text-primary">
       
       {/* 1. HEADER (Interactive Profile) */}
       <header className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8 pt-12">
@@ -249,18 +1240,12 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
 
         <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full lg:w-auto">
             <button 
-              onClick={() => setShowPitchDeck(true)}
-              className="px-10 py-6 bg-brand-section border border-brand-border text-brand-text-primary rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl hover:scale-105 hover:bg-brand-hover transition-all flex items-center gap-3 w-full lg:w-auto justify-center active:scale-95"
-            >
-              <Zap size={20} className="text-brand-accent" fill="currentColor" /> Pitch Deck Architect
-            </button>
-            <button 
-              onClick={handleExportPDF}
+              onClick={handleExportExecutiveReport}
               disabled={isExporting}
               className="px-10 py-6 bg-brand-accent text-brand-text-primary rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl hover:scale-105 hover:bg-brand-accent/90 transition-all flex items-center gap-3 w-full lg:w-auto justify-center shadow-brand-accent/20 active:scale-95 disabled:opacity-50"
             >
               {isExporting ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-              {isExporting ? 'Generating...' : 'Download Pitch Deck'}
+              {isExporting ? 'Generating...' : 'Download Project'}
             </button>
         </div>
       </header>
@@ -281,11 +1266,10 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
               animate={{ opacity: 1, scale: 1 }}
               className="relative w-full max-w-4xl bg-brand-section rounded-[2.5rem] border border-brand-border/20 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              {/* Modal Header */}
               <div className="p-8 border-b border-brand-border/10 flex justify-between items-center bg-brand-card/50">
                 <div>
-                  <h3 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Venture Analysis Profile</h3>
-                  <p className="text-xs text-brand-text-secondary uppercase tracking-widest mt-1">Refine your venture data for higher precision analysis</p>
+                  <h3 className="text-xl font-black text-brand-text-primary uppercase tracking-tight">Your Profile</h3>
+                  <p className="text-[10px] text-brand-text-secondary uppercase tracking-widest mt-1">Refine your data for more precise results</p>
                 </div>
                 <button 
                   onClick={() => setIsEditingProfile(false)}
@@ -295,8 +1279,28 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-10 space-y-12">
+              <div className="flex-1 overflow-y-auto p-10 space-y-8">
+                <div className="flex items-center justify-between p-6 bg-brand-bg/40 rounded-2xl border border-white/5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-black text-brand-text-primary uppercase tracking-widest block">Core Synchronization Mode</label>
+                    <p className="text-[10px] text-brand-text-secondary/50 uppercase tracking-widest">Toggle real-time recalculation of all scores and investments</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
+                      className={cn(
+                        "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer",
+                        autoSyncEnabled 
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-extrabold"
+                          : "bg-red-500/10 border-red-500/30 text-red-400 font-extrabold"
+                      )}
+                    >
+                      AUTO-SYNC {autoSyncEnabled ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                </div>
+
                 <form onSubmit={handleUpdateProfile} id="profile-form">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                     {formSections.map((section) => (
@@ -308,7 +1312,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
                         <div className="space-y-5">
                           {section.fields.map((field) => (
                             <div key={field.key}>
-                              <label className="block text-base font-black text-brand-text-secondary/50 uppercase tracking-[0.2em] mb-2">{field.label}</label>
+                              <label className="block text-[9px] font-black text-brand-text-secondary/50 uppercase tracking-[0.2em] mb-2">{field.label}</label>
                               {field.type === 'select' ? (
                                 <div className="relative">
                                   <input
@@ -350,30 +1354,36 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
                 </form>
               </div>
 
-              {/* Modal Footer */}
               <div className="p-8 border-t border-brand-border/10 bg-brand-card/50 flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                     <CheckCircle2 size={16} />
                   </div>
-                  <p className="text-xs text-brand-text-muted font-medium max-w-[200px]">Changes are synced to our modeling engine in real-time.</p>
+                  <p className="text-[12px] text-slate-300 font-medium tracking-[0.02em] opacity-95 max-w-[220px]">Changes are synced to our modeling engine in real-time</p>
                 </div>
                 <div className="flex gap-4 w-full sm:w-auto">
                   <button 
                     onClick={() => setIsEditingProfile(false)}
-                    className="flex-1 sm:flex-none px-8 py-4 border border-brand-border/20 rounded-xl text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:bg-brand-hover transition-all"
+                    className="flex-1 sm:flex-none px-6 py-4 border border-brand-border/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-text-secondary hover:bg-brand-hover transition-all"
                   >
                     Cancel
                   </button>
                   <button 
+                    onClick={handleUpdateProfile}
+                    disabled={isSyncing}
+                    className="flex-1 sm:flex-none px-6 py-4 bg-brand-card hover:bg-brand-hover text-white border border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    Quick Save & Sync
+                  </button>
+                  <button 
                     onClick={handleSyncAndReanalyze}
                     disabled={isSyncing}
-                    className="flex-1 sm:flex-none px-8 py-4 bg-brand-accent text-brand-text-primary rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
+                    className="flex-1 sm:flex-none px-6 py-4 bg-brand-accent text-brand-text-primary rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
                   >
                     {isSyncing ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-slate-900 border-t-brand-accent rounded-full animate-spin" />
                     ) : <Wand2 size={14} />}
-                    Sync & Refine Analysis
+                    Deep AI Refine
                   </button>
                 </div>
               </div>
@@ -382,315 +1392,948 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 gap-12">
-        {/* 1. VENTURE PERFORMANCE METRICS */}
-        <section 
-          onMouseEnter={() => setActiveSection('metrics')}
-          onMouseLeave={() => setActiveSection(null)}
-          className={cn(
-            "bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative group transition-all duration-300 overflow-visible",
-            activeSection === 'metrics' ? "z-[400]" : "z-10"
-          )}
-        >
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
-          
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14">
-              <div>
-                <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">VC Command Center</h3>
-                <p className="text-sm text-brand-text-muted font-medium opacity-80">Multi-dimensional assessment of startup viability and market potential.</p>
-              </div>
-              <div className="flex items-center gap-8">
-                <div className="text-right">
-                  <h4 className="text-xs font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2">Composite Score</h4>
-                  <p className="text-4xl font-black text-brand-accent tabular-nums">
-                    {(currentAnalysis.scores as any)?.overall || (currentAnalysis.scores as any)?.ideaStrength?.score || 0}%
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <VCCommandCenter 
-              scores={currentAnalysis.scores || {}} 
-              finalVerdict={currentAnalysis.finalVerdict} 
-              topInvestorTakeaway={currentAnalysis.topInvestorTakeaway} 
-            />
-
-            <div className="mt-12 p-8 bg-brand-card/30 border border-brand-border/20 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-center justify-between">
-              <div className="flex-1">
-                <h4 className="text-xs font-black text-brand-accent uppercase tracking-widest mb-4">Institutional Analysis Verdict</h4>
-                <p className="text-xs font-bold text-brand-text-primary leading-relaxed italic opacity-90">
-                  "{typeof currentAnalysis.finalVerdict === 'object' ? currentAnalysis.finalVerdict.description : (currentAnalysis.finalVerdict || 'Analysis in progress...')}"
-                </p>
-              </div>
-              <div className="shrink-0 pt-4 md:pt-0">
-                <div className={cn(
-                  "px-8 py-4 rounded-2xl border font-black uppercase tracking-widest text-xs shadow-lg",
-                  currentAnalysis.finalVerdict?.status === 'Strong Investment Opportunity' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                  currentAnalysis.finalVerdict?.status === 'Moderate Potential' ? "bg-brand-blue/10 text-brand-blue border-brand-blue/20" :
-                  "bg-brand-coral/10 text-brand-coral border-brand-coral/20"
-                )}>
-                  {currentAnalysis.finalVerdict?.status || 'Calculating...'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 2. RISK INTELLIGENCE MATRIX */}
-        <section 
-          onMouseEnter={() => setActiveSection('risk')}
-          onMouseLeave={() => setActiveSection(null)}
-          className={cn(
-            "bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative group transition-all duration-300 overflow-visible",
-            activeSection === 'risk' ? "z-[400]" : "z-10"
-          )}
-        >
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-coral/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-coral/10 transition-all duration-1000" />
-          
-          <div className="relative">
-            <div className="flex items-center justify-between mb-12">
-              <div>
-                <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Risk Exposure Matrix</h3>
-                <p className="text-sm text-brand-text-muted font-medium opacity-80">Critical identification of execution bottlenecks and latent market threats.</p>
-              </div>
-              <div className="w-14 h-14 bg-brand-coral/10 rounded-2xl flex items-center justify-center text-brand-coral border border-brand-coral/20 shadow-xl">
-                 <ShieldAlert size={28} />
-              </div>
-            </div>
-
-            <RiskEcosystemMap risks={currentAnalysis.riskMatrix || currentAnalysis.risks} />
-
-            {currentAnalysis.topInvestorTakeaway && (
-              <div className="mt-12 pt-12 border-t border-white/5">
-                <div className="flex items-center gap-4 mb-8">
-                   <div className="w-px h-8 bg-brand-accent" />
-                   <h4 className="text-xs font-black text-brand-accent uppercase tracking-[0.3em]">Investor Perspective</h4>
-                </div>
-                <div className="bg-brand-card/50 p-8 rounded-[2.5rem] border border-brand-border/20 shadow-inner group/persp transition-all">
-                  <p className="text-xs font-bold text-brand-text-primary leading-relaxed opacity-70 group-hover:opacity-100 transition-opacity">
-                    "{currentAnalysis.topInvestorTakeaway}"
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* 4. STRATEGIC EXPANSION JOURNEY */}
-      <section 
-        onMouseEnter={() => setActiveSection('roadmap')}
-        onMouseLeave={() => setActiveSection(null)}
-        className={cn(
-          "bg-brand-section/40 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative group transition-all duration-300 overflow-visible",
-          activeSection === 'roadmap' ? "z-[400]" : "z-10"
-        )}
-      >
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full group-hover:bg-brand-accent/10 transition-all duration-1000" />
+      {/* 4. WORKSPACE SYSTEM - TWO COLUMN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 relative z-10 pt-4">
         
-        <div className="relative">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-              <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Strategic Expansion Journey</h3>
-              <p className="text-sm text-brand-text-muted font-medium opacity-80">A cinematic pathway from structural validation to high-velocity venture maturity.</p>
+        {/* LEFT COLUMN: 'MY PROJECTS' PANEL (Sidebar) */}
+        <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-2 no-print scrollbar-thin">
+          <div className="bg-brand-section/40 p-6 rounded-[2rem] border border-brand-border/15 shadow-huge relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-brand-accent/30 to-brand-purple/30" />
+            
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/5">
+              <span className="text-xs font-black uppercase text-slate-100 tracking-wider flex items-center gap-2">
+                <Briefcase size={14} className="text-brand-accent" />
+                My Projects
+              </span>
+              <span className="text-[10px] font-mono font-black text-brand-accent px-2 py-0.5 bg-brand-accent/10 border border-brand-accent/20 rounded">
+                {savedProjects.length || 1}
+              </span>
             </div>
-            <div className="flex items-center gap-3">
-               <div className="px-6 py-4 bg-brand-card/50 border border-brand-border rounded-2xl flex items-center gap-4 shadow-lg">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-accent animate-ping" />
-                  <span className="text-xs font-black text-brand-text-primary uppercase tracking-widest leading-none">Trajectory Locked</span>
-               </div>
-            </div>
-          </div>
 
-          <StrategicExpansionJourney roadmap={currentAnalysis.roadmap} />
-        </div>
-      </section>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+              {savedProjects.length > 0 ? (
+                savedProjects.map((item) => {
+                  const isSelected = item.id === currentAnalysis.id;
+                  const score = (item.scores as any)?.overall || (item.scores as any)?.ideaStrength?.score || 85;
+                  const companyName = (item.startupProfile?.companyName || 'Custom Venture').replace(/\./g, '');
+                  const industry = (item.startupProfile?.industry || 'Modern Software').replace(/\./g, '');
+                  const stage = (item.startupProfile?.stage || 'Idea Stage').replace(/\./g, '');
+                  const lastUpdated = item.updatedAt;
+                  const statusStr = item.status === 'completed' ? 'Fully Validated' : 'Analyzing';
 
-      {/* 5. SUGGESTED INVESTORS (Matchmaking Network) */}
-      <section 
-        onMouseEnter={() => setActiveSection('investors')}
-        onMouseLeave={() => setActiveSection(null)}
-        className={cn(
-          "bg-brand-section/40 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative group transition-all duration-300 overflow-visible",
-          activeSection === 'investors' ? "z-[400]" : "z-10"
-        )}
-      >
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-brand-emerald/5 blur-[120px] rounded-full group-hover:bg-brand-emerald/10 transition-all duration-1000" />
-        
-        <div className="relative">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-              <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Investor Matchmaking Network</h3>
-              <p className="text-sm text-brand-text-muted font-medium opacity-80">Interactive strategic mapping of high-conviction institutional matches.</p>
-            </div>
-            <div className="flex items-center gap-3">
-               <div className="px-6 py-4 bg-brand-card/50 border border-brand-border rounded-2xl flex items-center gap-4 shadow-lg">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-emerald animate-pulse" />
-                  <span className="text-xs font-black text-brand-text-primary uppercase tracking-widest leading-none">Logic Stream Online</span>
-               </div>
-            </div>
-          </div>
+                  const formatUpdated = (val: any) => {
+                    if (!val) return 'Just now';
+                    try {
+                      let date: Date;
+                      if (val.seconds) {
+                        date = new Date(val.seconds * 1000);
+                      } else {
+                        date = new Date(val);
+                      }
+                      const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+                      return date.toLocaleDateString('en-US', options).replace(/,/g, '');
+                    } catch (_) {
+                      return 'Recent';
+                    }
+                  };
 
-          <InvestorRelationshipNetwork 
-            investors={currentAnalysis.investorMatching || []} 
-            startupName={displayProfile.companyName || 'Venture'} 
-          />
-        </div>
-      </section>
-
-      {/* Modal: Pitch Deck Detail */}
-      <AnimatePresence>
-        {showPitchDeck && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPitchDeck(false)}
-              className="absolute inset-0 bg-brand-bg/95 backdrop-blur-3xl"
-            />
-            <motion.div 
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              className="relative w-full max-w-6xl bg-brand-section rounded-[3rem] border border-brand-border shadow-huge overflow-hidden flex flex-col max-h-[92vh] group"
-            >
-              <div className="absolute inset-0 bg-brand-accent/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-1000" />
-              
-              <div className="flex items-center justify-between p-10 border-b border-brand-border/10 relative z-10 bg-brand-section/50 backdrop-blur-xl">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-brand-accent rounded-3xl flex items-center justify-center text-brand-text-primary shadow-2xl shadow-brand-accent/30">
-                    <Briefcase size={32} />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-black text-brand-text-primary tracking-tighter uppercase font-display">Pitch Deck Architect</h2>
-                    <p className="text-xs text-brand-accent font-black uppercase tracking-[0.3em]">Institutional Grade Blueprint • Stage {displayProfile.stage}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowPitchDeck(false)}
-                  className="w-12 h-12 flex items-center justify-center bg-brand-card hover:bg-brand-hover rounded-2xl text-brand-text-muted hover:text-brand-text-primary transition-all active:scale-90 border border-brand-border/10"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-10 lg:p-14 relative z-10">
-                <div className="mb-14 p-10 bg-brand-bg/50 border border-brand-border rounded-[2.5rem] relative overflow-hidden group/top">
-                  <div className="absolute top-0 right-0 p-8">
-                     <Zap size={32} className="text-brand-accent opacity-20 group-hover/top:scale-110 transition-transform" />
-                  </div>
-                  <h3 className="text-xs font-black text-brand-text-primary uppercase tracking-tight mb-4">Strategic Narrative Engine</h3>
-                  <p className="text-brand-text-muted font-medium max-w-2xl leading-relaxed">
-                    We've synthesized your unique value proposition into a tailored narrative structure. 
-                    This blueprint is designed to navigate common investor objections while highlighting your current velocity.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-12">
-                  {Array.isArray(currentAnalysis.pitchReadiness?.slides) && currentAnalysis.pitchReadiness.slides.map((slide: any, idx: number) => (
-                    <motion.div 
-                      key={idx} 
-                      whileHover={{ y: -8 }}
-                      className="p-8 bg-brand-card/40 border border-brand-border rounded-[2rem] hover:bg-brand-card/60 transition-all duration-300 relative overflow-hidden group/slide"
+                  return (
+                    <motion.div
+                      key={item.id}
+                      whileHover={{ scale: 1.01 }}
+                      onClick={() => {
+                        if (!isSelected) {
+                          navigate(`/dashboard/startup/${item.id}`);
+                        }
+                      }}
+                      className={cn(
+                        "p-4 rounded-xl border transition-all cursor-pointer text-left relative overflow-hidden group/card",
+                        isSelected
+                          ? "bg-brand-accent/5 border-brand-accent shadow-[0_0_20px_rgba(77,163,255,0.05)]"
+                          : "bg-brand-card/30 border-brand-border/10 hover:border-brand-border/40 hover:bg-brand-card/50"
+                      )}
                     >
-                      <div className="absolute bottom-4 right-4 p-4 opacity-5">
-                         <span className="text-8xl font-black text-brand-text-primary leading-none">{idx + 1}</span>
-                      </div>
+                      {isSelected && (
+                        <div className="absolute top-0 right-0 w-1.5 h-full bg-brand-accent" />
+                      )}
                       
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="w-10 h-10 bg-brand-bg flex items-center justify-center rounded-xl text-brand-accent font-black text-xs border border-brand-border/10">
-                           {idx + 1}
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-black text-slate-100 uppercase tracking-tight group-hover/card:text-brand-accent transition-colors truncate">
+                            {companyName}
+                          </h4>
+                          <p className="text-[10px] text-brand-text-secondary/80 lowercase mt-0.5 font-medium truncate font-sans">
+                            {industry}
+                          </p>
                         </div>
-                        <div className="px-2 py-1 bg-brand-accent/5 border border-brand-accent/20 rounded-md">
-                           <span className="text-[8px] font-black text-brand-accent uppercase tracking-widest">Slide Blueprint</span>
+                        <div className="shrink-0 text-right">
+                          <span className="text-xs font-black text-brand-accent font-mono">{score}</span>
+                          <div className="text-[8px] text-brand-text-secondary/50 font-black uppercase tracking-wider">Score</div>
                         </div>
                       </div>
 
-                      <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-widest mb-4 group-hover/slide:text-brand-accent transition-colors">{slide.title}</h4>
-                      <div className="h-px w-12 bg-brand-accent/30 mb-6 group-hover/slide:w-full transition-all" />
-                      
-                      <div className="space-y-6 relative z-10">
-                        <p className="text-sm text-brand-text-secondary leading-relaxed font-medium italic border-l-2 border-brand-accent/30 pl-4">
-                          "{slide.content}"
-                        </p>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 text-[9px] font-bold text-brand-text-muted">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-brand-text-secondary uppercase tracking-[0.1em] text-[8px]">Stage</span>
+                          <span className="text-slate-300 truncate max-w-[80px] text-[8px] uppercase font-black">{stage}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 text-right font-sans">
+                          <span className="text-brand-text-secondary uppercase tracking-[0.1em] text-[8px]">Updated</span>
+                          <span className="text-slate-300 text-[8px]">{formatUpdated(lastUpdated)}</span>
+                        </div>
+                      </div>
 
-                        {Array.isArray(slide.points) && (
-                          <div className="space-y-3">
-                            <p className="text-sm font-black text-brand-text-muted uppercase tracking-[0.3em] mb-1">Key Objectives</p>
-                            <div className="space-y-2">
-                              {slide.points.map((pt: string, i: number) => (
-                                <div key={i} className="flex gap-2 text-xs text-brand-text-secondary font-medium">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-brand-accent/40 mt-1 shrink-0" />
-                                  {pt}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {slide.metric && (
-                          <div className="p-4 bg-brand-bg/50 rounded-xl border border-brand-border/10">
-                             <p className="text-sm font-black text-brand-emerald uppercase tracking-[0.3em] mb-1">Success Metric</p>
-                             <p className="text-xs font-black text-brand-text-primary">{slide.metric.label}: {slide.metric.value}</p>
-                          </div>
-                        )}
-                        
-                        {slide.investorFocus && (
-                          <div className="pt-4 border-t border-brand-border/5">
-                            <p className="text-sm font-black text-brand-amber uppercase tracking-[0.3em] mb-1">Investor Psychology</p>
-                            <p className="text-xs text-brand-text-muted leading-relaxed font-semibold">
-                              {slide.investorFocus}
-                            </p>
-                          </div>
-                        )}
+                      <div className="mt-3 flex items-center justify-between text-[8px] uppercase tracking-wider font-mono">
+                        <span className="text-brand-text-secondary">Status:</span>
+                        <span className={cn(
+                          "font-black px-1.5 py-0.5 rounded",
+                          item.status === 'completed' ? "text-emerald-400 bg-emerald-500/10" : "text-amber-400 bg-amber-500/10"
+                        )}>
+                          {statusStr}
+                        </span>
                       </div>
                     </motion.div>
-                  ))}
+                  );
+                })
+              ) : (
+                <div className="p-4 rounded-xl border border-brand-border/10 bg-brand-card/20 text-center">
+                  <span className="text-[11px] text-brand-text-muted font-bold font-mono uppercase">EduMatch AI</span>
+                  <p className="text-[10px] text-brand-text-secondary mt-1 max-w-[150px] mx-auto">No other active projects cached yet.</p>
                 </div>
-              </div>
-              
-              <div className="p-10 border-t border-brand-border/10 bg-brand-section relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
-                 <div className="flex items-center gap-4">
-                    <div className="flex -space-x-3">
-                       {[1, 2, 3].map(i => (
-                         <div key={i} className="w-10 h-10 rounded-full border-4 border-brand-section bg-brand-card flex items-center justify-center text-xs font-black text-brand-text-muted shadow-lg">
-                            {i}
-                         </div>
-                       ))}
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-brand-text-primary uppercase tracking-widest">Trusted by 1,200+ Founding Teams</p>
-                      <p className="text-[8px] font-bold text-brand-text-muted uppercase tracking-widest">Verified Venture Architecture</p>
-                    </div>
-                 </div>
-                 <button 
-                  onClick={handleExportPDF} 
-                  disabled={isExporting}
-                  className="px-10 py-5 bg-brand-accent text-brand-text-primary rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-accent/20 hover:scale-105 transition-all active:scale-95 flex items-center gap-3 w-full md:w-auto justify-center disabled:opacity-50"
-                 >
-                    {isExporting ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-                    {isExporting ? 'Generating Professional PDF...' : 'Export High-Fidelity Deck'}
-                 </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              )}
+            </div>
 
-      {/* Hidden container for PDF export */}
-      <div className="fixed left-[-9999px] top-[-9999px] pointer-events-none" ref={exportContainerRef}>
-        {Array.isArray(currentAnalysis.pitchReadiness?.slides) && currentAnalysis.pitchReadiness.slides.map((slide: any, idx: number) => (
-          <PitchDeckSlide 
-            key={`export-${idx}`} 
-            slide={slide} 
-            index={idx} 
-            companyName={displayProfile.companyName || 'Venture'} 
-          />
+            <div className="mt-6 pt-5 border-t border-white/5">
+              <Link
+                to="/"
+                className="w-full py-3.5 bg-brand-card/40 border border-white/5 text-[10px] font-black uppercase text-[#5ce1e6] tracking-widest rounded-xl hover:bg-brand-hover hover:border-brand-accent/35 transition-all flex items-center justify-center gap-2"
+              >
+                + Analyze New Idea
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        {/* RIGHT COLUMN: MAIN WORKSPACE OR SUITE PANELS */}
+        <div className="lg:col-span-3 space-y-12">
+
+          <div id="command-center-tabs" className="flex flex-wrap items-center justify-start gap-3 border-b border-white/5 pb-8 no-print relative z-10">
+        {[
+          { id: 'overview', label: '01 / Startup Overview', icon: <LayoutGrid size={15} /> },
+          { id: 'analysis', label: '02 / Startup Summary', icon: <BarChart3 size={15} /> },
+          { id: 'risk', label: '03 / Risks', icon: <ShieldAlert size={15} /> },
+          { id: 'growth', label: '04 / Growth Opportunities', icon: <TrendingUp size={15} /> },
+          { id: 'investors', label: '05 / Investors', icon: <Handshake size={15} /> },
+          { id: 'reports', label: '06 / Reports', icon: <FileText size={15} /> },
+          { id: 'architect', label: '07 / Pitch Deck Architect', icon: <Presentation size={15} /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "flex items-center gap-3 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+              activeTab === tab.id
+                ? "bg-brand-accent text-brand-text-primary shadow-xl shadow-brand-accent/20 border-b-2 border-brand-accent scale-102"
+                : "bg-brand-section text-brand-text-secondary hover:text-white border border-brand-border/15 hover:border-brand-border/60"
+            )}
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
         ))}
       </div>
 
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.4 }}
+          className="space-y-12 min-h-[500px]"
+        >
+          {/* ==================== 01 / OVERVIEW TAB ==================== */}
+          {activeTab === 'overview' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
+                <div className="relative">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14">
+                    <div>
+                      <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Startup Overview</h3>
+                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Overall evaluation of your startup idea</p>
+                    </div>
+                    <div className="text-right">
+                      <h4 className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2">Startup Score</h4>
+                      <p className="text-4xl font-black text-brand-accent tabular-nums">
+                        {getCalculatedVentureScore(currentAnalysis.scores)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Single Startup Score visualization — real pentagon/hexagon
+                      radar chart. Hover any vertex for the explanation. */}
+                  <StartupScoreRadar scores={currentAnalysis.scores || {}} />
+
+                  <div className="mt-12 p-8 bg-brand-card/30 border border-brand-border/20 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="text-xs font-black text-brand-accent uppercase tracking-widest mb-4">Final Verdict</h4>
+                      <p className="text-lg font-bold text-brand-text-primary leading-relaxed italic opacity-90">
+                        "{typeof currentAnalysis.finalVerdict === 'object' ? currentAnalysis.finalVerdict.description : (currentAnalysis.finalVerdict || 'Analysis in progress...')}"
+                      </p>
+                    </div>
+                    <div className="shrink-0 pt-4 md:pt-0">
+                      <div className={cn(
+                        "px-8 py-4 rounded-2xl border font-black uppercase tracking-widest text-xs shadow-lg",
+                        currentAnalysis.finalVerdict?.status === 'Strong Investment Opportunity' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                        currentAnalysis.finalVerdict?.status === 'Moderate Potential' ? "bg-brand-blue/10 text-brand-blue border-brand-blue/20" :
+                        "bg-brand-coral/10 text-brand-coral border-brand-coral/20"
+                      )}>
+                        {currentAnalysis.finalVerdict?.status || 'Calculating...'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="bg-brand-section/40 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative">
+                <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-6">Executive Summary</h4>
+                <p className="text-base text-slate-300 leading-relaxed font-sans">{displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 pt-10 border-t border-white/5">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-secondary/60">Selected Industry</span>
+                    <p className="text-sm text-slate-200 font-bold">{displayProfile.industry || 'Enterprise SaaS'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-secondary/60">Validated Venture Stage</span>
+                    <p className="text-sm text-brand-accent font-black uppercase tracking-widest">{displayProfile.stage || 'Idea Stage'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-10 pt-10 border-t border-white/5 space-y-6">
+                  <h4 className="text-sm font-black text-brand-accent uppercase tracking-widest flex items-center gap-2">
+                    <Zap size={14} className="text-brand-accent animate-pulse" />
+                    01 Key Insights
+                  </h4>
+                  {currentAnalysis.keyInsights && currentAnalysis.keyInsights.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
+                        <div key={idx} className="bg-[#0b1320] border border-brand-border/10 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all">
+                          <span className="text-xs font-mono text-brand-accent font-black font-semibold">0{idx + 1}</span>
+                          <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">{insight}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
+                      <div className="bg-[#0b1320] border border-brand-border/15 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all text-xs">
+                        <span className="text-xs font-mono text-brand-accent font-black">01</span>
+                        <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">Defensive Concept Capability: Excellent foundational business logic with robust early stage proof elements.</p>
+                      </div>
+                      <div className="bg-[#0b1320] border border-brand-border/15 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all text-xs">
+                        <span className="text-xs font-mono text-brand-accent font-black">02</span>
+                        <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">Strategic Market Signals: Initial target sectors demonstrate major expansion trends over standard VC benchmarks.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* ==================== 02 / STARTUP SUMMARY TAB ==================== */}
+          {activeTab === 'analysis' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none" />
+                <div className="relative">
+                  <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Startup Summary</h3>
+                  <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Overall evaluation of your startup idea</p>
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Market Opportunity card — compact, scannable, max 3 bullets */}
+                <div className="bg-brand-section/80 p-7 rounded-[2rem] border border-brand-border shadow-lg">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-8 h-8 bg-brand-accent/10 border border-brand-accent/20 text-brand-accent rounded-lg flex items-center justify-center shrink-0">
+                      <Globe size={16} />
+                    </div>
+                    <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Market Opportunity</h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Market Size</p>
+                      <p className="text-lg font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</p>
+                    </div>
+                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Demand</p>
+                      <p className="text-lg font-black text-[#5ce1e6]">{extractStatusWord(currentAnalysis.marketAnalysis?.demandSignals, 'Moderate')}</p>
+                    </div>
+                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5 col-span-2">
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Growth</p>
+                      <p className="text-lg font-black text-emerald-400">{extractStatusWord(currentAnalysis.marketAnalysis?.growthTrends, 'Steady')}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-2.5">Why It Matters</p>
+                    <ul className="space-y-1.5">
+                      {summarizeToBullets(currentAnalysis.marketAnalysis?.overview || 'Large active market with room for focused solutions', 3).map((bullet, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                          <span className="text-brand-accent shrink-0">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Competition & Revenue card — compact, scannable, max 3 bullets */}
+                <div className="bg-brand-section/80 p-7 rounded-[2rem] border border-brand-border shadow-lg">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-8 h-8 bg-brand-coral/10 border border-brand-coral/20 text-brand-coral rounded-lg flex items-center justify-center shrink-0">
+                      <Shield size={16} />
+                    </div>
+                    <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Competition & Revenue</h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Competition</p>
+                      <p className="text-lg font-black text-amber-400">{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium', /low|medium|high/i)}</p>
+                    </div>
+                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Revenue Potential</p>
+                      <p className="text-lg font-black text-emerald-400">High</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 space-y-4">
+                    <div>
+                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-2.5">Biggest Gap</p>
+                      <ul className="space-y-1.5">
+                        {summarizeToBullets(currentAnalysis.competitorAnalysis?.marketGaps || 'No clear leader on trust and pricing', 2).map((bullet, i) => (
+                          <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                            <span className="text-brand-coral shrink-0">•</span>
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-2.5">Your Edge</p>
+                      <ul className="space-y-1.5">
+                        {summarizeToBullets(currentAnalysis.competitorAnalysis?.competitiveAdvantages || 'Better customer experience', 2).map((bullet, i) => (
+                          <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                            <span className="text-brand-accent shrink-0">•</span>
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SWOT Matrix Grid */}
+              <div className="bg-brand-section/50 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge space-y-8">
+                <div>
+                  <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">SWOT Analysis</h4>
+                  <p className="text-sm text-brand-text-muted font-bold">A simple look at your strengths, weaknesses, opportunities, and threats</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* S */}
+                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-emerald-500/10 hover:border-emerald-500/30 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black text-xs font-mono">S</div>
+                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Strengths</h5>
+                    </div>
+                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
+                      <li>Unique architecture with {(currentAnalysis.scores as any)?.ideaStrength?.score || 85}% concept strength rating</li>
+                      <li>High core technology defensibility (edge pattern scanning)</li>
+                      <li>Verifiable execution latency parameters under extreme simulated environments</li>
+                    </ul>
+                  </div>
+                  {/* W */}
+                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-coral/10 hover:border-brand-coral/30 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-brand-coral/10 flex items-center justify-center text-brand-coral font-black text-xs font-mono">W</div>
+                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Weaknesses</h5>
+                    </div>
+                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
+                      <li>Early operational business stages starting from {displayProfile.stage}</li>
+                      <li>Lack of multi-regional pre-existing consumer relationships</li>
+                      <li>Requires initial capital deployment to acquire specialized database engineers</li>
+                    </ul>
+                  </div>
+                  {/* O */}
+                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-accent/10 hover:border-brand-accent/30 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent font-black text-xs font-mono">O</div>
+                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Opportunities</h5>
+                    </div>
+                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
+                      <li>Direct expansion into key high-growth {displayProfile.industry || 'enterprise cloud'} spaces</li>
+                      <li>Enlisting GCC and EU regional accelerators for pilot secure edge deployments</li>
+                      <li>Automated workflow integrations to capture traditional manually managed customers</li>
+                    </ul>
+                  </div>
+                  {/* T */}
+                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-amber/10 hover:border-brand-amber/30 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-brand-amber/10 flex items-center justify-center text-brand-amber font-black text-xs font-mono">T</div>
+                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Threats</h5>
+                    </div>
+                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
+                      <li>Incumbent product price decreases blocking early startup segment capture</li>
+                      <li>Revisions in international data protection regulation parameters</li>
+                      <li>Global engineering talent blockade restricting core product development speed</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Investor Readiness & Business Model Analysis */}
+              <div className="bg-brand-section/40 p-10 rounded-[2.5rem] border border-brand-border/20 flex flex-col md:flex-row items-center gap-12 justify-between">
+                <div>
+                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">Investor Readiness and Business Model</h4>
+                  <p className="text-sm text-brand-text-muted font-bold leading-relaxed max-w-2xl">
+                    Model: {displayProfile.businessType || 'B2B'} with {displayProfile.productType || 'SaaS Platform'}
+                    <span className="block mt-1">Next step: {(currentAnalysis as any).investorReadinessRouting || 'Start with angels'}</span>
+                  </p>
+                </div>
+                <div className="bg-[#0f1d2d] border border-white/5 rounded-2xl px-8 py-5 flex items-center gap-4 text-xs font-black font-mono">
+                  <ShieldCheck className="text-emerald-400" />
+                  <span className="uppercase tracking-widest text-[#5ce1e6]">STARTUP READY</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== 03 / RISK CENTER TAB ==================== */}
+          {activeTab === 'risk' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-coral/5 blur-[120px] rounded-full pointer-events-none" />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-12">
+                    <div>
+                      <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Risks</h3>
+                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">What are the risks</p>
+                    </div>
+                    <div className="w-14 h-14 bg-brand-coral/10 rounded-2xl flex items-center justify-center text-brand-coral border border-brand-coral/20 shadow-xl">
+                      <ShieldAlert size={28} />
+                    </div>
+                  </div>
+
+                  <RiskEcosystemMap risks={currentAnalysis.riskMatrix || currentAnalysis.risks} />
+
+                  {currentAnalysis.topInvestorTakeaway && (
+                    <div className="mt-12 pt-12 border-t border-white/5">
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="w-px h-8 bg-brand-accent" />
+                        <h4 className="text-xs font-black text-brand-accent uppercase tracking-[0.3em]">Investor Perspective</h4>
+                      </div>
+                      <div className="bg-brand-card/50 p-8 rounded-[2.5rem] border border-brand-border/20 shadow-inner">
+                        <p className="text-lg font-bold text-brand-text-primary leading-relaxed opacity-70">
+                          "{currentAnalysis.topInvestorTakeaway}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="bg-brand-section/80 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
+                <div className="flex items-center gap-4 mb-8">
+                  <ShieldAlert className="text-brand-coral" size={24} />
+                  <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight">Things to Fix</h4>
+                </div>
+                <RiskHeatmap risks={currentAnalysis.riskMatrix || currentAnalysis.risks} />
+              </section>
+            </div>
+          )}
+
+          {/* ==================== 04 / GROWTH CENTER TAB ==================== */}
+          {activeTab === 'growth' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full" />
+                <div className="relative">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <div>
+                      <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Growth Opportunities</h3>
+                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">How can it grow</p>
+                    </div>
+                    <div className="px-6 py-4 bg-brand-card/50 border border-brand-border rounded-2xl flex items-center gap-4 shadow-lg shrink-0">
+                      <div className="w-2.5 h-2.5 rounded-full bg-brand-accent animate-ping" />
+                      <span className="text-xs font-black text-brand-text-primary uppercase tracking-widest leading-none">Trajectory Locked</span>
+                    </div>
+                  </div>
+
+                  <StrategicExpansionJourney roadmap={currentAnalysis.roadmap} />
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
+                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight mb-4">Growth and Expansion Strategy</h4>
+                  <p className="text-sm text-brand-text-secondary leading-relaxed font-medium">
+                    {currentAnalysis.growthPotential?.scaling || 'Venture scalability focused on expanding node configurations across enterprise private database clusters.'}
+                  </p>
+                </div>
+                <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
+                  <h4 className="text-lg font-black text-[#5ce1e6] uppercase tracking-tight mb-4">Revenue and Market Entry Opportunities</h4>
+                  <p className="text-sm text-brand-text-secondary leading-relaxed font-medium">
+                    {currentAnalysis.growthPotential?.revenue || 'Target monetization via multi-tiered SaaS subscription volume modules, launching early accelerator sandboxes.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== 05 / INVESTOR MATCHING TAB ==================== */}
+          {activeTab === 'investors' && (() => {
+            const ind = (currentAnalysis.startupProfile?.industry || 'Intelligent Systems').trim();
+            const stage = (currentAnalysis.startupProfile?.stage || 'Idea Stage').trim();
+            const region = (currentAnalysis.startupProfile?.country || 'GCC').trim();
+            const model = (currentAnalysis.startupProfile?.businessType || 'B2B').trim();
+            const vScore = getCalculatedVentureScore(currentAnalysis.scores);
+
+            const realMatches = currentAnalysis.investorMatching;
+            const matches = (Array.isArray(realMatches) && realMatches.length > 0)
+              ? realMatches.map((m: any, idx: number) => ({
+                  id: m.id || `investor_${idx}`,
+                  name: (m.name || 'Unnamed Investor').replace(/\./g, ''),
+                  type: m.type || 'Investor',
+                  category: (m.type || '').toLowerCase().includes('angel') ? 'angels'
+                    : (m.type || '').toLowerCase().includes('accelerat') ? 'accelerators'
+                    : (m.type || '').toLowerCase().includes('family') ? 'family'
+                    : (m.type || '').toLowerCase().includes('corporate') || (m.type || '').toLowerCase().includes('strategic') ? 'strategic'
+                    : 'vcs',
+                  industryFocus: m.focus || ind,
+                  stageFocus: m.stage || stage,
+                  checkSize: m.checkSize || '',
+                  region: m.region || region,
+                  matchScore: typeof m.matchScore === 'number' ? m.matchScore : vScore,
+                  thesis: m.whyFit || m.suggestedPitch || '',
+                  pitchAdvice: m.whatTheyLookFor || m.suggestedPitch || '',
+                }))
+              : generateInvestorMatches(
+                  region,
+                  currentAnalysis.startupProfile?.city || '',
+                  ind,
+                  model,
+                  stage,
+                  vScore,
+                  currentAnalysis.ideaDescription || ''
+                );
+
+            const filteredMatches = investorCategory === 'all' 
+              ? matches 
+              : matches.filter(m => m.category === investorCategory);
+
+            return (
+              <div className="space-y-12">
+                {/* Venture Capital Search Intelligence Summary Banner */}
+                <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
+                  <div className="relative">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
+                      <div>
+                        <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Investors</span>
+                        <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3 font-semibold">Which investors fit my startup</h3>
+                        <p className="text-base text-slate-300 font-medium tracking-[0.2px] max-w-2xl">
+                          Matching you with people who fund your industry
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4 bg-brand-card/45 border border-white/5 p-4 rounded-3xl shrink-0 self-start lg:self-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 flex items-center justify-center text-brand-accent shrink-0">
+                          <Handshake size={24} />
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest leading-none mb-1.5">Capital Match Pool</div>
+                          <div className="text-lg font-black text-white">{matches.length} Targets Found</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Startup Profile Sync Credentials Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 bg-brand-bg/40 rounded-[2rem] border border-white/5">
+                      <div className="p-4 rounded-2xl bg-brand-card/20 space-y-1 border border-white/5">
+                        <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider block">Target Industry</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-tight block truncate" title={ind}>{ind}</span>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-brand-card/20 space-y-1 border border-white/5">
+                        <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider block">Venture Stage</span>
+                        <span className="text-xs font-bold text-[#5da9ff] uppercase tracking-tight block truncate" title={stage}>{stage}</span>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-brand-card/20 space-y-1 border border-white/5">
+                        <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider block">Target Region</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-tight block truncate" title={region}>{region}</span>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-brand-card/20 space-y-1 border border-white/5">
+                        <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider block">Service Model</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-tight block truncate" title={model}>{model}</span>
+                      </div>
+                      <div className="col-span-2 md:col-span-1 p-4 rounded-2xl bg-brand-accent/10 space-y-1 border border-brand-accent/10">
+                        <span className="text-[9px] font-black text-brand-accent uppercase tracking-wider block">Startup Strength Score</span>
+                        <span className="text-xs font-black text-[#5ce1e6] uppercase tracking-tight block font-mono">{vScore}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Sub category filter tabs and results */}
+                <div className="space-y-8">
+                  <div className="flex flex-wrap items-center justify-start gap-2 bg-brand-bg/40 p-2 rounded-[2rem] border border-white/5 max-w-fit">
+                    {[
+                      { key: 'all', label: 'All Matches', icon: <LayoutGrid size={13} /> },
+                      { key: 'angels', label: 'Potential Angels', icon: <User size={13} /> },
+                      { key: 'vcs', label: 'Potential VCs', icon: <Building2 size={13} /> },
+                      { key: 'accelerators', label: 'Accelerators & Incubators', icon: <Rocket size={13} /> },
+                      { key: 'strategic', label: 'Strategic Capital', icon: <Target size={13} /> },
+                      { key: 'family', label: 'Family Offices', icon: <Globe size={13} /> }
+                    ].map((btn) => (
+                      <button
+                        key={btn.key}
+                        onClick={() => {
+                          setInvestorCategory(btn.key as any);
+                          setExpandedThesisId(null);
+                        }}
+                        className={cn(
+                          "px-5 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer",
+                          investorCategory === btn.key
+                            ? "bg-brand-accent text-brand-text-primary shadow-lg"
+                            : "bg-transparent text-brand-text-secondary hover:text-white hover:bg-brand-card/20"
+                        )}
+                      >
+                        {btn.icon}
+                        <span>{btn.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Investor Cards Listing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full box-border">
+                    {filteredMatches.map((investor) => {
+                      const isExpanded = expandedThesisId === investor.id;
+                      return (
+                        <div 
+                          key={investor.id}
+                          className="bg-brand-section border border-brand-border hover:border-brand-accent/40 rounded-[2.5rem] p-8 space-y-6 transition-all duration-300 flex flex-col justify-between group/card h-full"
+                        >
+                          <div className="space-y-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <span className="text-[9px] font-black text-brand-accent uppercase tracking-widest block mb-1">{investor.type}</span>
+                                <h4 className="text-lg font-black text-white uppercase tracking-tight">{investor.name}</h4>
+                              </div>
+                              <div className="px-3 py-2 rounded-xl bg-brand-accent/15 border border-brand-accent/20 flex flex-col items-center justify-center shrink-0">
+                                <span className="text-[8px] font-black text-brand-text-muted uppercase tracking-wider">Match</span>
+                                <span className="text-sm font-black text-[#5ce1e6] font-mono leading-none mt-0.5">{investor.matchScore}%</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3.5 pt-3 border-t border-white/5">
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider block">Industry Segment</span>
+                                <span className="text-white font-semibold block uppercase text-xs leading-snug break-words">{investor.industryFocus}</span>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider block">Stage Scope</span>
+                                <span className="text-white font-semibold block uppercase text-xs leading-snug break-words">{investor.stageFocus}</span>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider block">Check Framework</span>
+                                <span className="text-brand-accent font-black font-mono tracking-tight block uppercase text-xs leading-snug break-words">{investor.checkSize}</span>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-wider block">Geographic Focus</span>
+                                <span className="text-white font-semibold block uppercase text-xs leading-snug break-words">{investor.region}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 pt-4 border-t border-white/5">
+                            <button
+                              onClick={() => setExpandedThesisId(isExpanded ? null : investor.id)}
+                              className={cn(
+                                "w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer",
+                                isExpanded 
+                                  ? "bg-brand-accent text-brand-text-primary" 
+                                  : "bg-brand-card/40 hover:bg-brand-card text-brand-text-secondary hover:text-white border border-white/5"
+                              )}
+                            >
+                              <span>{isExpanded ? 'Minimize Alignment' : 'View Investment Thesis'}</span>
+                              <ChevronRight size={12} className={cn("transition-transform duration-300", isExpanded && "rotate-90")} />
+                            </button>
+
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-4 bg-brand-bg/40 border border-white/5 rounded-2xl space-y-3.5 mt-3 text-left">
+                                    <div>
+                                      <h5 className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-1">Thesis Alignment</h5>
+                                      <p className="text-xs text-slate-300 font-medium leading-relaxed uppercase">{investor.thesis}</p>
+                                    </div>
+                                    <div>
+                                      <h5 className="text-[9px] font-black text-[#5da9ff] uppercase tracking-wider mb-1">Pitch Strategy Advice</h5>
+                                      <p className="text-xs text-slate-300 font-medium leading-relaxed uppercase">{investor.pitchAdvice}</p>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ==================== 06 / REPORTS TAB ==================== */}
+          {activeTab === 'reports' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border/20 shadow-huge text-center relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-brand-accent/5 blur-[120px] rounded-full" />
+                <div className="relative max-w-lg mx-auto space-y-8 py-8">
+                  <FileText size={56} className="text-brand-accent mx-auto" strokeWidth={1} />
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tight font-display">Download & Export Reports</h3>
+                    <p className="text-base text-slate-400 mt-2 font-medium">Compile the complete validated startup analytical dossier to present to institutional stakeholders and angels</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button
+                      onClick={handleExportExecutiveReport}
+                      disabled={isExporting}
+                      className="px-8 py-5 bg-brand-accent text-brand-text-primary rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 flex items-center gap-3 w-full sm:w-auto justify-center active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      {isExporting ? 'Generating Report...' : 'Download Executive PDF'}
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="px-8 py-5 bg-brand-card text-brand-text-secondary border border-brand-border/20 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-hover active:scale-95 transition-all w-full sm:w-auto"
+                    >
+                      Print Layout Dossier
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-brand-text-muted font-bold font-mono tracking-widest uppercase">
+                    PRODUCED BY DECISIONLAB • VALIDATED BY VC COMMAND HUB
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* ==================== 07 / PITCH DECK ARCHITECT TAB ==================== */}
+          {activeTab === 'architect' && (
+            <div className="space-y-12">
+              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
+                <div className="relative">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+                    <div>
+                      <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tight font-display mb-3">Pitch Deck Architect</h3>
+                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Integrated access to synchronize validated findings directly into editable vector slides</p>
+                    </div>
+                    <Link
+                      to={`/pitch-deck?projectId=${currentAnalysis.id}`}
+                      className="px-8 py-5 bg-brand-accent text-brand-text-primary rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl hover:scale-105 hover:bg-brand-accent/95 flex items-center gap-3 w-full md:w-auto justify-center shadow-brand-accent/20 active:scale-95 transition-all shrink-0 font-display"
+                    >
+                      <Presentation size={18} />
+                      Launch Deck Editor
+                    </Link>
+                  </div>
+
+                  <div className="p-8 bg-brand-card/40 border border-brand-border/20 rounded-[2.5rem] space-y-6">
+                    <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Real-time Data Synchronization Metrics</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs">
+                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                        <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Hypothesis Sync</span>
+                        <p className="text-white font-bold truncate">{displayProfile.companyName || 'Validated Venture'}</p>
+                      </div>
+                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                        <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Startup Score Sync</span>
+                        <p className="text-emerald-400 font-bold">{(currentAnalysis.scores as any)?.overall || (currentAnalysis.scores as any)?.ideaStrength?.score || 85}% locked</p>
+                      </div>
+                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                        <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">SWOT Matrix Sync</span>
+                        <p className="text-[#5ce1e6] font-bold">4 Categories bound</p>
+                      </div>
+                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                        <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Expansion Journey</span>
+                        <p className="text-white font-bold">{currentAnalysis.roadmap ? 'Linked roadmap active' : 'Default roadmap active'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex items-center gap-3 text-xs font-bold text-slate-400 pl-2 leading-relaxed">
+                    <Info size={16} className="text-brand-accent animate-pulse shrink-0" />
+                    <span>Content Standard: Prohibits generic copy-paste layouts. All 12 slides are derived from completed SWOT, Competitor, Risk and expansion findings.</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Suggested Matchmaking Network (formerly under layout) */}
+              <section className="bg-[#09121d] p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative">
+                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-brand-emerald/5 blur-[120px] rounded-full pointer-events-none" />
+                <div className="relative">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tight font-display mb-2">Investor Matchmaking Network</h3>
+                      <p className="text-sm text-brand-text-muted font-bold">Interactive mapping of high-conviction investor matches matching seed parameters</p>
+                    </div>
+                    <div className="px-6 py-4 bg-[#0a1522] border border-brand-border rounded-xl flex items-center gap-3 shrink-0">
+                      <div className="w-2.5 h-2.5 rounded-full bg-brand-emerald animate-pulse" />
+                      <span className="text-[10px] font-black text-brand-text-primary uppercase tracking-widest leading-none">Ready</span>
+                    </div>
+                  </div>
+
+                  <InvestorRelationshipNetwork 
+                    investors={currentAnalysis.investorMatching || []} 
+                    startupName={displayProfile.companyName || 'Venture'} 
+                  />
+                </div>
+              </section>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+        </div>
+      </div>
+
+      {/* Hidden printable Executive Report — captured by
+          handleExportExecutiveReport. FIX: html2canvas cannot parse oklch()
+          colors, which is what Tailwind v4's color utilities compile to in
+          this project — every color below is now set via inline style with a
+          plain hex value, so html2canvas never has to parse an oklch() value.
+          Only non-color layout classes remain as Tailwind classes. */}
+      <div
+        ref={reportPrintRef}
+        style={{ position: 'absolute', left: '-9999px', top: 0, width: '800px', backgroundColor: '#ffffff', color: '#171717' }}
+        className="p-12 space-y-10 font-sans"
+      >
+        {/* Cover */}
+        <div style={{ paddingBottom: '2rem', borderBottom: '2px solid #e5e5e5' }}>
+          <p style={{ color: '#2563eb' }} className="text-xs font-black uppercase tracking-[0.3em] mb-2">DecisionLab Executive Report</p>
+          <h1 style={{ color: '#171717' }} className="text-4xl font-black uppercase tracking-tight">{displayProfile.companyName || 'Startup Name'}</h1>
+          <p style={{ color: '#737373' }} className="text-sm mt-2">{displayProfile.industry} • {displayProfile.city}, {displayProfile.country} • {displayProfile.stage}</p>
+        </div>
+
+        {/* Startup Score */}
+        <div>
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-4">Startup Score</h2>
+          <div className="flex items-center gap-6 mb-4">
+            <div style={{ color: '#2563eb' }} className="text-5xl font-black">{getCalculatedVentureScore(currentAnalysis.scores)}%</div>
+            <p style={{ color: '#404040' }} className="text-sm max-w-md">{typeof currentAnalysis.finalVerdict === 'object' ? currentAnalysis.finalVerdict.description : 'Analysis in progress'}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              ['Idea Strength', 'ideaStrength'], ['Market Fit', 'marketFit'], ['Execution', 'execution'],
+              ['Scalability', 'scalability'], ['Competition', 'competition'], ['Investor Appeal', 'investorAppeal'],
+            ].map(([label, key]) => {
+              const val = (currentAnalysis.scores as any)?.[key];
+              const score = typeof val === 'number' ? val : val?.score || 0;
+              return (
+                <div key={key} style={{ border: '1px solid #e5e5e5', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                  <p style={{ color: '#737373' }} className="text-[10px] font-black uppercase">{label}</p>
+                  <p style={{ color: '#171717' }} className="text-xl font-black">{score}%</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Executive Summary */}
+        <div>
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Executive Summary</h2>
+          <p style={{ color: '#404040' }} className="text-sm leading-relaxed">{displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
+        </div>
+
+        {/* Market & Competition */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <h3 style={{ color: '#171717' }} className="text-sm font-black uppercase tracking-tight mb-3">Market Opportunity</h3>
+            <p style={{ color: '#525252' }} className="text-xs mb-2">Market Size: <strong style={{ color: '#171717' }}>{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</strong></p>
+            <p style={{ color: '#525252' }} className="text-xs mb-2">Demand: <strong style={{ color: '#171717' }}>{extractStatusWord(currentAnalysis.marketAnalysis?.demandSignals, 'Moderate')}</strong></p>
+            <p style={{ color: '#525252' }} className="text-xs mb-2">Growth: <strong style={{ color: '#171717' }}>{extractStatusWord(currentAnalysis.marketAnalysis?.growthTrends, 'Steady')}</strong></p>
+            <ul style={{ color: '#404040' }} className="text-xs mt-2 space-y-1">
+              {summarizeToBullets(currentAnalysis.marketAnalysis?.overview, 3).map((b, i) => <li key={i}>• {b}</li>)}
+            </ul>
+          </div>
+          <div>
+            <h3 style={{ color: '#171717' }} className="text-sm font-black uppercase tracking-tight mb-3">Competition & Revenue</h3>
+            <p style={{ color: '#525252' }} className="text-xs mb-2">Competition Level: <strong style={{ color: '#171717' }}>{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium')}</strong></p>
+            <ul style={{ color: '#404040' }} className="text-xs mt-2 space-y-1">
+              {summarizeToBullets(currentAnalysis.competitorAnalysis?.competitiveAdvantages, 2).map((b, i) => <li key={i}>• {b}</li>)}
+            </ul>
+          </div>
+        </div>
+
+        {/* Risks */}
+        <div>
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Risk Assessment</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {Object.entries(currentAnalysis.riskMatrix || {}).map(([key, val]: any) => (
+              <div key={key} style={{ border: '1px solid #e5e5e5', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                <p style={{ color: '#737373' }} className="text-[10px] font-black uppercase">{key}</p>
+                <p style={{ color: '#404040' }} className="text-xs mt-1">{val.explanation || val.note}</p>
+                <p style={{ color: '#737373' }} className="text-[10px] mt-1">Severity: {val.severity} • Impact {val.impact}/10 • Likelihood {val.likelihood}/10</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Roadmap */}
+        <div>
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Growth Roadmap</h2>
+          {[
+            ['Immediate', currentAnalysis.roadmap?.immediate],
+            ['1–3 Months', currentAnalysis.roadmap?.oneToThreeMonths],
+            ['3–6 Months', currentAnalysis.roadmap?.threeToSixMonths],
+            ['Investor Readiness', currentAnalysis.roadmap?.investorReadiness],
+          ].map(([label, items]: any) => (
+            <div key={label} className="mb-3">
+              <p style={{ color: '#2563eb' }} className="text-xs font-black uppercase mb-1">{label}</p>
+              <ul style={{ color: '#404040' }} className="text-xs space-y-1">
+                {(items || []).map((it: string, i: number) => <li key={i}>• {it}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Investor Matches */}
+        <div>
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Investor Matches</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {(currentAnalysis.investorMatching || []).slice(0, 8).map((inv: any, i: number) => (
+              <div key={i} style={{ border: '1px solid #e5e5e5', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                <p style={{ color: '#171717' }} className="text-xs font-black">{inv.name}</p>
+                <p style={{ color: '#737373' }} className="text-[10px] uppercase">{inv.type} • Match {inv.matchScore}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid #e5e5e5', color: '#a3a3a3' }} className="pt-6 text-[10px] uppercase tracking-widest text-center">
+          Produced by DecisionLab • Validated by VC Command Hub
+        </div>
+      </div>
     </div>
+    </MotionConfig>
   );
 }

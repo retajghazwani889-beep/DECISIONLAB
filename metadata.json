@@ -1,6 +1,45 @@
 {
-  "name": "DecisionLab",
-  "description": "Premium venture analysis and strategic insights platform. Get investor-grade market insights, risk mapping, strategic roadmap execution, and pitch validation in one interactive, minimalist interface.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["Analysis Suite", "Startup Validation", "Investment Analytics"]
+"name": "DecisionLab",
+"description": "Premium startup validation, investor readiness, venture analysis, benchmarking, reporting, investor matching, and pitch deck platform. Founders can submit startup ideas, generate detailed analyses, discover investors, assess risks, identify growth opportunities, benchmark performance, and create investor-ready pitch decks from a single workspace.",
+"requestFramePermissions": [],
+"majorCapabilities": [
+"MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API",
+"Startup Validation",
+"Startup Analysis",
+"Investment Analytics",
+"Risk Assessment",
+"Growth Opportunities",
+"Investor Matching",
+"Startup Benchmarking",
+"Professional Reports",
+"Pitch Deck Architect",
+"Project Management"
+],
+"projectPersistence": {
+"enabled": true,
+"autoSave": true,
+"dashboardSync": true,
+"crossSessionPersistence": true,
+"crossDevicePersistence": true
+},
+"workflow": {
+"startNow": {
+"createProject": true,
+"saveProjectImmediately": true,
+"generateAnalysis": true,
+"generateStartupScore": true,
+"generateReport": true,
+"addToPortfolio": true,
+"redirectToReport": true
+}
+},
+"portfolioRules": {
+"everySubmissionCreatesProject": true,
+"everyProjectAppearsInPortfolio": true,
+"projectsRemainAfterRefresh": true,
+"projectsRemainAfterLogout": true,
+"projectsRemainAfterBrowserClose": true,
+"neverDeleteProjectsAutomatically": true
+},
+"criticalRule": "Every startup idea submitted through Start Now must automatically create a project, save it permanently, and immediately display it in the Portfolio/Dashboard. No analysis, report, investor match, score, or pitch deck may exist without being attached to a saved project."
 }

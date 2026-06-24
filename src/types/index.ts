@@ -1,4 +1,4 @@
-export type SubscriptionTier = 'free' | 'premium';
+export type SubscriptionTier = 'free' | 'founder' | 'growth' | 'premium';
 
 export interface TeamMember {
   id: string;
@@ -12,16 +12,16 @@ export interface TeamMember {
 
 export interface UserProfile {
   uid: string;
-  userId?: string; // Added for compatibility with some parts of the app
+  userId?: string;
   email: string;
   displayName: string | null;
-  fullName?: string; // Added for compatibility
+  fullName?: string;
   photoURL: string | null;
   roleType?: 'Founder' | 'Investor' | 'Operator' | 'Analyst' | 'Builder' | 'Student';
   onboardingCompleted?: boolean;
   subscriptionStatus: SubscriptionTier;
   companyName?: string;
-  startupName?: string; // Added for compatibility
+  startupName?: string;
   companyLogo?: string;
   companyDescription?: string;
   industry?: string;
@@ -32,12 +32,12 @@ export interface UserProfile {
   startupStage?: string;
   pitchSummary?: string;
   pitchDeckUrl?: string;
+  pitchDeck?: PitchDeck;
   founderInfo?: string;
   teamMembers?: string;
   roleDescription?: string;
   teamStructure?: TeamMember[];
   companyAnalysis?: CompanyAnalysis;
-  pitchDeck?: PitchDeck;
   createdAt: any;
   updatedAt?: any;
 }
@@ -49,10 +49,10 @@ export interface CompanyHealthScore {
 
 export interface RiskFactor {
   explanation: string;
-  note?: string; // Compatibility
+  note?: string;
   severity: 'Low' | 'Medium' | 'High';
-  impact: number; // 1-10
-  likelihood: number; // 1-10
+  impact: number;
+  likelihood: number;
   mitigation?: string;
 }
 
@@ -102,10 +102,6 @@ export interface CompanyAnalysis {
     status: 'Strong Investment Opportunity' | 'Moderate Potential' | 'High Risk' | 'Needs Pivot' | 'Not Investor Ready';
     description: string;
   };
-  pitchDeckRecommendation: {
-    status: 'Recommended: Generate Professional Pitch Deck' | 'Recommended: Improve idea before generating pitch deck';
-    isStrongPotential: boolean;
-  };
   investorReadinessRouting: 'Not ready for VC' | 'Start with angels' | 'Apply to accelerators' | 'VC-ready';
   topInvestorTakeaway: string;
   generatedAt: any;
@@ -113,12 +109,12 @@ export interface CompanyAnalysis {
 
 export interface SlideElement {
   id: string;
-  type: 'text' | 'image' | 'shape' | 'chart' | 'metric' | 'title' | 'point';
+  type: 'text' | 'image' | 'shape' | 'chart' | 'metric' | 'title' | 'point' | 'table';
   content: string;
-  x: number; // Percentage (0-100)
-  y: number; // Percentage (0-100)
-  w: number; // Percentage (0-100)
-  h: number; // Percentage (0-100)
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   fontSize?: number;
   fontWeight?: string;
   fontFamily?: string;
@@ -135,56 +131,63 @@ export interface PitchDeckSlide {
   content: string;
   points: string[];
   metric?: {
-    label: string;
+    label?: string;
     value: string;
   };
   visualType?: 'chart' | 'data' | 'image' | 'text';
-  visualSuggestion: string;
-  imageKeywords: string;
-  imageUrl?: string; // Explicitly added
-  colorAccent: string;
+  visualSuggestion?: string;
+  imageKeywords?: string;
+  imageUrl?: string;
+  colorAccent?: string;
   layout?: 'split' | 'centered' | 'grid' | 'hero';
-  elements?: SlideElement[]; // For custom positioned elements
-  tldrawSnapshot?: any; // For persisting tldraw state
+  layoutType?: string;
+  elements?: SlideElement[];
 }
 
-export type PitchDeckTemplate = 
-  | 'Institutional VC' 
-  | 'Executive Corporate' 
-  | 'Modern SaaS' 
-  | 'Minimal Dark' 
-  | 'Founder Narrative' 
-  | 'Fintech Editorial' 
-  | 'Clean White Investor' 
-  | 'Classic Pitch' 
-  | 'Gradient Modern' 
-  | 'Bold Presentation' 
-  | 'Elegant Editorial';
+// UPDATED: replaced the old 6 theme names with the 10 new ones
+// that match DECK_THEMES in constants/deckThemes.ts
+export type PitchDeckTemplate =
+  | 'Silicon Valley VC'
+  | 'Startup Minimal'
+  | 'Corporate Executive'
+  | 'Fintech Modern'
+  | 'Healthcare Innovation'
+  | 'Cybersecurity Command'
+  | 'Luxury Investor'
+  | 'Dark Investor'
+  | 'Bright Modern'
+  | 'DecisionLab Signature';
 
 export interface PitchDeck {
   id: string;
-  userId: string;
+  userId?: string;
   linkedAnalysisId?: string;
-  projectName: string;
+  projectName?: string;
+  title?: string;
   slides: PitchDeckSlide[];
-  template: PitchDeckTemplate;
-  theme: {
+  template?: PitchDeckTemplate;
+  theme?: {
     primaryColor: string;
     secondaryColor: string;
     fontFamily: string;
     mode: 'dark' | 'light';
+    borderRadius: string;
+    shadow: string;
+    headerWeight: string;
+    backgroundGradient: string;
   };
-  generatedAt: any;
+  generatedAt?: any;
   updatedAt?: any;
 }
 
 export interface AnalysisScores {
-  ideaStrength: number;
-  marketFit: number;
-  execution: number;
-  scalability: number;
-  competition: number;
-  investorAppeal: number;
+  overall?: number;
+  ideaStrength: number | { score: number; explanation?: string };
+  marketFit: number | { score: number; explanation?: string };
+  execution: number | { score: number; explanation?: string };
+  scalability: number | { score: number; explanation?: string };
+  competition: number | { score: number; explanation?: string };
+  investorAppeal: number | { score: number; explanation?: string };
 }
 
 export interface RiskEntry {
@@ -282,16 +285,17 @@ export type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed';
 export interface AnalysisReport {
   id: string;
   userId: string;
+  projectName?: string;
   ideaDescription: string;
   status: AnalysisStatus;
   scores?: AnalysisScores;
   marketAnalysis?: MarketAnalysis;
   competitorAnalysis?: CompetitorAnalysis;
-  riskMatrix?: any; // Using any for flexibility during transition
+  riskMatrix?: any;
   risks?: any;
   keyInsights?: string[];
   growthPotential?: GrowthPotential;
-  pitchReadiness?: any; // Contains slides structure
+  pitchReadiness?: any;
   roadmap?: StrategicRoadmap;
   investorMatching?: InvestorMatch[];
   topInvestorTakeaway?: string;
