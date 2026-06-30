@@ -11,7 +11,6 @@ import {
   Plus, Trash2, Copy, RefreshCw, BarChart, Sparkles, Scale, Info, Award
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { safeLocalStorage as localStorage } from '../lib/storage';
 import { 
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer,
   BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, Legend
@@ -327,7 +326,7 @@ export default function ComparisonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070d19] flex flex-col items-center justify-center p-8 gap-4">
+      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center p-8 gap-4">
         <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
         <span className="text-xs uppercase font-extrabold tracking-widest text-[#5ce1e6] animate-pulse">Loading Venture intelligence suite...</span>
       </div>
@@ -341,9 +340,9 @@ export default function ComparisonPage() {
     
     if (matchedStartups.length < 1) {
       return (
-        <div className="min-h-screen bg-[#070d19] flex flex-col items-center justify-center p-8">
+        <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center p-8">
           <p className="text-slate-400 mb-6">Startups used in this comparison could not be loaded or were removed from your profile.</p>
-          <button onClick={() => setSearchParams({})} className="px-6 py-3 bg-[#112435] hover:bg-[#112435]/80 text-white rounded-xl text-xs font-bold uppercase transition-all">
+          <button onClick={() => setSearchParams({})} className="px-6 py-3 bg-brand-card hover:bg-brand-card/80 text-white rounded-xl text-xs font-bold uppercase transition-all">
             Return to Library
           </button>
         </div>
@@ -372,7 +371,7 @@ export default function ComparisonPage() {
       { subject: 'Market Opportunity', [name1]: getScoreVal(s1.scores, 'marketFit', 78), [name2]: getScoreVal(s2.scores, 'marketFit', 72) },
       { subject: 'Scalability Index', [name1]: getScoreVal(s1.scores, 'scalability', 84), [name2]: getScoreVal(s2.scores, 'scalability', 70) },
       { subject: 'Execution Readiness', [name1]: getScoreVal(s1.scores, 'execution', 65), [name2]: getScoreVal(s2.scores, 'execution', 78) },
-      { subject: 'Investor Appeal', [name1]: getScoreVal(s1.scores, 'investorAppeal', 80), [name2]: getScoreVal(s2.scores, 'investorAppeal,', 68) },
+      { subject: 'Investor Appeal', [name1]: getScoreVal(s1.scores, 'investorAppeal', 80), [name2]: getScoreVal(s2.scores, 'investorAppeal', 68) },
       { subject: 'Competitive Moat', [name1]: 100 - getScoreVal(s1.scores, 'competition', 40), [name2]: 100 - getScoreVal(s2.scores, 'competition', 50) }
     ];
 
@@ -386,8 +385,48 @@ export default function ComparisonPage() {
       { key: 'investorAppeal', label: 'Investor Appeal Index', icon: <Award size={16} />, val1: getScoreVal(s1.scores, 'investorAppeal', 80), val2: getScoreVal(s2.scores, 'investorAppeal', 68) }
     ];
 
+    // --- Premium dashboard helpers ---------------------------------------
+    // Pull a headline number (e.g. "$12B") out of a TAM sentence.
+    const splitTam = (raw: string | undefined, fbVal: string, fbTitle: string) => {
+      const text = (raw || '').trim();
+      if (!text) return { value: fbVal, title: fbTitle };
+      const m = text.match(/\$?\s?\d[\d.,]*\s?(?:trillion|billion|million|thousand|[KMBT])?/i);
+      if (m) {
+        let value = m[0].trim();
+        if (!value.startsWith('$')) value = '$' + value;
+        const title = text.replace(m[0], '').replace(/^[\s,.\u2013-]+/, '').replace(/\.$/, '').trim();
+        return { value, title: title || fbTitle };
+      }
+      return { value: fbVal, title: text };
+    };
+
+    // Map a score to a risk status + status colors (green / amber / red).
+    const riskTier = (score: number, low: string, mid: string, high: string) => {
+      if (score >= 78) return { label: low, dot: 'bg-emerald-400', text: 'text-emerald-300', bg: 'bg-emerald-500/10', bar: 'bg-emerald-400', pct: score };
+      if (score >= 58) return { label: mid, dot: 'bg-amber-400', text: 'text-amber-300', bg: 'bg-amber-500/10', bar: 'bg-amber-400', pct: score };
+      return { label: high, dot: 'bg-rose-400', text: 'text-rose-300', bg: 'bg-rose-500/10', bar: 'bg-rose-400', pct: score };
+    };
+
+    const riskFactors = [
+      { factor: 'Market Acceptance', a: riskTier(getScoreVal(s1.scores, 'marketFit', 75), 'Low', 'Moderate', 'High'),     b: riskTier(getScoreVal(s2.scores, 'marketFit', 75), 'Low', 'Moderate', 'High') },
+      { factor: 'Execution & Dev',   a: riskTier(getScoreVal(s1.scores, 'execution', 70), 'Low', 'Moderate', 'Elevated'), b: riskTier(getScoreVal(s2.scores, 'execution', 70), 'Low', 'Moderate', 'Elevated') },
+      { factor: 'Scalability',       a: riskTier(getScoreVal(s1.scores, 'scalability', 70), 'Mitigated', 'Watch', 'Severe'), b: riskTier(getScoreVal(s2.scores, 'scalability', 70), 'Mitigated', 'Watch', 'Severe') },
+    ];
+
+    const tam1 = splitTam(s1.marketAnalysis?.sizeEstimate, '$12.5B', 'Addressable Market');
+    const tam2 = splitTam(s2.marketAnalysis?.sizeEstimate, '$8.4B', 'Addressable Market');
+
+    // Funding-confidence deltas, relative to startup A.
+    const fundDeltas = [
+      { label: 'Market Readiness', d: getScoreVal(s1.scores, 'marketFit', 78) - getScoreVal(s2.scores, 'marketFit', 72) },
+      { label: 'Investor Appeal',  d: getScoreVal(s1.scores, 'investorAppeal', 80) - getScoreVal(s2.scores, 'investorAppeal', 68) },
+      { label: 'Execution',        d: getScoreVal(s1.scores, 'execution', 65) - getScoreVal(s2.scores, 'execution', 78) },
+    ];
+    const ready1 = getScoreVal(s1.scores, 'investorAppeal', 80);
+    const ready2 = getScoreVal(s2.scores, 'investorAppeal', 68);
+    const fundingLeader = ready1 >= ready2 ? name1 : name2;
     return (
-      <div className="min-h-screen bg-[#070d19] text-slate-100 p-6 md:p-12">
+      <div className="min-h-screen bg-brand-bg text-slate-100 p-6 md:p-12">
         <div className="max-w-7xl mx-auto space-y-10">
           
           {/* Header Action Nav */}
@@ -422,13 +461,13 @@ export default function ComparisonPage() {
               )}
               <button 
                 onClick={(e) => handleRefreshComparison(activeComparison, e)}
-                className="px-5 py-3 bg-[#112435]/80 hover:bg-[#112435] border border-white/5 text-slate-300 hover:text-white font-black text-[11px] uppercase tracking-widest rounded-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                className="px-5 py-3 bg-brand-card/80 hover:bg-brand-card border border-white/5 text-slate-300 hover:text-white font-black text-[11px] uppercase tracking-widest rounded-xl active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <RefreshCw size={14} /> Recalculate Metrics
               </button>
               <button 
                 onClick={() => setSearchParams({})}
-                className="px-5 py-3 bg-[#112435]/40 hover:bg-[#112435]/60 text-slate-400 hover:text-slate-200 border border-white/5 font-black text-[11px] uppercase tracking-widest rounded-xl active:scale-95 transition-all cursor-pointer"
+                className="px-5 py-3 bg-brand-card/40 hover:bg-brand-card/60 text-slate-400 hover:text-slate-200 border border-white/5 font-black text-[11px] uppercase tracking-widest rounded-xl active:scale-95 transition-all cursor-pointer"
               >
                 Back to Library
               </button>
@@ -439,7 +478,7 @@ export default function ComparisonPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* SPIDER / RADAR CHART COMPARATIVE MOAT */}
-            <div className="lg:col-span-7 bg-[#0b1426] border border-white/5 rounded-3xl p-8 space-y-6 relative overflow-hidden flex flex-col justify-between shadow-xl">
+            <div className="lg:col-span-7 bg-brand-section border border-white/5 rounded-3xl p-8 space-y-6 relative overflow-hidden flex flex-col justify-between shadow-xl">
               <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 blur-[120px] pointer-events-none rounded-full" />
               <div>
                 <h3 className="text-xs font-black uppercase text-[#5ce1e6] tracking-widest">01 / Comparative Spider Moat</h3>
@@ -452,9 +491,9 @@ export default function ComparisonPage() {
                     <PolarGrid stroke="#ffffff10" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: '700' }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 8 }} stroke="rgba(255,255,255,0.05)" />
-                    <Radar name={name1} dataKey={name1} stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.25} />
+                    <Radar name={name1} dataKey={name1} stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.25} isAnimationActive={false} />
                     {name1 !== name2 && (
-                      <Radar name={name2} dataKey={name2} stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.25} />
+                      <Radar name={name2} dataKey={name2} stroke="#a78bfa" fill="#a78bfa" fillOpacity={0.25} isAnimationActive={false} />
                     )}
                     <Tooltip contentStyle={{ backgroundColor: '#070d19', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }} />
                     <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '15px', color: '#cbd5e1', fontWeight: '900', textTransform: 'uppercase' }} />
@@ -462,16 +501,16 @@ export default function ComparisonPage() {
                 </ResponsiveContainer>
               </div>
               
-              <div className="p-4 bg-[#070d19]/60 border border-white/5 rounded-2xl flex items-center justify-between text-[11px] text-slate-400 font-bold font-mono">
+              <div className="p-4 bg-brand-bg/60 border border-white/5 rounded-2xl flex items-center justify-between text-[11px] text-slate-400 font-bold font-mono">
                 <span>BENCHMARK GRAPH MATRIX</span>
                 <span className="text-[#5ce1e6] flex items-center gap-1">REAL-TIME DATA BIND active <Sparkles size={10} className="animate-spin" /></span>
               </div>
             </div>
 
             {/* KPI STAT COMPARATIVE PROGRESS LIST */}
-            <div className="lg:col-span-5 bg-[#0b1426] border border-white/5 rounded-3xl p-8 space-y-6 flex flex-col justify-between shadow-xl">
+            <div className="lg:col-span-5 bg-brand-section border border-white/5 rounded-3xl p-8 space-y-6 flex flex-col justify-between shadow-xl">
               <div>
-                <h3 className="text-xs font-black uppercase text-amber-500 tracking-widest">02 / Competitive Vector Analysis</h3>
+                <h3 className="text-xs font-black uppercase text-violet-300 tracking-widest">02 / Competitive Vector Analysis</h3>
                 <p className="text-slate-400 text-xs font-medium">Head-to-head performance comparisons index</p>
               </div>
 
@@ -479,7 +518,7 @@ export default function ComparisonPage() {
                 {metricsToDisplay.map((metric) => {
                   const diff = metric.val1 - metric.val2;
                   return (
-                    <div key={metric.key} className="space-y-2 p-3 bg-[#070d19]/40 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                    <div key={metric.key} className="space-y-2 p-3 bg-brand-bg/40 rounded-xl border border-white/5 hover:border-white/10 transition-all">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-300">
                           <span className="text-slate-500">{metric.icon}</span>
@@ -488,7 +527,7 @@ export default function ComparisonPage() {
                         <div className="flex items-center gap-3 text-xs font-extrabold text-white">
                           <span className="text-cyan-400">{metric.val1}%</span>
                           <span className="text-slate-600">vs</span>
-                          <span className="text-amber-500">{metric.val2}%</span>
+                          <span className="text-violet-300">{metric.val2}%</span>
                         </div>
                       </div>
                       
@@ -498,7 +537,7 @@ export default function ComparisonPage() {
                           style={{ width: `${(metric.val1 / (metric.val1 + metric.val2 || 1)) * 100}%` }} 
                         />
                         <div 
-                          className="h-full bg-amber-500 transition-all duration-500" 
+                          className="h-full bg-violet-300 transition-all duration-500" 
                           style={{ width: `${(metric.val2 / (metric.val1 + metric.val2 || 1)) * 100}%` }} 
                         />
                       </div>
@@ -507,7 +546,7 @@ export default function ComparisonPage() {
                         <span>{name1}</span>
                         <span className={cn(
                           "px-1.5 py-0.5 rounded uppercase tracking-widest text-[9px]",
-                          diff > 0 ? "bg-cyan-500/10 text-cyan-400" : diff < 0 ? "bg-amber-500/10 text-amber-500" : "bg-slate-800 text-slate-400"
+                          diff > 0 ? "bg-cyan-500/10 text-cyan-400" : diff < 0 ? "bg-violet-400/10 text-violet-300" : "bg-slate-800 text-slate-400"
                         )}>
                           {diff > 0 ? `${name1} +${diff}%` : diff < 0 ? `${name2} +${Math.abs(diff)}%` : 'Even Tie'}
                         </span>
@@ -520,7 +559,7 @@ export default function ComparisonPage() {
 
               <div className="pt-2">
                 <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold leading-relaxed">
-                  <Info size={12} className="text-slate-500 text-amber-500 shrink-0" />
+                  <Info size={12} className="text-slate-500 text-violet-300 shrink-0" />
                   <p>Risk values correspond to overall mitigation rating. Higher is less failure likelihood.</p>
                 </div>
               </div>
@@ -531,143 +570,112 @@ export default function ComparisonPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* COMP RISK HEATMAP MATRIX */}
-            <div className="lg:col-span-6 bg-[#0b1426] border border-white/5 rounded-3xl p-8 space-y-6 shadow-xl">
+            <div className="lg:col-span-6 bg-brand-section border border-white/5 rounded-3xl p-8 space-y-6 shadow-xl">
               <div>
-                <h3 className="text-xs font-black uppercase text-rose-500 tracking-widest">03 / Core Venture Risk Heatmap</h3>
-                <p className="text-slate-400 text-xs font-medium">Comparative matrix assessing risk vulnerabilities side-by-side</p>
+                <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Risk Profile</h3>
+                <p className="text-white text-lg font-bold tracking-tight mt-1">Core Venture Risk</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden font-mono text-[11px] font-bold">
-                <div className="bg-[#070d19] p-4 text-slate-500 uppercase font-black text-[9px] tracking-widest">Risk Factor</div>
-                <div className="bg-[#070d19] p-4 text-cyan-400 font-extrabold truncate">{name1}</div>
-                <div className="bg-[#070d19] p-4 text-amber-500 font-extrabold truncate">{name2}</div>
+              <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Low</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> Moderate</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400" /> High</span>
+              </div>
 
-                {/* Market Risk */}
-                <div className="bg-[#0b1426] p-4 text-slate-300 border-t border-white/5 font-sans font-bold">Market Acceptance</div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s1.scores, 'marketFit', 75) > 80 ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
-                  )}>
-                    {getScoreVal(s1.scores, 'marketFit', 75) > 80 ? 'Low Risk' : 'Moderate'}
-                  </span>
-                </div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s2.scores, 'marketFit', 75) > 80 ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
-                  )}>
-                    {getScoreVal(s2.scores, 'marketFit', 75) > 80 ? 'Low Risk' : 'Moderate'}
-                  </span>
-                </div>
-
-                {/* Execution Risk */}
-                <div className="bg-[#0b1426] p-4 text-slate-300 border-t border-white/5 font-sans font-bold">Execution & Dev</div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s1.scores, 'execution', 70) > 75 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                  )}>
-                    {getScoreVal(s1.scores, 'execution', 70) > 75 ? 'Low Risk' : 'Elevated'}
-                  </span>
-                </div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s2.scores, 'execution', 70) > 75 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                  )}>
-                    {getScoreVal(s2.scores, 'execution', 70) > 75 ? 'Low Risk' : 'Elevated'}
-                  </span>
-                </div>
-
-                {/* Scaling block */}
-                <div className="bg-[#0b1426] p-4 text-slate-300 border-t border-white/5 font-sans font-bold">Scalability Bottleneck</div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s1.scores, 'scalability', 70) > 75 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                  )}>
-                    {getScoreVal(s1.scores, 'scalability', 70) > 75 ? 'Mitigated' : 'Severe'}
-                  </span>
-                </div>
-                <div className="bg-[#0b1426] p-4 border-t border-l border-white/5">
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider",
-                    getScoreVal(s2.scores, 'scalability', 70) > 75 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                  )}>
-                    {getScoreVal(s2.scores, 'scalability', 70) > 75 ? 'Mitigated' : 'Severe'}
-                  </span>
-                </div>
+              <div className="space-y-3">
+                {riskFactors.map((rf) => (
+                  <div key={rf.factor} className="bg-brand-bg/40 border border-white/5 rounded-2xl p-4">
+                    <span className="text-xs font-bold text-slate-200">{rf.factor}</span>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      {[{ n: name1, t: rf.a, accent: 'text-cyan-400' }, { n: name2, t: rf.b, accent: 'text-violet-300' }].map((side, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={cn('text-[9px] font-black uppercase tracking-wider truncate', side.accent)}>{side.n}</span>
+                            <span className={cn('flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0', side.t.bg, side.t.text)}>
+                              <span className={cn('w-1.5 h-1.5 rounded-full', side.t.dot)} /> {side.t.label}
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                            <div className={cn('h-full rounded-full transition-all', side.t.bar)} style={{ width: `${side.t.pct}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* COMBINED GROWTH & MARKET SIZE GRAPH */}
-            <div className="lg:col-span-6 bg-[#0b1426] border border-white/5 rounded-3xl p-8 space-y-6 shadow-xl">
+            <div className="lg:col-span-6 bg-brand-section border border-white/5 rounded-3xl p-8 space-y-6 shadow-xl">
               <div>
-                <h3 className="text-xs font-black uppercase text-emerald-400 tracking-widest">04 / Market TAM & Capacity Mapping</h3>
-                <p className="text-slate-400 text-xs font-medium">Detailed comparative industry size and monetization indexes</p>
+                <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Market Size</h3>
+                <p className="text-white text-lg font-bold tracking-tight mt-1">Total Addressable Market</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* s1 stats */}
-                <div className="p-6 bg-[#070d19]/60 border border-cyan-500/10 rounded-2xl space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400">{name1}</span>
-                    <span className="text-xs font-bold text-slate-500 font-mono">TAM estimation</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {[
+                  { name: name1, tam: tam1, ov: s1.marketAnalysis?.overview, accent: 'text-cyan-400', border: 'border-cyan-500/15', dot: 'bg-cyan-400' },
+                  { name: name2, tam: tam2, ov: s2.marketAnalysis?.overview, accent: 'text-violet-300', border: 'border-violet-400/15', dot: 'bg-violet-300' },
+                ].map((c, i) => (
+                  <div key={i} className={cn('p-6 bg-brand-bg/40 border rounded-2xl flex flex-col gap-3', c.border)}>
+                    <div className="flex items-center gap-2">
+                      <span className={cn('w-1.5 h-1.5 rounded-full', c.dot)} />
+                      <span className={cn('text-[10px] font-black uppercase tracking-wider', c.accent)}>{c.name}</span>
+                    </div>
+                    <div className="text-5xl font-black text-white font-display tracking-tighter leading-none">{c.tam.value}</div>
+                    <div className="text-sm font-bold text-slate-200 leading-snug">{c.tam.title}</div>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
+                      {c.ov || 'Validated market opportunity with clear room for a focused entrant.'}
+                    </p>
                   </div>
-                  <h4 className="text-3xl font-black text-white font-display tracking-tight leading-none">
-                    {s1.marketAnalysis?.sizeEstimate || '$12.5B Worldwide'}
-                  </h4>
-                  <p className="text-xs text-slate-400 font-medium leading-relaxed line-clamp-3">
-                    {s1.marketAnalysis?.overview || 'Strong market fits verified by dynamic neural network validations.'}
-                  </p>
-                </div>
-
-                {/* s2 stats */}
-                <div className="p-6 bg-[#070d19]/60 border border-amber-500/10 rounded-2xl space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-500">{name2}</span>
-                    <span className="text-xs font-bold text-slate-500 font-mono">TAM estimation</span>
-                  </div>
-                  <h4 className="text-3xl font-black text-white font-display tracking-tight leading-none">
-                    {s2.marketAnalysis?.sizeEstimate || '$8.4B Global Addressable'}
-                  </h4>
-                  <p className="text-xs text-slate-400 font-medium leading-relaxed line-clamp-3">
-                    {s2.marketAnalysis?.overview || 'Robust scaling capabilities mapping directly into enterprise revenue volumes.'}
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
 
           </div>
 
           {/* INVESTOR READINESS SUMMARY BOX */}
-          <div className="bg-[#0b1426] rounded-3xl border border-white/5 p-8 flex flex-col md:flex-row gap-8 items-center md:justify-between shadow-2xl relative overflow-hidden">
+          <div className="bg-brand-section rounded-3xl border border-white/5 p-8 flex flex-col md:flex-row gap-8 items-center md:justify-between shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none" />
             
-            <div className="space-y-3 relative z-10">
-              <h3 className="text-xs font-black uppercase text-[#5ce1e6] tracking-widest flex items-center gap-2">
-                <Sparkles size={14} className="text-cyan-400 animate-pulse" /> VC PREDICTIVE FUNDING CONFIDENCE
-              </h3>
-              <p className="text-white text-lg font-bold leading-tight max-w-xl">
-                Benchmarked analysis indicates {name1} displays {getScoreVal(s1.scores, 'overall', 80) > getScoreVal(s2.scores, 'overall', 75) ? 'stronger market fit capabilities' : 'equivalent investor attractiveness margins'} than competitive counterparts.
-              </p>
-              <p className="text-slate-400 text-xs font-medium">
-                Analysis automatically compiled from validated quantitative risk profiles under regulatory venture modeling standards.
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-6 shrink-0 relative z-10 w-full md:w-auto">
-              <div className="p-6 bg-[#070d19] border border-white/5 rounded-2xl text-center min-w-[140px] space-y-2">
-                <span className="text-slate-500 text-[10px] font-black uppercase tracking-wide">Ready Score</span>
-                <div className="text-3xl font-black text-[#5ce1e6]">{getScoreVal(s1.scores, 'investorAppeal', 80)}%</div>
-                <div className="text-[9px] font-black uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-400/10 rounded-full">{name1}</div>
+            <div className="space-y-5 relative z-10 flex-1">
+              <div>
+                <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] flex items-center gap-2">
+                  <Sparkles size={12} className="text-cyan-400" /> Funding Confidence
+                </h3>
+                <p className="text-white text-xl font-bold tracking-tight mt-1.5 max-w-md leading-snug">
+                  {fundingLeader} leads on investor readiness.
+                </p>
               </div>
 
-              <div className="p-6 bg-[#070d19] border border-white/5 rounded-2xl text-center min-w-[140px] space-y-2">
-                <span className="text-slate-500 text-[10px] font-black uppercase tracking-wide font-mono">Ready Score</span>
-                <div className="text-3xl font-black text-amber-500">{getScoreVal(s2.scores, 'investorAppeal', 68)}%</div>
-                <div className="text-[9px] font-black uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-400/10 rounded-full">{name2}</div>
+              <div className="flex flex-wrap gap-3">
+                {fundDeltas.map((f) => {
+                  const lead = f.d >= 0 ? name1 : name2;
+                  const val = Math.abs(f.d);
+                  return (
+                    <div key={f.label} className="px-4 py-3 bg-brand-bg/40 border border-white/5 rounded-2xl min-w-[120px]">
+                      <div className={cn('text-2xl font-black font-mono leading-none', f.d >= 0 ? 'text-cyan-400' : 'text-violet-300')}>
+                        {f.d === 0 ? '\u2014' : `+${val}%`}
+                      </div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 mt-1.5">{f.label}</div>
+                      <div className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-0.5">{f.d === 0 ? 'Even' : lead}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 shrink-0 relative z-10">
+              <div className="p-5 bg-brand-bg border border-white/5 rounded-2xl text-center min-w-[130px]">
+                <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Ready Score</span>
+                <div className="text-4xl font-black text-cyan-400 my-1.5 leading-none">{ready1}%</div>
+                <div className="text-[9px] font-black uppercase tracking-wider text-cyan-400/80 truncate">{name1}</div>
+              </div>
+              <div className="p-5 bg-brand-bg border border-white/5 rounded-2xl text-center min-w-[130px]">
+                <span className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Ready Score</span>
+                <div className="text-4xl font-black text-violet-300 my-1.5 leading-none">{ready2}%</div>
+                <div className="text-[9px] font-black uppercase tracking-wider text-violet-300/80 truncate">{name2}</div>
               </div>
             </div>
           </div>
@@ -679,7 +687,7 @@ export default function ComparisonPage() {
 
   // RENDER SAVED COMPARISONS LIBRARY DASHBOARD
   return (
-    <div className="min-h-screen bg-[#070d19] text-slate-100 p-6 md:p-12 font-sans select-text">
+    <div className="min-h-screen bg-brand-bg text-slate-100 p-6 md:p-12 font-sans select-text">
       <div className="max-w-7xl mx-auto space-y-12">
         
         {/* Page title and premium badge */}
@@ -724,12 +732,12 @@ export default function ComparisonPage() {
           <h2 className="text-xs font-black uppercase text-slate-500 tracking-widest">SAVED REAL-TIME VC REPORTS ({savedComparisons.length})</h2>
           
           {savedComparisons.length === 0 ? (
-            <div className="p-16 border border-dashed border-white/5 rounded-3xl text-center space-y-4 bg-[#0a111a]/40">
+            <div className="p-16 border border-dashed border-white/5 rounded-3xl text-center space-y-4 bg-brand-section/40">
               <p className="text-slate-500 text-sm font-medium">Your Saved Comparisons Library is currently empty.</p>
               {allAnalyses.length >= 2 && (
                 <button 
                   onClick={() => setCreationModalOpen(true)} 
-                  className="px-5 py-3 bg-[#112435] hover:bg-[#112435]/80 text-[#5ce1e6] border border-[#5ce1e6]/10 text-xs font-black tracking-widest uppercase rounded-xl transition-all inline-flex items-center gap-2"
+                  className="px-5 py-3 bg-brand-card hover:bg-brand-card/80 text-[#5ce1e6] border border-[#5ce1e6]/10 text-xs font-black tracking-widest uppercase rounded-xl transition-all inline-flex items-center gap-2"
                 >
                   <Plus size={14} /> Run Comparative Study Now
                 </button>
@@ -745,7 +753,7 @@ export default function ComparisonPage() {
                   <div 
                     key={c.id}
                     onClick={() => setSearchParams({ ids: c.ids.join(',') })}
-                    className="group bg-[#0b1426] hover:bg-[#0f1b33] border border-white/5 hover:border-brand-accent/30 rounded-3xl p-6 flex flex-col justify-between gap-6 cursor-pointer hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all relative overflow-hidden"
+                    className="group bg-brand-section hover:bg-[#0f1b33] border border-white/5 hover:border-brand-accent/30 rounded-3xl p-6 flex flex-col justify-between gap-6 cursor-pointer hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 w-44 h-44 bg-brand-accent/5 blur-3xl pointer-events-none rounded-full group-hover:bg-brand-accent/10 transition-all" />
                     
@@ -788,7 +796,7 @@ export default function ComparisonPage() {
                     </div>
 
                     {/* COMPARATIVE HIGHLIGHTS SPECIFIED BY USER */}
-                    <div className="space-y-3 bg-[#070d19]/60 p-4 rounded-2xl border border-white/5 border-slate-900">
+                    <div className="space-y-3 bg-brand-bg/60 p-4 rounded-2xl border border-white/5 border-slate-900">
                       <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
                         <span>Startup Score:</span>
                         <span className="font-extrabold text-[#5ce1e6] font-mono">{stats.scoreSign} diff</span>
@@ -799,7 +807,7 @@ export default function ComparisonPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
                         <span>Risk Level:</span>
-                        <span className="font-extrabold text-amber-500">{stats.riskText}</span>
+                        <span className="font-extrabold text-violet-300">{stats.riskText}</span>
                       </div>
                     </div>
 
@@ -823,7 +831,7 @@ export default function ComparisonPage() {
         {creationModalOpen && (
           <>
             <div 
-              className="fixed inset-0 bg-[#040810]/80 backdrop-blur-md z-40 transition-opacity"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 transition-opacity"
               onClick={() => setCreationModalOpen(false)}
             />
             <motion.div 
@@ -831,7 +839,7 @@ export default function ComparisonPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-[#0c1e2c] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-huge z-50 overflow-hidden"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-brand-section border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-huge z-50 overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-80 h-80 bg-brand-accent/5 blur-3xl pointer-events-none rounded-full" />
               
@@ -849,7 +857,7 @@ export default function ComparisonPage() {
                     placeholder="e.g. FixNest vs Competitors"
                     value={newComparisonName}
                     onChange={(e) => setNewComparisonName(e.target.value)}
-                    className="w-full bg-[#070d19] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#5ce1e6]/40 transition-colors uppercase font-bold tracking-wide"
+                    className="w-full bg-brand-bg border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#5ce1e6]/40 transition-colors uppercase font-bold tracking-wide"
                   />
                 </div>
 
@@ -877,7 +885,7 @@ export default function ComparisonPage() {
                             "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs font-bold",
                             isChecked 
                               ? "bg-brand-accent/10 border-brand-accent text-white" 
-                              : "bg-[#070d19]/60 border-white/5 text-slate-400 hover:border-slate-800"
+                              : "bg-brand-bg/60 border-white/5 text-slate-400 hover:border-slate-800"
                           )}
                         >
                           <div className="space-y-0.5">

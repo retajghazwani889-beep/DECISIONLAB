@@ -47,7 +47,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           subscriptionStatus: targetTier,
           updatedAt: serverTimestamp()
         });
-        alert(`Success! You are now on the ${targetTier === 'growth' ? 'Raise Capital & Scale' : 'Founder Validation'} plan.`);
+        alert(`Success! You are now on the ${targetTier === 'growth' ? 'Startup Grow' : 'Startup Validation'} plan.`);
         window.location.reload();
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `profiles/${activeUser!.uid}`);
@@ -148,14 +148,14 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-center">
         <PlanCard
           tier="free"
-          title="Startup Readiness"
+          title="Startup at a Glance"
           price="0"
           subtitle="Free forever · Validate your idea"
           features={[
             "1 Startup Idea",
             "Startup Profile",
             "Startup Overview",
-            "Executive Summary",
+            "Initial Analysis",
             "Startup Readiness Score",
             "Save Project",
           ]}
@@ -163,12 +163,12 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         />
         <PlanCard
           tier="founder"
-          title="Founder Validation"
+          title="Startup Validation"
           price="39"
           subtitle="Validate before you build"
           popular={true}
           features={[
-            "Everything in Startup Readiness",
+            "Everything in Startup at a Glance",
             "Unlimited Startup Ideas",
             "Market Opportunity Analysis",
             "Competition Analysis",
@@ -181,11 +181,11 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         />
         <PlanCard
           tier="growth"
-          title="Raise Capital & Scale"
+          title="Startup Grow"
           price="99"
           subtitle="Investor & growth toolkit"
           features={[
-            "Everything in Founder Validation",
+            "Everything in Startup Validation",
             "Investor Matching & Fit Analysis",
             "Pitch Deck Architect",
             "Investor-Ready Pitch Decks",

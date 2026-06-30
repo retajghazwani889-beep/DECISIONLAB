@@ -1,6 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { safeLocalStorage as localStorage } from '../lib/storage';
+import React, { useEffect, useState } from 'react';
 
 export interface GuaranteedAnalysisLoaderProps {
   projectData?: {
@@ -17,10 +15,20 @@ export interface GuaranteedAnalysisLoaderProps {
   onPipelineComplete?: (data: any) => void;
 }
 
-export default function GuaranteedAnalysisLoader({ projectData, onPipelineComplete }: GuaranteedAnalysisLoaderProps) {
-  const navigate = useNavigate();
+// PURELY A LOADING SCREEN. This component no longer navigates on its own.
+//
+// Previously it ran a ~2s internal timer and then force-redirected to the
+// report regardless of whether the analysis had actually finished. Because the
+// real AI analysis takes much longer than 2s, that timer fired first and
+// yanked the user off the loading screen before the report was ready.
+//
+// Now the page that shows this loader (AnalysisPage) keeps it mounted for as
+// long as the analysis is genuinely running, and navigates to the report only
+// once the analysis truly completes (or shows an error screen if it fails or
+// times out). So this component just animates while it waits — it stays on
+// screen the whole time and never redirects by itself.
+export default function GuaranteedAnalysisLoader({ projectData }: GuaranteedAnalysisLoaderProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const routeTriggered = useRef(false);
 
   const loadingMilestones = [
     "Analysis Processing",
@@ -30,79 +38,14 @@ export default function GuaranteedAnalysisLoader({ projectData, onPipelineComple
     "Report Generation"
   ];
 
-  const projectId = projectData?.id || projectData?.projectId || "active-workspace";
-  const finalReportTargetUrl = `/dashboard/startup/${projectId}/overview`;
-
-  const executeAbsoluteRedirect = () => {
-    if (routeTriggered.current || !projectId) return;
-    routeTriggered.current = true;
-
-    if (onPipelineComplete && typeof onPipelineComplete === 'function') {
-      onPipelineComplete({
-        ...projectData,
-        analysisStatus: "Complete",
-        lastUpdatedDate: new Date().toISOString()
-      });
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('isAnalyzing');
-      localStorage.setItem(`project_${projectId}_ready`, "true");
-    }
-
-    setTimeout(() => {
-      navigate(finalReportTargetUrl, { replace: true });
-    }, 0);
-  };
-
   useEffect(() => {
-    if (!projectId) return;
-
-    // SHORT-CIRCUIT: already complete — skip loader entirely
-    if (projectData?.analysisStatus === "Complete" || projectData?.reportExists) {
-      const bypassTimer = setTimeout(() => {
-        navigate(finalReportTargetUrl, { replace: true });
-      }, 0);
-      return () => clearTimeout(bypassTimer);
-    }
-
-    // ── FAST: 250ms per step → 5 steps = ~1.25s total ──
-    const stepInterval = 250;
-    const progressTimer = setInterval(() => {
-      setActiveStep((prevIndex) => {
-        if (prevIndex < loadingMilestones.length - 1) {
-          return prevIndex + 1;
-        } else {
-          clearInterval(progressTimer);
-          return prevIndex;
-        }
-      });
-    }, stepInterval);
-
-    // Hard failsafe at 2s (was 5s)
-    const fallbackFailsafeTimeout = setTimeout(() => {
-      if (!routeTriggered.current) {
-        executeAbsoluteRedirect();
-      }
-    }, 2000);
-
-    return () => {
-      clearInterval(progressTimer);
-      clearTimeout(fallbackFailsafeTimeout);
-    };
-  }, [projectId, projectData]);
-
-  useEffect(() => {
-    if (activeStep === loadingMilestones.length - 1) {
-      // 80ms gap so user briefly sees 100% before navigating (was 300ms)
-      const completionTimer = setTimeout(() => {
-        executeAbsoluteRedirect();
-      }, 80);
-      return () => clearTimeout(completionTimer);
-    }
-  }, [activeStep]);
-
-  if (projectData?.analysisStatus === "Complete" || projectData?.reportExists) return null;
+    // Cycle the milestone labels on a loop so the screen always looks active,
+    // no matter how long the analysis takes. No navigation happens here.
+    const labelTimer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % loadingMilestones.length);
+    }, 1400);
+    return () => clearInterval(labelTimer);
+  }, []);
 
   return (
     <div style={styles.loaderOverlay}>
@@ -114,6 +57,14 @@ export default function GuaranteedAnalysisLoader({ projectData, onPipelineComple
         }
         .dl-logo-pulse {
           animation: dlPulse 2s infinite ease-in-out;
+        }
+        @keyframes dlSlide {
+          0% { left: -45%; }
+          100% { left: 100%; }
+        }
+        .dl-indeterminate {
+          position: relative;
+          animation: dlSlide 1.4s infinite ease-in-out;
         }
       `}</style>
 
@@ -147,14 +98,9 @@ export default function GuaranteedAnalysisLoader({ projectData, onPipelineComple
         </div>
 
         <div style={styles.progressBarTrack}>
-          <div 
-            style={{
-              ...styles.progressBarFill,
-              width: `${((activeStep + 1) / loadingMilestones.length) * 100}%`
-            }}
-          />
+          <div className="dl-indeterminate" style={styles.progressBarFill} />
         </div>
-        
+
         <span style={styles.footerTrackerSubtext}>
           Workspace Loading Active
         </span>
@@ -210,14 +156,15 @@ const styles: Record<string, React.CSSProperties> = {
     height: '6px',
     borderRadius: '100px',
     overflow: 'hidden',
-    marginBottom: '12px'
+    marginBottom: '12px',
+    position: 'relative'
   },
   progressBarFill: {
     backgroundColor: '#3B82F6',
     backgroundImage: 'linear-gradient(to right, #3B82F6, #60A5FA)',
     height: '100%',
-    borderRadius: '100px',
-    transition: 'width 200ms ease-out'
+    width: '45%',
+    borderRadius: '100px'
   },
   footerTrackerSubtext: {
     color: '#93A4B5',

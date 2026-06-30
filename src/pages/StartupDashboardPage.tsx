@@ -6,7 +6,6 @@ import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Loader2, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 import ResultsDashboard from '../components/ResultsDashboard';
-import { safeLocalStorage as localStorage } from '../lib/storage';
 
 interface StartupDashboardPageProps {
   user: User | null;
@@ -236,7 +235,7 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
   return (
     <div className="bg-[#102434] min-h-screen">
       <div className="max-w-[1400px] mx-auto py-12 md:py-24 px-4 sm:px-6">
-        <ResultsDashboard analysis={analysis} profile={profile} />
+        <ResultsDashboard analysis={analysis} profile={profile} investorView={!!analysis?.userId && analysis.userId !== user?.uid} />
       </div>
     </div>
   );

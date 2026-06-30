@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
-import { Upload, ArrowRight, Sparkles, FileText, Info, Target, BarChart3, Shield } from 'lucide-react';
+import { Upload, ArrowRight, Sparkles, FileText, Info, Target, BarChart3, Shield, X, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
-import { safeLocalStorage as localStorage } from '../lib/storage';
 
 interface StartupFormProps {
   user: any;
@@ -19,23 +18,98 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
   const [idea, setIdea] = useState('');
   const [loading, setLoading] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  const [deckText, setDeckText] = useState('');
+  const [deckName, setDeckName] = useState('');
+  const [parsingDeck, setParsingDeck] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  // Pull readable text out of an uploaded pitch deck so it can be fed into the
+  // analysis. TXT and DOCX are read reliably; PDF uses pdf.js (loaded on demand).
+  // Anything that fails is handled gracefully — we tell the user and let them
+  // proceed with whatever they typed instead of breaking the page.
+  const handleDeckFile = async (file: File) => {
+    if (!file) return;
+    setParsingDeck(true);
+    setDeckName(file.name);
+    try {
+      const name = file.name.toLowerCase();
+      let text = '';
+
+      if (name.endsWith('.txt')) {
+        text = await file.text();
+      } else if (name.endsWith('.docx')) {
+        const mammoth: any = await import('mammoth');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result?.value || '';
+      } else if (name.endsWith('.pdf')) {
+        const pdfjs: any = await import('pdfjs-dist');
+        // Worker is loaded from a CDN matching the exact installed version,
+        // which avoids bundler worker-path issues.
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+        const data = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data }).promise;
+        const pages: string[] = [];
+        const maxPages = Math.min(pdf.numPages, 30);
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items.map((it: any) => it.str).join(' '));
+        }
+        text = pages.join('\n');
+      } else {
+        alert('Please upload a PDF, DOCX, or TXT file.');
+        setDeckName('');
+        return;
+      }
+
+      const cleaned = text.replace(/\s+/g, ' ').trim();
+      if (!cleaned) {
+        alert("We couldn't read any text from that file. If it's a scanned PDF (an image), try a text-based PDF, DOCX, or TXT instead. You can still run the analysis with your description.");
+        setDeckName('');
+        return;
+      }
+      // Cap the extracted text so the analysis prompt stays focused and fast.
+      setDeckText(cleaned.slice(0, 4000));
+    } catch (err) {
+      console.error('Pitch deck parsing failed:', err);
+      alert("We couldn't read that file. DOCX and TXT work most reliably; for PDFs make sure it's text-based (not a scan). You can still run the analysis with your description.");
+      setDeckName('');
+      setDeckText('');
+    } finally {
+      setParsingDeck(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const clearDeck = () => {
+    setDeckText('');
+    setDeckName('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!idea.trim() || loading) return;
+    if ((!idea.trim() && !deckText) || loading || parsingDeck) return;
 
     setIsPressed(true);
     setTimeout(() => setIsPressed(false), 500);
     setLoading(true);
     try {
+      // Attach the extracted pitch-deck text to the description that gets
+      // analyzed, so the deck genuinely informs the analysis.
+      const combinedIdea = deckText
+        ? `${idea.trim()}\n\n--- PITCH DECK CONTENT (from ${deckName}) ---\n${deckText}`.trim()
+        : idea;
+
       if (!user) {
-        localStorage.setItem('pending_analysis_idea', idea);
+        localStorage.setItem('pending_analysis_idea', combinedIdea);
         onOpenAccess();
         return;
       }
       // Navigate to analyze page with state
-      navigate('/analyze', { state: { idea } });
+      navigate('/analyze', { state: { idea: combinedIdea } });
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         // User closed popup, just reset loading
@@ -100,22 +174,59 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-5 relative group/upload">
               <input
-                type="button"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                onClick={() => alert("Upload feature requires Premium Access. Try basic analysis first!")}
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleDeckFile(file);
+                }}
               />
-              <div className="h-full flex items-center justify-center gap-4 px-6 py-6 rounded-[2rem] border border-white/5 bg-brand-bg/50 hover:bg-brand-bg hover:border-brand-accent/40 transition-all duration-500">
-                <FileText size={22} className="text-brand-text-muted transition-colors" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-black text-brand-text-primary uppercase tracking-tight">Pitch Decks</span>
-                  <span className="text-[9px] font-bold text-brand-text-muted uppercase opacity-40">PDF / DOCX</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={parsingDeck}
+                className="w-full h-full flex items-center justify-center gap-4 px-6 py-6 rounded-[2rem] border border-white/5 bg-brand-bg/50 hover:bg-brand-bg hover:border-brand-accent/40 transition-all duration-500 disabled:opacity-60"
+              >
+                {parsingDeck ? (
+                  <Loader2 size={22} className="text-brand-accent animate-spin" />
+                ) : deckName ? (
+                  <FileText size={22} className="text-brand-accent transition-colors" />
+                ) : (
+                  <Upload size={22} className="text-brand-text-muted transition-colors" />
+                )}
+                <div className="flex flex-col items-start min-w-0">
+                  {parsingDeck ? (
+                    <span className="text-xs font-black text-brand-accent uppercase tracking-tight">Reading deck...</span>
+                  ) : deckName ? (
+                    <>
+                      <span className="text-xs font-black text-brand-accent uppercase tracking-tight truncate max-w-[160px]">{deckName}</span>
+                      <span className="text-[9px] font-bold text-emerald-400 uppercase opacity-80">Added to analysis</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs font-black text-brand-text-primary uppercase tracking-tight">Pitch Decks</span>
+                      <span className="text-[9px] font-bold text-brand-text-muted uppercase opacity-40">PDF / DOCX / TXT</span>
+                    </>
+                  )}
                 </div>
-              </div>
+              </button>
+              {deckName && !parsingDeck && (
+                <button
+                  type="button"
+                  onClick={clearDeck}
+                  className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg bg-brand-bg border border-white/10 text-brand-text-muted hover:text-rose-400 hover:border-rose-400/40 transition-all z-20"
+                  title="Remove pitch deck"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={!idea.trim() || loading}
+              disabled={(!idea.trim() && !deckText) || loading || parsingDeck}
               className={cn(
                 "md:col-span-7 inline-flex items-center justify-center gap-4 py-6 btn-premium-start disabled:opacity-40 text-white font-bold rounded-[2rem] shadow-2xl transition-all active:scale-95 group uppercase text-xs tracking-[0.05em] overflow-hidden relative"
               )}

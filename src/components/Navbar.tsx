@@ -51,7 +51,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
               { label: 'ABOUT US', path: '/about' },
               { label: 'DASHBOARD', path: '/dashboard', hidden: !user && !localStorage.getItem('cached_analyses') },
               { label: 'PRICING', path: '/pricing' },
-              { label: 'COMPARISONS', path: '/compare', hidden: !user && !localStorage.getItem('cached_analyses') },
+              { label: 'INVESTOR NETWORK', path: '/investor-network' },
             ].map(link => {
               if (link.hidden) return null;
               const isActive = location.pathname === link.path;

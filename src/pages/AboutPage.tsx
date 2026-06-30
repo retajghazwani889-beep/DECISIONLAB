@@ -42,13 +42,13 @@ const AboutPage: React.FC = () => {
               About Us
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
-              Built for founders <br className="hidden md:block" />
+              Streamline your startup journey <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-text-primary via-brand-text-primary to-brand-accent/60 font-medium" style={{ fontFamily: 'system-ui' }}>
-                making decisions
+                From idea to investment
               </span>
             </h1>
             <p className="max-w-2xl mx-auto text-xl md:text-2xl text-slate-200 leading-relaxed font-medium mb-12 opacity-95 tracking-[0.02em]">
-              DecisionLab helps startups grow by providing clear data and simple plans
+              Validate smarter. Build faster. Raise capital with confidence. Every insight, strategy, and investor-ready document you need to turn an idea into a fundable startup.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link to="/analyze">
@@ -79,14 +79,14 @@ const AboutPage: React.FC = () => {
                 About Us
               </span>
               <h2 className="text-4xl md:text-5xl font-black text-brand-text-primary mb-8 tracking-tight font-display leading-[1.15]">
-                Why building <br /> is hard
+                Why DecisionLab <br /> exists
               </h2>
               <div className="space-y-6 text-xl text-slate-200 leading-[1.8] font-medium opacity-95 tracking-[0.02em]">
                 <p>
-                  Most startups fail from a lack of focus where every choice counts
+                  Founders shouldn't have to switch between countless tools to build one company.
                 </p>
                 <p>
-                  We help founders stay on track by turning ideas into real plans
+                  DecisionLab unifies startup validation, market research, strategy, fundraising, and pitch creation in one intelligent workspace.
                 </p>
               </div>
             </motion.div>
@@ -284,12 +284,12 @@ const AboutPage: React.FC = () => {
           {/* Interactive Steps Content Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-12 relative z-10 pt-16">
             {[
-              { label: "ADD", desc: "Share your business data" },
-              { label: "CHECK", desc: "Cross-check every point" },
-              { label: "VIEW", desc: "Clear data review" },
-              { label: "MAP", desc: "Build your roadmap" },
-              { label: "FIX", desc: "Refine only where needed" },
-              { label: "FINISH", desc: "Ready for market entry" }
+              { label: "SUBMIT", desc: "Share your startup" },
+              { label: "ANALYZE", desc: "Evaluate your potential" },
+              { label: "VALIDATE", desc: "Confirm market fit" },
+              { label: "BUSINESS READINESS", desc: "Prepare for investment" },
+              { label: "RISK MITIGATION", desc: "Reduce business risks" },
+              { label: "SCALE", desc: "Scale with confidence" }
             ].map((step, i) => {
               const isStepActive = i === activeStep;
               const offsetClass = 
@@ -334,7 +334,7 @@ const AboutPage: React.FC = () => {
                     <span className="text-[10px] font-bold font-mono text-[#5da9ff]/80 block mb-1 tracking-wider uppercase">
                       PHASE 0{i + 1}
                     </span>
-                    <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-3 leading-none">
+                    <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-3 leading-tight">
                       {step.label}
                     </h4>
                     <p className="text-sm md:text-base font-medium text-white opacity-95 leading-snug tracking-[0.02em] max-w-[170px] mx-auto uppercase">
@@ -359,14 +359,11 @@ const AboutPage: React.FC = () => {
           >
             <div className="w-16 h-1 w-2.5 bg-brand-accent mx-auto rounded-full opacity-50" />
             <h2 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
-              "Tactics without strategy is noise"
+              "Ideas are everywhere — great decisions are rare"
             </h2>
             <div className="max-w-2xl mx-auto space-y-8 text-2xl md:text-3xl text-slate-200 font-medium italic opacity-95 leading-relaxed tracking-[0.02em]">
               <p>
-                DecisionLab was built for founders who believe clarity is the key to winning
-              </p>
-              <p>
-                Success is about moving in the right way to help you stay on course
+                DecisionLab empowers founders to build with clarity, confidence, and purpose
               </p>
             </div>
           </motion.div>

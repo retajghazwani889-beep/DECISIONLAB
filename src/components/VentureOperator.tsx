@@ -221,26 +221,8 @@ const VentureOperator: React.FC = () => {
 
   return (
     <>
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.5, y: 20 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleOpen}
-            className="fixed bottom-10 right-10 z-[200] w-20 h-20 rounded-full bg-[#102434] md:w-24 md:h-24 p-[2px] shadow-[0_0_40px_rgba(93,169,255,0.85)] border-2 border-[#5da9ff] animate-pulse group overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#5da9ff]/20 via-[#5da9ff]/5 to-transparent animate-pulse" />
-            <div className="w-full h-full rounded-full bg-[#102434] flex flex-col items-center justify-center relative overflow-hidden group-hover:bg-[#152d3f] transition-colors duration-500">
-               <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(93,169,255,1)_0%,transparent_70%)] group-hover:opacity-40 transition-opacity" />
-               <Zap className="w-8 h-8 text-[#5da9ff] drop-shadow-[0_0_12px_rgba(93,169,255,0.8)] relative z-10 group-hover:scale-110 transition-transform duration-500" fill="currentColor" />
-               <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#5da9ff]/90 mt-2 relative z-10">Operator</span>
-            </div>
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* Floating "Operator" launcher button removed per request. With no
+          trigger, the panel below never opens, so nothing renders on screen. */}
 
       <AnimatePresence>
         {isOpen && (

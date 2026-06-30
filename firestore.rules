@@ -140,5 +140,18 @@ service cloud.firestore {
       allow update: if isOwner(userId) && isValidProject(incoming());
       allow delete: if isOwner(userId) || isAdmin();
     }
+
+    // 7. Investor Applications
+    match /investorApplications/{applicationId} {
+      allow create: if isSignedIn();
+      allow get: if isSignedIn() && (existing() == null || existing().uid == request.auth.uid) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // 8. Connection Test
+    match /_test_/connection {
+      allow read: if true;
+    }
   }
 }

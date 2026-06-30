@@ -17,6 +17,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import { INDUSTRIES, STARTUP_STAGES, PRODUCT_TYPES, BUSINESS_TYPES } from '../constants';
+import InvestorPlaybookView from './InvestorPlaybookView';
+import { hasAccess } from '../lib/tiers';
 
 const extractIdeaSnippet = (ideaDescription: string): string => {
   if (!ideaDescription) return '';
@@ -650,7 +652,8 @@ const recalculateVentureSuite = (profile: any) => {
     }
   };
 
-  const matches = generateInvestorMatches(country, city, industry, businessType, stage, overall, ideaDescription);
+  // Investor matches are AI-only now; profile edits must NOT regenerate a
+  // hard-coded list, so we no longer compute or return investorMatching here.
 
   const newSlides = [
     {
@@ -686,7 +689,6 @@ const recalculateVentureSuite = (profile: any) => {
   return {
     scores: updatedScores,
     riskMatrix: riskMatrix,
-    investorMatching: matches,
     pitchReadiness: {
       readinessScore: overall,
       improvementSuggestions: [
@@ -712,12 +714,276 @@ const recalculateVentureSuite = (profile: any) => {
   };
 };
 
+// Builds a tailored "Investor Playbook" instantly from the existing analysis
+// data (no AI call). Content adapts to the investor's type (angel / VC /
+// accelerator / strategic / family office) and weaves in the user's real
+// company name, score, market size, stage and check size.
+const buildInvestorPlaybook = (investor: any, analysis: any, displayProfile: any) => {
+  const company = (displayProfile?.companyName || 'your startup').replace(/\./g, '');
+  const industry = (displayProfile?.industry || 'your sector').replace(/\./g, '');
+  const stage = (displayProfile?.stage || 'your current stage').replace(/\./g, '');
+  const market = formatMarketSize(analysis?.marketAnalysis?.sizeEstimate);
+  const score = getCalculatedVentureScore(analysis?.scores);
+  const investorName = (investor?.name || 'this investor').replace(/\./g, '');
+  const region = (investor?.region || 'their region').replace(/\./g, '');
+  const check = investor?.checkSize || 'their typical check size';
+
+  // Find the strongest scored area to emphasize.
+  const scoreObj = analysis?.scores || {};
+  const getS = (k: string) => {
+    const v = scoreObj[k];
+    return typeof v === 'number' ? v : (v?.score ?? 0);
+  };
+  const ranked = [
+    ['market demand', getS('marketFit')],
+    ['the core idea', getS('ideaStrength')],
+    ['execution capability', getS('execution')],
+    ['scalability', getS('scalability')],
+    ['investor appeal', getS('investorAppeal')],
+  ].sort((a: any, b: any) => b[1] - a[1]);
+  const topStrength = ranked[0][0];
+
+  const category = (investor?.category || (investor?.type || '')).toString().toLowerCase();
+  const isAngel = category.includes('angel');
+  const isAccel = category.includes('accel') || category.includes('incubat');
+  const isStrategic = category.includes('strateg') || category.includes('corporate');
+  const isFamily = category.includes('family');
+
+  // ---- How to approach them (outreach / first contact) ----
+  let approach: string[];
+  if (isAngel) approach = [
+    `Angels back people first, so a warm, personal introduction from someone they trust beats any cold email.`,
+    `Reach out briefly and personally: who you are, what ${company} does, and why you are emailing them specifically.`,
+    `Reference something real about them — a company they backed or a talk they gave — so it is clearly not a mass email.`,
+    `Keep it human and conversational; angels often decide on their conviction in the founder.`,
+    `Ask for a short 20-minute call, not money up front, and be honest that the stage is early.`,
+  ];
+  else if (isAccel) approach = [
+    `Apply through the official program and hit the deadline — most accelerators run on fixed cohort cycles.`,
+    `In the application show momentum and coachability more than polish; they invest in trajectory.`,
+    `Name the specific batch or program and explain why it fits ${company} right now at ${stage}.`,
+    `Get a referral from a program alum if you can — it carries real weight in selection.`,
+    `Have a working MVP or prototype to show, even if it is rough, and be clear what you want from the program beyond the check.`,
+  ];
+  else if (isStrategic) approach = [
+    `Approach through their corporate-venture or partnerships team, or a warm intro from one of their portfolio companies.`,
+    `Frame the first conversation around strategic fit — how ${company} helps them, not just that you need funding.`,
+    `Lead with where you complement their products or reach their customers in ${industry}.`,
+    `Be ready to discuss a commercial relationship (a pilot or integration) alongside the investment.`,
+    `Expect a slower, more committee-driven process, and keep your IP and independence in mind from the first meeting.`,
+  ];
+  else if (isFamily) approach = [
+    `Family offices move on trust, so a discreet introduction through a mutual, trusted contact is the way in.`,
+    `Lead with stability, downside protection, and a credible path to profitability rather than hyper-growth.`,
+    `Be patient and relationship-first; they often take longer and value long-term alignment.`,
+    `Have clean financials and clear unit economics ready — they scrutinise the numbers closely.`,
+    `Respect discretion; many prefer to stay low-profile, and be ready to discuss longer hold periods.`,
+  ];
+  else approach = [
+    `Get a warm introduction — a referral from a founder they have backed or a fellow investor beats a cold email every time.`,
+    `If cold, keep the first email to about five sentences: what ${company} does, your traction, the market, the ask, and one line on why now.`,
+    `Lead with a metric or a sharp insight, not your life story — investors scan fast.`,
+    `Attach a tight 10-12 slide deck, not a 30-page document, and make the ask specific.`,
+    `Follow up once after about a week if you do not hear back; persistence is fine, pestering is not.`,
+  ];
+
+  // ---- Likely questions (with how to answer) ----
+  let questions: string[];
+  if (isAngel) questions = [
+    `Why are you the right founder for this? Tell the story of your edge — experience, insight, or obsession with the problem.`,
+    `Why now? Point to a real shift in technology, behaviour, or regulation that makes this the moment.`,
+    `How far will this check take you? Show the runway it buys and what you will prove with it.`,
+    `What does early traction look like? Share your most honest real numbers, not vanity metrics.`,
+    `What is your commitment? Be clear you are all-in and how long your personal runway is.`,
+  ];
+  else if (isAccel) questions = [
+    `Why an accelerator now? Show what you gain — network, mentors, focus — not just the money.`,
+    `How coachable are you? Give a concrete example of feedback you took and acted on.`,
+    `What will you achieve in the program? Name a specific goal for demo day.`,
+    `What is your MVP and early feedback? Show the product and exactly what users said.`,
+    `Where do you want to be by demo day? Give an ambitious but realistic target.`,
+  ];
+  else if (isStrategic) questions = [
+    `How does this fit our priorities? Tie it directly to their products, customers, or strategy.`,
+    `Could this integrate with us? Sketch a concrete integration or pilot.`,
+    `What is the partnership upside? Show mutual value, not only your gain.`,
+    `How defensible is the technology? Explain your moat and any IP clearly.`,
+    `What would a commercial deal look like? Have a rough pilot or partnership shape ready.`,
+  ];
+  else if (isFamily) questions = [
+    `How predictable is revenue? Show recurring or repeatable revenue and retention.`,
+    `What is the downside protection? Explain what limits the loss if growth stalls.`,
+    `What are the unit economics? Walk through margins, payback, and the path to profit.`,
+    `How long until profitability? Give a realistic timeline, not a fantasy.`,
+    `How is capital preserved? Show disciplined spending tied to milestones.`,
+  ];
+  else questions = [
+    `How big is the market really? Give a credible top-down and bottom-up number and avoid wild claims.`,
+    `What makes you different and defensible? Name the moat: technology, data, network, brand, or speed.`,
+    `How will you acquire customers efficiently? Show your channels and rough cost-to-acquire versus value.`,
+    `How will the funding be used? Break it into runway, key hires, and the milestones it unlocks.`,
+    `What are the next 12 months? Give two or three concrete, measurable milestones.`,
+  ];
+
+  // ---- What to avoid ----
+  let avoid: string[];
+  if (isAngel) avoid = [
+    `Overloading them with dense financial models — keep it human and clear.`,
+    `Hiding personal risk or runway; angels value honesty over a perfect story.`,
+    `Vague answers about your commitment to the company.`,
+    `Over-promising on timelines you cannot realistically hit.`,
+  ];
+  else if (isAccel) avoid = [
+    `Acting like you already know everything — coachability is the whole point.`,
+    `Showing a finished product with no room left to iterate.`,
+    `Dismissing the value of mentorship and the network.`,
+    `Unclear or unrealistic goals for what you will achieve.`,
+  ];
+  else if (isStrategic) avoid = [
+    `Ignoring how you fit into their ecosystem.`,
+    `Positioning yourself purely as a competitor to them.`,
+    `Being vague about the integration or partnership value.`,
+    `Overstating your independence from their platform when you depend on it.`,
+  ];
+  else if (isFamily) avoid = [
+    `Growth-at-all-costs framing; they prize stability and discipline.`,
+    `Ignoring risk and capital preservation.`,
+    `Unrealistic hockey-stick projections.`,
+    `A weak margin or cash-flow story.`,
+  ];
+  else avoid = [
+    `Inflated or unsupported market numbers — experienced investors spot it instantly.`,
+    `Buzzwords with no substance behind them.`,
+    `Dodging hard questions on competition; name competitors honestly.`,
+    `A vague use of funds — always tie the money to milestones.`,
+  ];
+
+  // ---- Presentation style ----
+  let style: string[];
+  if (isAngel) style = [
+    `Personal and story-driven — they are betting on you as much as the idea.`,
+    `Lead with the founder and the vision, then bring in the numbers.`,
+    `Keep it conversational, like talking to a smart, busy friend.`,
+  ];
+  else if (isAccel) style = [
+    `Energetic and growth-minded — show momentum and hunger to learn.`,
+    `Demonstrate that you iterate quickly on feedback.`,
+    `Demo the product live if you possibly can.`,
+  ];
+  else if (isStrategic) style = [
+    `Professional and partnership-focused throughout.`,
+    `Frame everything around mutual strategic value.`,
+    `Use concrete integration or customer examples, not abstractions.`,
+  ];
+  else if (isFamily) style = [
+    `Measured, data-backed, and steady in tone.`,
+    `Emphasise stability and discipline over hype.`,
+    `Show that you think carefully about risk and the long term.`,
+  ];
+  else style = [
+    `Sharp, structured, and metrics-driven — back every claim with a number.`,
+    `Lead with market size and traction in the first two minutes.`,
+    `Confident but not over-polished; substance earns more trust than slickness.`,
+  ];
+
+  // ---- Negotiation tips ----
+  let negotiation: string[];
+  if (isAngel) negotiation = [
+    `Keep terms simple — a SAFE or convertible note is standard this early.`,
+    `Be flexible on valuation for an angel who brings real network and help.`,
+    `Value their mentorship and introductions, not just the size of the check.`,
+    `Agree on follow-on expectations early so there are no surprises later.`,
+  ];
+  else if (isAccel) negotiation = [
+    `Know the standard equity-for-program terms before you apply.`,
+    `Weigh the network and demo-day exposure, not only the cash.`,
+    `Clarify what post-program follow-on support actually looks like.`,
+    `Do not over-negotiate a standardised cohort deal — it rarely moves.`,
+  ];
+  else if (isStrategic) negotiation = [
+    `Protect your independence and your IP above all else.`,
+    `Keep investment terms separate from any commercial or partnership terms.`,
+    `Watch for exclusivity, right-of-first-refusal, or right-of-first-offer clauses.`,
+    `Define a clear, bounded scope for the partnership.`,
+  ];
+  else if (isFamily) negotiation = [
+    `Expect a heavy focus on downside protection and capital preservation.`,
+    `Be ready to discuss longer hold periods and patient timelines.`,
+    `Show clear, credible paths to profitability.`,
+    `Align on realistic, steady milestones rather than moonshots.`,
+  ];
+  else negotiation = [
+    `Anchor valuation with comparable recent rounds at your stage.`,
+    `Do not over-optimise valuation over getting the right partner.`,
+    `Understand the term sheet: liquidation preference, board seats, pro-rata, option pool.`,
+    `Keep healthy competitive tension — talking to several investors strengthens your hand.`,
+  ];
+
+  return [
+    { title: 'How to Approach Them', items: approach },
+    {
+      title: 'Recommended Pitch Structure',
+      items: [
+        `Open in one line: what ${company} does and for whom, so it is instantly clear.`,
+        `Problem & solution: the specific pain you remove and how, in plain language.`,
+        market !== '—'
+          ? `Market opportunity: around ${market} and growing — show it is big and where you fit.`
+          : `Market opportunity: show it is large, growing, and where you fit.`,
+        `Business model: how you make money, your pricing, and your margins.`,
+        `Traction & growth: your best proof — users, revenue, pilots, or signups.`,
+        `The ask: how much you are raising (around ${check} for this investor) and exactly what it buys — runway, hires, milestones.`,
+      ],
+    },
+    {
+      title: 'Key Talking Points',
+      items: [
+        market !== '—'
+          ? `Market potential: ${market} and growing, with clear room for a focused player.`
+          : `Market potential: a large, growing market with room for a focused player.`,
+        `Competitive advantage: what you do that others cannot easily copy.`,
+        `Revenue model: how money comes in and why it scales profitably.`,
+        `Scalability: how you grow without costs rising just as fast.`,
+        `Founder strength: why you and your team are the ones to win this.`,
+      ],
+    },
+    { title: 'Likely Investor Questions', items: questions },
+    {
+      title: 'What to Emphasize',
+      items: [
+        `Your strongest area: ${topStrength} — lead with it, it is where you score highest.`,
+        `Strong, specific market demand — proof that people actually want this.`,
+        `Customer validation — real users, feedback, pilots, or early revenue.`,
+        `Revenue potential — a believable path to meaningful money.`,
+        `A competitive moat — why your lead is defensible over time.`,
+        `Execution capability — evidence you can actually ship and deliver.`,
+      ],
+    },
+    { title: 'What to Avoid', items: avoid },
+    { title: 'Presentation Style', items: style },
+    {
+      title: 'Meeting Preparation',
+      items: [
+        `Research ${investorName}: their focus, past deals, and public statements — then reference them in the meeting.`,
+        `Prepare two versions: a tight 10-12 slide deck and a 2-minute verbal pitch.`,
+        market !== '—'
+          ? `Have your numbers ready: ${score}% startup score, ${market} market, traction, and unit economics.`
+          : `Have your numbers ready: ${score}% startup score, market size, traction, and unit economics.`,
+        `Write out answers to the likely questions above and rehearse them out loud.`,
+        `Prepare two or three smart questions to ask them — it shows you are evaluating fit too.`,
+        `Know your specific ask and your minimum acceptable terms before you walk in.`,
+      ],
+    },
+    { title: 'Negotiation Tips', items: negotiation },
+  ];
+};
+
 interface ResultsDashboardProps {
   analysis: AnalysisReport;
   profile: UserProfile | null;
+  investorView?: boolean;
 }
 
-export default function ResultsDashboard({ analysis, profile }: ResultsDashboardProps) {
+export default function ResultsDashboard({ analysis, profile, investorView = false }: ResultsDashboardProps) {
   const navigate = useNavigate();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -754,6 +1020,8 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [investorCategory, setInvestorCategory] = useState<'all' | 'angels' | 'vcs' | 'accelerators' | 'strategic' | 'family'>('all');
   const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
+  const [playbookInvestor, setPlaybookInvestor] = useState<any | null>(null);
+  const [savingShare, setSavingShare] = useState(false);
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any;
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'risk' | 'growth' | 'investors' | 'reports' | 'architect'>(() => {
@@ -770,6 +1038,9 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
     if (path.endsWith('/architect')) return 'architect';
     return 'overview';
   });
+
+  // In investor view, lock the report to the Startup Overview only.
+  const effectiveTab = investorView ? 'overview' : activeTab;
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -854,7 +1125,6 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
         },
         scores: recalculation.scores as any,
         riskMatrix: recalculation.riskMatrix,
-        investorMatching: recalculation.investorMatching,
         pitchReadiness: recalculation.pitchReadiness,
         traction: recalculation.traction,
         overallScore: recalculation.scores.overall,
@@ -966,8 +1236,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           ...updatedItem,
           scores: recalculation.scores as any,
           riskMatrix: recalculation.riskMatrix,
-          investorMatching: recalculation.investorMatching,
-          pitchReadiness: recalculation.pitchReadiness,
+            pitchReadiness: recalculation.pitchReadiness,
           traction: recalculation.traction,
           overallScore: recalculation.scores.overall,
           analysisScore: recalculation.scores.overall,
@@ -1142,6 +1411,94 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
   };
 
   const displayProfile = currentAnalysis.startupProfile || editedProfile;
+
+  // ----- Investor-share consent --------------------------------------------
+  // Asked once, right after the analysis loads and BEFORE the report shows.
+  // Nothing about a founder ever reaches an investor unless they choose "Yes".
+  // The choice is stored on the analysis; when it's undefined the gate shows.
+  const handleShareChoice = async (choice: boolean) => {
+    setSavingShare(true);
+    const score = getCalculatedVentureScore(currentAnalysis.scores);
+    const stage = (displayProfile.stage || '').toString();
+    const updated: any = {
+      ...currentAnalysis,
+      sharedWithInvestors: choice,
+      shareScore: score,
+      shareStage: stage,
+    };
+    try {
+      await updateDoc(doc(db, 'analyses', currentAnalysis.id), {
+        sharedWithInvestors: choice,
+        shareScore: score,
+        shareStage: stage,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Could not save investor-share choice:', err);
+    }
+    setCurrentAnalysis(updated);
+    updateLocalCache(updated);
+    setSavingShare(false);
+  };
+
+  // The share gate appears only for Growth-tier founders whose analysis scored
+  // 80% or higher and who haven't answered yet.
+  const shareScoreNow = getCalculatedVentureScore(currentAnalysis.scores);
+  if (!investorView && hasAccess(profile, 'growth') && shareScoreNow >= 80 && (currentAnalysis as any).sharedWithInvestors === undefined) {
+    const previewScore = shareScoreNow;
+    return (
+      <div className="fixed inset-0 z-[1400] bg-brand-bg flex items-center justify-center p-6 overflow-y-auto">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-brand-accent/5 blur-[140px] rounded-full pointer-events-none" />
+        <div className="relative w-full max-w-lg bg-brand-section border border-brand-border rounded-[2.5rem] p-8 sm:p-10 shadow-huge text-center">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+            <Handshake size={28} />
+          </div>
+          <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Analysis Ready</span>
+          <h2 className="text-2xl sm:text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4 leading-tight">
+            Share with investors?
+          </h2>
+          <p className="text-sm text-slate-300 font-medium leading-relaxed mb-2">
+            Your analysis for <span className="text-white font-bold">{(displayProfile.companyName || 'your startup').replace(/\./g, '')}</span> scored <span className="text-brand-accent font-black">{previewScore}%</span>.
+          </p>
+          <p className="text-sm text-brand-text-secondary font-medium leading-relaxed mb-8">
+            Would you like verified investors on DecisionLab to be able to discover this startup and view your report? Only investors looking for your stage will see it. You choose once now, so pick what you're comfortable with.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => handleShareChoice(false)}
+              disabled={savingShare}
+              className="flex-1 px-6 py-4 rounded-2xl bg-brand-card border border-white/5 text-brand-text-secondary hover:text-white text-[11px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95"
+            >
+              No, keep it private
+            </button>
+            <button
+              onClick={() => handleShareChoice(true)}
+              disabled={savingShare}
+              className="flex-1 px-6 py-4 rounded-2xl bg-brand-accent text-brand-text-primary text-[11px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+            >
+              {savingShare ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              Yes, share it
+            </button>
+          </div>
+          <p className="text-[10px] text-brand-text-muted font-bold uppercase tracking-widest mt-6">This is a one-time choice for this analysis</p>
+        </div>
+      </div>
+    );
+  }
+
+  // When an investor is selected, take over the screen with the full-page,
+  // tabbed Investor Playbook (built instantly from this analysis).
+  if (playbookInvestor) {
+    return (
+      <InvestorPlaybookView
+        investor={playbookInvestor}
+        sections={buildInvestorPlaybook(playbookInvestor, currentAnalysis, displayProfile)}
+        companyName={(displayProfile.companyName || 'Your Startup').replace(/\./g, '')}
+        score={getCalculatedVentureScore(currentAnalysis.scores)}
+        onBack={() => setPlaybookInvestor(null)}
+      />
+    );
+  }
 
   const formSections = [
     {
@@ -1398,7 +1755,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
         {/* MAIN WORKSPACE (full width) */}
         <div className="space-y-12">
 
-          <div id="command-center-tabs" className="flex flex-wrap items-center justify-start gap-3 border-b border-white/5 pb-8 no-print relative z-10">
+          <div id="command-center-tabs" className={cn("flex flex-wrap items-center justify-start gap-3 border-b border-white/5 pb-8 no-print relative z-10", investorView && "hidden")}>
         {[
           { id: 'overview', label: '01 / Startup Overview', icon: <LayoutGrid size={15} /> },
           { id: 'analysis', label: '02 / Key Insights', icon: <BarChart3 size={15} /> },
@@ -1426,7 +1783,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={activeTab}
+          key={effectiveTab}
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -15 }}
@@ -1434,7 +1791,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           className="space-y-12 min-h-[500px]"
         >
           {/* ==================== 01 / OVERVIEW TAB ==================== */}
-          {activeTab === 'overview' && (
+          {effectiveTab === 'overview' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
@@ -1523,7 +1880,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           )}
 
           {/* ==================== 02 / STARTUP SUMMARY TAB ==================== */}
-          {activeTab === 'analysis' && (
+          {effectiveTab === 'analysis' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none" />
@@ -1694,7 +2051,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           )}
 
           {/* ==================== 03 / RISK CENTER TAB ==================== */}
-          {activeTab === 'risk' && (
+          {effectiveTab === 'risk' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-coral/5 blur-[120px] rounded-full pointer-events-none" />
@@ -1738,7 +2095,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           )}
 
           {/* ==================== 04 / GROWTH CENTER TAB ==================== */}
-          {activeTab === 'growth' && (
+          {effectiveTab === 'growth' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full" />
@@ -1776,7 +2133,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           )}
 
           {/* ==================== 05 / INVESTOR MATCHING TAB ==================== */}
-          {activeTab === 'investors' && (() => {
+          {effectiveTab === 'investors' && (() => {
             const ind = (currentAnalysis.startupProfile?.industry || 'Intelligent Systems').trim();
             const stage = (currentAnalysis.startupProfile?.stage || 'Idea Stage').trim();
             const region = (currentAnalysis.startupProfile?.country || 'GCC').trim();
@@ -1802,15 +2159,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
                   thesis: m.whyFit || m.suggestedPitch || '',
                   pitchAdvice: m.whatTheyLookFor || m.suggestedPitch || '',
                 }))
-              : generateInvestorMatches(
-                  region,
-                  currentAnalysis.startupProfile?.city || '',
-                  ind,
-                  model,
-                  stage,
-                  vScore,
-                  currentAnalysis.ideaDescription || ''
-                );
+              : [];
 
             const filteredMatches = investorCategory === 'all' 
               ? matches 
@@ -1899,6 +2248,15 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
 
                   {/* Investor Cards Listing */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full box-border">
+                    {filteredMatches.length === 0 && (
+                      <div className="col-span-full p-12 text-center bg-brand-section/60 border border-dashed border-white/10 rounded-[2.5rem]">
+                        <Handshake size={40} className="text-brand-accent/40 mx-auto mb-4" />
+                        <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight mb-2">No investor matches yet</h4>
+                        <p className="text-xs text-brand-text-secondary font-medium max-w-md mx-auto leading-relaxed">
+                          Investor matches are generated from your analysis. Edit your profile and run "Deep AI Refine" to generate investors aligned to your idea and stage.
+                        </p>
+                      </div>
+                    )}
                     {filteredMatches.map((investor) => {
                       const isExpanded = expandedThesisId === investor.id;
                       return (
@@ -1940,40 +2298,12 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
 
                           <div className="space-y-4 pt-4 border-t border-white/5">
                             <button
-                              onClick={() => setExpandedThesisId(isExpanded ? null : investor.id)}
-                              className={cn(
-                                "w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer",
-                                isExpanded 
-                                  ? "bg-brand-accent text-brand-text-primary" 
-                                  : "bg-brand-card/40 hover:bg-brand-card text-brand-text-secondary hover:text-white border border-white/5"
-                              )}
+                              onClick={() => setPlaybookInvestor(investor)}
+                              className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-brand-text-primary border border-brand-accent/20"
                             >
-                              <span>{isExpanded ? 'Minimize Alignment' : 'View Investment Thesis'}</span>
-                              <ChevronRight size={12} className={cn("transition-transform duration-300", isExpanded && "rotate-90")} />
+                              <span>Investor Playbook</span>
+                              <ChevronRight size={12} />
                             </button>
-
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="p-4 bg-brand-bg/40 border border-white/5 rounded-2xl space-y-3.5 mt-3 text-left">
-                                    <div>
-                                      <h5 className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-1">Thesis Alignment</h5>
-                                      <p className="text-xs text-slate-300 font-medium leading-relaxed uppercase">{investor.thesis}</p>
-                                    </div>
-                                    <div>
-                                      <h5 className="text-[9px] font-black text-[#5da9ff] uppercase tracking-wider mb-1">Pitch Strategy Advice</h5>
-                                      <p className="text-xs text-slate-300 font-medium leading-relaxed uppercase">{investor.pitchAdvice}</p>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
                           </div>
                         </div>
                       );
@@ -1985,7 +2315,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           })()}
 
           {/* ==================== 06 / REPORTS TAB ==================== */}
-          {activeTab === 'reports' && (
+          {effectiveTab === 'reports' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border/20 shadow-huge text-center relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-brand-accent/5 blur-[120px] rounded-full" />
@@ -2020,7 +2350,7 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           )}
 
           {/* ==================== 07 / PITCH DECK ARCHITECT TAB ==================== */}
-          {activeTab === 'architect' && (
+          {effectiveTab === 'architect' && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
@@ -2192,22 +2522,38 @@ export default function ResultsDashboard({ analysis, profile }: ResultsDashboard
           </div>
         </div>
 
-        {/* Roadmap */}
+        {/* Roadmap — horizontal timeline scale: each duration sits on a
+            scale line with its label on top and bullets underneath. All
+            colors inline-hex so html2canvas renders the PDF reliably. */}
         <div>
-          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Growth Roadmap</h2>
-          {[
-            ['Immediate', currentAnalysis.roadmap?.immediate],
-            ['1–3 Months', currentAnalysis.roadmap?.oneToThreeMonths],
-            ['3–6 Months', currentAnalysis.roadmap?.threeToSixMonths],
-            ['Investor Readiness', currentAnalysis.roadmap?.investorReadiness],
-          ].map(([label, items]: any) => (
-            <div key={label} className="mb-3">
-              <p style={{ color: '#2563eb' }} className="text-xs font-black uppercase mb-1">{label}</p>
-              <ul style={{ color: '#404040' }} className="text-xs space-y-1">
-                {(items || []).map((it: string, i: number) => <li key={i}>• {it}</li>)}
-              </ul>
-            </div>
-          ))}
+          <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-4">Growth Roadmap</h2>
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch' }}>
+            {[
+              ['Immediate', currentAnalysis.roadmap?.immediate],
+              ['1–3 Months', currentAnalysis.roadmap?.oneToThreeMonths],
+              ['3–6 Months', currentAnalysis.roadmap?.threeToSixMonths],
+              ['Investor Readiness', currentAnalysis.roadmap?.investorReadiness],
+            ].map(([label, items]: any, idx: number, arr: any[]) => (
+              <div key={label} style={{ flex: 1, minWidth: 0 }}>
+                {/* scale line + node */}
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ width: '11px', height: '11px', borderRadius: '9999px', backgroundColor: '#2563eb', flexShrink: 0 }} />
+                  <div style={{ flex: 1, height: '2px', backgroundColor: idx === arr.length - 1 ? 'transparent' : '#bfdbfe' }} />
+                </div>
+                {/* duration label on top */}
+                <p style={{ color: '#2563eb', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{label}</p>
+                {/* bullets under the duration */}
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {(items || []).map((it: string, i: number) => (
+                    <li key={i} style={{ color: '#404040', fontSize: '11px', lineHeight: 1.45, marginBottom: '6px', display: 'flex', gap: '6px' }}>
+                      <span style={{ color: '#2563eb', flexShrink: 0 }}>•</span>
+                      <span>{String(it).replace(/^[*•\-\s]+/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Investor Matches */}

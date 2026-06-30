@@ -15,7 +15,6 @@ import {
   Trash2, ChevronDown, Upload
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { safeLocalStorage as localStorage } from '../lib/storage';
 import { MarqueeSection } from '../components/MarqueeSection';
 import { CircularProgress, AnimatedCounter, ConfidenceLineChart, RiskEcosystemMap, RiskHeatmap } from '../components/ReportVisuals';
 
@@ -771,6 +770,16 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
               )}
             </motion.button>
 
+            <Link
+              to="/compare"
+              className="w-full flex items-center justify-between px-6 py-4 text-xs font-bold uppercase tracking-[0.05em] transition-all duration-300 font-sans cursor-pointer text-[#8a9cae] hover:bg-[#152d3f]/40 hover:text-[#fbfbff] rounded-lg border border-transparent"
+            >
+              <div className="flex items-center gap-3 font-semibold tracking-wider">
+                <div className="w-2 h-2 rounded-full bg-violet-400/70" />
+                COMPARISONS
+              </div>
+              <ArrowUpRight size={14} className="text-white/20" />
+            </Link>
             <motion.button
               whileHover={{ x: 4 }}
               whileTap={{ scale: 0.98 }}
@@ -1207,7 +1216,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                       </>
                     ) : (
                       <>
-                        <Edit3 size={16} strokeWidth={3} /> CONFIGURE PROFILE
+                        <Edit3 size={16} strokeWidth={3} /> EDIT PROFILE
                       </>
                     )}
                   </button>
@@ -1300,15 +1309,43 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      if (typeof reader.result === 'string') {
-                                        setCompanyLogo(reader.result);
+                                  if (!file) return;
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    if (typeof reader.result !== 'string') return;
+                                    const dataUrl = reader.result;
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      // Shrink the logo to a max of 256px before saving. Large
+                                      // images exceed Firestore's ~1MB document limit and the
+                                      // whole save silently fails, which is why an uploaded logo
+                                      // sometimes never replaces the placeholder. Downscaling
+                                      // keeps the saved image tiny so it always persists.
+                                      const MAX = 256;
+                                      let width = img.width;
+                                      let height = img.height;
+                                      if (width > height && width > MAX) {
+                                        height = Math.round((height * MAX) / width);
+                                        width = MAX;
+                                      } else if (height > MAX) {
+                                        width = Math.round((width * MAX) / height);
+                                        height = MAX;
+                                      }
+                                      const canvas = document.createElement('canvas');
+                                      canvas.width = width;
+                                      canvas.height = height;
+                                      const ctx = canvas.getContext('2d');
+                                      if (ctx) {
+                                        ctx.drawImage(img, 0, 0, width, height);
+                                        setCompanyLogo(canvas.toDataURL('image/png'));
+                                      } else {
+                                        setCompanyLogo(dataUrl);
                                       }
                                     };
-                                    reader.readAsDataURL(file);
-                                  }
+                                    img.onerror = () => setCompanyLogo(dataUrl);
+                                    img.src = dataUrl;
+                                  };
+                                  reader.readAsDataURL(file);
                                 }}
                               />
                             </label>
@@ -1345,8 +1382,8 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
                         {/* Dropdown Options matching Fintech, Fashion, Healthcare, AI */}
                         {isIndustryFocused && (
-                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                            {["Fintech", "Fashion", "Healthcare", "AI", "SaaS Platform", "E-commerce", "CleanTech", "EdTech", "Biotech", "Web3 Systems"]
+                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                            {["Fintech", "Fashion", "Healthcare", "AI", "SaaS Platform", "E-commerce", "CleanTech", "EdTech", "Biotech", "Web3 Systems", "Real Estate / PropTech", "Food & Beverage", "Logistics & Supply Chain", "Travel & Hospitality", "Gaming & Entertainment", "Media & Content", "Marketing & AdTech", "HR & Recruitment", "Legal Tech", "InsurTech", "Cybersecurity", "Cloud & Infrastructure", "Data & Analytics", "IoT & Hardware", "Robotics", "Energy & Sustainability", "Agriculture / AgriTech", "Manufacturing", "Retail", "Automotive & Mobility", "Construction", "Sports & Fitness", "Beauty & Wellness", "Social & Community", "Nonprofit & Impact", "Government & Public Sector", "Telecommunications", "Aerospace & Defense", "Pharmaceuticals", "Other"]
                               .filter(item => !industry || item.toLowerCase().includes(industry.toLowerCase()))
                               .map((item) => (
                                 <button
@@ -1362,7 +1399,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                   {item.toUpperCase()}
                                 </button>
                               ))}
-                            {["Fintech", "Fashion", "Healthcare", "AI", "SaaS Platform", "E-commerce", "CleanTech", "EdTech", "Biotech", "Web3 Systems"]
+                            {["Fintech", "Fashion", "Healthcare", "AI", "SaaS Platform", "E-commerce", "CleanTech", "EdTech", "Biotech", "Web3 Systems", "Real Estate / PropTech", "Food & Beverage", "Logistics & Supply Chain", "Travel & Hospitality", "Gaming & Entertainment", "Media & Content", "Marketing & AdTech", "HR & Recruitment", "Legal Tech", "InsurTech", "Cybersecurity", "Cloud & Infrastructure", "Data & Analytics", "IoT & Hardware", "Robotics", "Energy & Sustainability", "Agriculture / AgriTech", "Manufacturing", "Retail", "Automotive & Mobility", "Construction", "Sports & Fitness", "Beauty & Wellness", "Social & Community", "Nonprofit & Impact", "Government & Public Sector", "Telecommunications", "Aerospace & Defense", "Pharmaceuticals", "Other"]
                               .filter(item => !industry || item.toLowerCase().includes(industry.toLowerCase())).length === 0 && (
                               <div className="px-6 py-4 text-white/40 text-xs uppercase tracking-widest text-center">
                                 No industries matched
@@ -1561,8 +1598,8 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
                         {/* Dropdown Options for Monetization Engine */}
                         {isMonetizationFocused && (
-                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                            {["B2B", "B2C", "Subscription", "Marketplace", "Freemium", "Commission", "Direct Sales", "Ad-supported", "Transaction fee"]
+                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                            {["B2B", "B2C", "B2B2C", "D2C", "Subscription", "Marketplace", "Freemium", "Commission", "Direct Sales", "Ad-supported", "Transaction fee", "Usage-Based / Pay-As-You-Go", "Licensing", "Affiliate", "White Label", "Wholesale", "Franchise", "Tiered Pricing", "Enterprise Contracts", "In-App Purchases", "Donations / Crowdfunding", "Other"]
                               .filter(item => !businessType || item.toLowerCase().includes(businessType.toLowerCase()))
                               .map((item) => (
                                 <button
@@ -1578,7 +1615,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                   {item.toUpperCase()}
                                 </button>
                               ))}
-                            {["B2B", "B2C", "Subscription", "Marketplace", "Freemium", "Commission", "Direct Sales", "Ad-supported", "Transaction fee"]
+                            {["B2B", "B2C", "B2B2C", "D2C", "Subscription", "Marketplace", "Freemium", "Commission", "Direct Sales", "Ad-supported", "Transaction fee", "Usage-Based / Pay-As-You-Go", "Licensing", "Affiliate", "White Label", "Wholesale", "Franchise", "Tiered Pricing", "Enterprise Contracts", "In-App Purchases", "Donations / Crowdfunding", "Other"]
                               .filter(item => !businessType || item.toLowerCase().includes(businessType.toLowerCase())).length === 0 && (
                               <div className="px-6 py-4 text-white/40 text-xs uppercase tracking-widest text-center">
                                 Use your typed model
@@ -1617,8 +1654,8 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
                         {/* Dropdown Options for Product Architecture */}
                         {isProductFocused && (
-                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                            {["SaaS Platform", "Marketplace", "Service-Based", "Mobile App", "Hardware", "API Tool", "On-Premise Software", "E-commerce Platform"]
+                          <div className="absolute left-0 right-0 top-[105%] bg-[#102434] border border-[#5da9ff]/45 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[100] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                            {["SaaS Platform", "Marketplace", "Service-Based", "Mobile App", "Web App", "Hardware", "API Tool", "On-Premise Software", "E-commerce Platform", "AI / ML Platform", "Browser Extension", "Desktop Application", "Physical Product", "Consumer Electronics", "Wearable Device", "Plugin / Integration", "Developer Tool", "No-Code / Low-Code Platform", "Content Platform", "Social Network", "Fintech App", "Marketplace App", "Subscription Box", "Other"]
                               .filter(item => !productType || item.toLowerCase().includes(productType.toLowerCase()))
                               .map((item) => (
                                 <button
@@ -1634,7 +1671,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                   {item.toUpperCase()}
                                 </button>
                               ))}
-                            {["SaaS Platform", "Marketplace", "Service-Based", "Mobile App", "Hardware", "API Tool", "On-Premise Software", "E-commerce Platform"]
+                            {["SaaS Platform", "Marketplace", "Service-Based", "Mobile App", "Web App", "Hardware", "API Tool", "On-Premise Software", "E-commerce Platform", "AI / ML Platform", "Browser Extension", "Desktop Application", "Physical Product", "Consumer Electronics", "Wearable Device", "Plugin / Integration", "Developer Tool", "No-Code / Low-Code Platform", "Content Platform", "Social Network", "Fintech App", "Marketplace App", "Subscription Box", "Other"]
                               .filter(item => !productType || item.toLowerCase().includes(productType.toLowerCase())).length === 0 && (
                               <div className="px-6 py-4 text-white/40 text-xs uppercase tracking-widest text-center">
                                 Use your typed structure
@@ -1683,33 +1720,36 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                   <div className="bg-[#102434] p-12 rounded-[4rem] border border-white/10 shadow-huge space-y-14 relative overflow-hidden">
                     <div className="flex items-center gap-5">
                        <div className="w-2 h-8 bg-brand-accent rounded-full shadow-glow" />
-                       <h3 className="text-sm font-bold uppercase tracking-[0.4em] text-white">Our Plan</h3>
+                       <h3 className="text-sm font-bold uppercase tracking-[0.4em] text-white">Founder Brief</h3>
                     </div>
+                    <p className="text-sm text-white/70 font-medium leading-relaxed -mt-4 max-w-3xl">
+                      Provide the background behind your startup. This information helps DecisionLab generate more accurate analysis, recommendations, reports, and investor-ready materials.
+                    </p>
                     <div className="space-y-12">
                       <div className="space-y-5">
-                        <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">STORY (DETAILED)</label>
+                        <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">STARTUP STORY</label>
                         <textarea
                           className="w-full px-10 py-10 bg-[#102434] border border-white/20 rounded-[2.5rem] text-base font-bold h-64 focus:border-brand-accent/50 focus:ring-0 transition-all resize-none text-white outline-none leading-relaxed"
-                          placeholder="Articulate your vision and competitive moats"
+                          placeholder="Tell us how the idea started, the problem you discovered, why it matters, how your solution is different, and your long-term vision."
                           value={companyDescription}
                           onChange={(e) => setCompanyDescription(e.target.value)}
                         />
                       </div>
                       <div className="space-y-5">
-                        <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">PITCH (ELEVATOR)</label>
+                        <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">ELEVATOR PITCH</label>
                         <textarea
                           className="w-full px-10 py-10 bg-[#102434] border border-white/20 rounded-[2rem] text-base font-bold h-40 focus:border-brand-accent/50 focus:ring-0 transition-all resize-none text-white outline-none leading-relaxed"
-                          placeholder="Synthesize your business into a high-impact thesis"
+                          placeholder="Summarize your startup in 2–3 sentences as if you were introducing it to an investor."
                           value={pitchSummary}
                           onChange={(e) => setPitchSummary(e.target.value)}
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         <div className="space-y-5">
-                          <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">FOUNDER & EXPERIENCE</label>
+                          <label className="text-xs font-bold uppercase tracking-[0.2em] text-white px-2">FOUNDER BACKGROUND</label>
                           <textarea
                             className="w-full px-10 py-10 bg-[#102434] border border-white/20 rounded-[2.5rem] text-base font-bold h-64 focus:border-brand-accent/50 focus:ring-0 transition-all resize-none text-white outline-none leading-relaxed"
-                            placeholder="Who leads this venture? Detail their relevant experience and expertise"
+                            placeholder="Describe the founder(s), relevant experience, expertise, achievements, and why your team is uniquely positioned to build this company."
                             value={founderInfo}
                             onChange={(e) => setFounderInfo(e.target.value)}
                           />
@@ -2322,10 +2362,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                              onChange={(e) => {
                                const newSlides = [...profile.pitchDeck!.slides];
                                newSlides[currentSlide].content = e.target.value;
-                               updateDoc(doc(db, 'profiles', user.uid), { 
-                                 'pitchDeck.slides': newSlides,
-                                 updatedAt: serverTimestamp()
-                               });
+                               updateDoc(doc(db, 'profiles', user.uid), { 'pitchDeck.slides': newSlides });
                              }}
                            />
                            <ul className="space-y-6">
@@ -2342,10 +2379,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                        onChange={(e) => {
                                          const newSlides = [...profile.pitchDeck!.slides];
                                          newSlides[currentSlide].points[idx] = e.target.value;
-                                         updateDoc(doc(db, 'profiles', user.uid), { 
-                                           'pitchDeck.slides': newSlides,
-                                           updatedAt: serverTimestamp()
-                                         });
+                                         updateDoc(doc(db, 'profiles', user.uid), { 'pitchDeck.slides': newSlides });
                                        }}
                                     />
                                  </li>

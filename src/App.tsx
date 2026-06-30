@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage';
 import PremiumPage from './pages/PremiumPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
+import InvestorNetworkPage from './pages/InvestorNetworkPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -124,6 +125,7 @@ function AppContent() {
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />
+          <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

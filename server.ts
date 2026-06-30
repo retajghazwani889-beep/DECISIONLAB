@@ -900,7 +900,45 @@ async function startServer() {
       };
 
       const { city: resolvedCity, country: resolvedCountry } = splitLocation(profile);
-      const seedString = `${profile.name || ''}-${profile.tagline || ''}-${profile.industry || ''}`;
+
+      // Map the ACTUAL fields the dashboard profile form sends. Previously this
+      // handler only read profile.name / profile.tagline / profile.description,
+      // none of which the form sends — so the founder's Startup Story, Elevator
+      // Pitch and Founder Background never reached the model and could not move
+      // the score. We now read the real field names and pass all of it through.
+      const cName = profile.companyName || profile.name || 'Unnamed Venture';
+      const cStage = profile.startupStage || profile.stage || 'Idea Stage';
+      const cIndustry = profile.industry || 'General Tech';
+      const startupStory = profile.companyDescription || profile.description || '';
+      const elevatorPitch = profile.pitchSummary || profile.tagline || '';
+      const founderBackground = profile.founderInfo || '';
+      const cBusinessType = profile.businessType || '';
+      const cProductType = profile.productType || '';
+      const cSectors = Array.isArray(profile.sectors) ? profile.sectors.join(', ') : (profile.sectors || '');
+
+      // Summarize the structured team for the model.
+      let teamSummary = '';
+      if (Array.isArray(profile.teamStructure) && profile.teamStructure.length > 0) {
+        teamSummary = profile.teamStructure.map((m: any) =>
+          `${m.name || 'Unnamed'} — ${m.role || 'Member'}, ${m.experience || 0} yrs${m.specialty && m.specialty.length ? ', ' + m.specialty.join('/') : ''}`
+        ).join('; ');
+      } else if (profile.teamMembers) {
+        teamSummary = String(profile.teamMembers);
+      }
+
+      // How complete is the founder brief? This directly drives the score band:
+      // a rich, specific brief earns a higher ceiling; a thin/empty one is
+      // capped lower. Word count (not the raw text) decides the band.
+      const briefWordCount = `${startupStory} ${elevatorPitch} ${founderBackground}`
+        .trim().split(/\s+/).filter(Boolean).length;
+      let briefDepth = 'MINIMAL';
+      if (briefWordCount >= 120) briefDepth = 'COMPREHENSIVE';
+      else if (briefWordCount >= 60) briefDepth = 'MODERATE';
+      else if (briefWordCount >= 20) briefDepth = 'BASIC';
+
+      // Seed now varies with the actual founder brief, so editing the profile
+      // produces a genuinely different analysis instead of the same numbers.
+      const seedString = `${cName}-${cIndustry}-${cStage}-${startupStory}-${elevatorPitch}-${founderBackground}`;
       const uniqueSeed = getInputHash(seedString);
 
       const systemInstruction = `
@@ -1126,12 +1164,30 @@ async function startServer() {
       const dynamicPrompt = `
         Conduct a highly intensive company profile mapping and threat analysis for the following startup instance:
         
-        - Company Name: "${profile.name || 'Unnamed Venture'}"
-        - Current Stage: "${profile.stage || 'Idea Stage'}"
-        - Sector/Industry Cluster: "${profile.industry || 'General Tech'}"
+        - Company Name: "${cName}"
+        - Current Stage: "${cStage}"
+        - Sector/Industry Cluster: "${cIndustry}"
+        - Detailed Sectors: "${cSectors}"
+        - Revenue / Business Model: "${cBusinessType}"
+        - Product Architecture: "${cProductType}"
         - Context Target Coordinates: City: ${resolvedCity}, Country: ${resolvedCountry}
-        - Baseline Core Value Proposition / Description: "${profile.tagline || profile.description || ''}"
-        
+        - Team: ${teamSummary || 'Not specified'}
+
+        FOUNDER BRIEF (the founder's own words — weight this heavily in every score):
+        - Startup Story: "${startupStory || 'NOT PROVIDED'}"
+        - Elevator Pitch: "${elevatorPitch || 'NOT PROVIDED'}"
+        - Founder Background: "${founderBackground || 'NOT PROVIDED'}"
+
+        FOUNDER BRIEF DEPTH: ${briefDepth} (${briefWordCount} words total)
+
+        SCORING IMPACT DIRECTIVE — THE FOUNDER BRIEF MUST RAISE OR LOWER THE SCORE:
+        The depth, specificity, and credibility of the Founder Brief above MUST directly drive every score.
+        - COMPREHENSIVE brief (clear problem, differentiated solution, concrete numbers, real founder expertise): award HIGH scores (typically 80-95 where genuinely justified).
+        - MODERATE brief: mid-range scores (60-79).
+        - BASIC brief: cautious scores (45-65).
+        - MINIMAL or "NOT PROVIDED": you MUST penalize with LOW scores (25-50), and each explanation must state that the score is limited by insufficient founder-provided detail.
+        Map fields to scores: ideaStrength and execution depend on the Startup Story and Founder Background; investorAppeal depends on how compelling the Elevator Pitch and founder credibility are; marketFit and scalability depend on the clarity of the problem and solution described. Reward concrete, specific, credible detail; penalize vagueness, buzzwords, or empty fields. NEVER give a strong score to a thin or empty brief.
+
         CRITICAL EVALUATION SYSTEM FACTOR SEED: ${uniqueSeed}
         WARNING: Use the unique seed parameter above to structurally offset token probabilities. All metrics and risk indices MUST be mathematically relative to the specific input criteria. Do not fall back to standard baseline calculations or hardcoded score values like 78%.
         

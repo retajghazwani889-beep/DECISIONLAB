@@ -579,7 +579,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
     { 
       id: 'scale', 
       label: 'Scale', 
-      items: roadmap?.growthStage || [], 
+      items: roadmap?.growthStage?.length ? roadmap.growthStage : roadmap?.sixToTwelveMonths?.length ? roadmap.sixToTwelveMonths : ['Expand into new segments and regions', 'Make sales and onboarding repeatable', 'Grow the team to support scale'], 
       icon: <TrendingUp size={20} />, 
       title: 'Expansion Phase',
       desc: 'Elite operational compounding.'
