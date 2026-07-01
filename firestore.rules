@@ -35,6 +35,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'retajghazwani889@gmail.com';
     }
 
+    function isApprovedInvestor() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.accountType == 'investor';
+    }
+
     // --- Entity Validations ---
 
     function isValidUserProfile(data) {
@@ -99,8 +105,8 @@ service cloud.firestore {
 
     // 2. Venture Analyses
     match /analyses/{analysisId} {
-      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid || (existing().sharedWithInvestors == true && isApprovedInvestor()))) || isAdmin();
+      allow list: if (isSignedIn() && (resource.data.userId == request.auth.uid || (resource.data.sharedWithInvestors == true && isApprovedInvestor()))) || isAdmin();
       allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(analysisId) && isValidVentureAnalysis(incoming());
       allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
       allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();

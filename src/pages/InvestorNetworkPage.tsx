@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { STARTUP_STAGES, INDUSTRIES } from '../constants';
@@ -49,7 +49,7 @@ const normalizeUrl = (raw: string) => {
 };
 
 export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetworkPageProps) {
-  const { profile } = useAuth();
+  const { profile, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const navigate = useNavigate();
 
   const stageOptions = toLabels(STARTUP_STAGES as any[]);
@@ -65,6 +65,44 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
   );
   const [reapplying, setReapplying] = useState(false);
   const [justApproved, setJustApproved] = useState(false);
+
+  // Investor login / sign-up (shown when no one is signed in)
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authName, setAuthName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPass, setAuthPass] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authErr, setAuthErr] = useState('');
+
+  const handleAuthEmail = async () => {
+    setAuthErr('');
+    if (!authEmail.includes('@')) return setAuthErr('Enter a valid email.');
+    if (authPass.length < 6) return setAuthErr('Password must be at least 6 characters.');
+    if (authMode === 'signup' && !authName.trim()) return setAuthErr('Enter your name.');
+    setAuthBusy(true);
+    try {
+      if (authMode === 'signup') {
+        await signUpWithEmail(authEmail.trim(), authPass, authName.trim());
+      } else {
+        await signInWithEmail(authEmail.trim(), authPass);
+      }
+    } catch (err: any) {
+      setAuthErr(err?.message?.replace('Firebase:', '').trim() || 'Could not sign in. Check your details and try again.');
+    }
+    setAuthBusy(false);
+  };
+
+  const handleAuthGoogle = async () => {
+    setAuthErr('');
+    setAuthBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setAuthErr(err?.message?.replace('Firebase:', '').trim() || 'Google sign-in failed.');
+    }
+    setAuthBusy(false);
+  };
+
   const [matches, setMatches] = useState<any[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchError, setMatchError] = useState('');
@@ -72,10 +110,33 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
   // Stage/niche focus picks (shared by the application form and the browse view).
   const [stages, setStages] = useState<string[]>([]);
   const [niches, setNiches] = useState<string[]>([]);
+  const [businessModels, setBusinessModels] = useState<string[]>([]);
+  const BUSINESS_MODELS = ['B2B', 'B2C', 'B2B2C', 'Marketplace', 'SaaS', 'D2C'];
 
   // Show the matched-startups dashboard when the saved profile says investor,
   // OR immediately after a fresh approval (before the profile reloads).
   const approvedView = isApprovedInvestor || justApproved;
+
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit') === '1';
+
+  // Arriving from the matches page to "Change focus": open the pre-filled form.
+  useEffect(() => {
+    if (editParam && isApprovedInvestor && !reapplying) {
+      setStages(((profile as any)?.investorStages || []) as string[]);
+      setNiches(((profile as any)?.investorNiches || []) as string[]);
+      setBusinessModels(((profile as any)?.investorBusinessModels || []) as string[]);
+      setTier((profile as any)?.investorTier === 'organization' ? 'organization' : 'individual');
+      setReapplying(true);
+    }
+  }, [editParam, isApprovedInvestor]);
+
+  // Approved investors get their own dedicated matches page.
+  useEffect(() => {
+    if ((isApprovedInvestor || justApproved) && !reapplying && !editParam) {
+      navigate('/investor-matches');
+    }
+  }, [isApprovedInvestor, justApproved, reapplying, editParam, navigate]);
 
   useEffect(() => {
     if (!approvedView || !user) return;
@@ -164,6 +225,7 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
           investorStatus: 'approved',
           investorStages: stages,
           investorNiches: niches,
+          investorBusinessModels: businessModels,
           investorApprovedAt: serverTimestamp(),
           ...record,
         },
@@ -269,6 +331,15 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
   const labelClass =
     'text-[11px] font-black text-brand-text-secondary uppercase tracking-widest flex items-center gap-2 mb-2';
 
+  // Approved investors are being sent to their matches page — show a brief spinner.
+  if ((isApprovedInvestor || justApproved) && !reapplying && !editParam) {
+    return (
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-brand-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text-primary">
       {/* Hero */}
@@ -344,6 +415,7 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
                     onClick={() => {
                       setStages(((profile as any)?.investorStages || []) as string[]);
                       setNiches(((profile as any)?.investorNiches || []) as string[]);
+                      setBusinessModels(((profile as any)?.investorBusinessModels || []) as string[]);
                       setError('');
                       setTier((profile as any)?.investorTier === 'organization' ? 'organization' : 'individual');
                       setReapplying(true);
@@ -444,17 +516,10 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
 
                         <div className="mt-5 flex flex-wrap items-center gap-3">
                           <button
-                            onClick={() => navigate(`/dashboard/startup/${m.id}/overview`)}
-                            className="px-5 py-3 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2"
+                            onClick={() => navigate(`/dashboard/startup/${m.id}/overview?investor=1`)}
+                            className="px-6 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                           >
                             View report <ArrowRight size={13} />
-                          </button>
-                          <button
-                            onClick={requestDeck}
-                            disabled={!founderEmail}
-                            className="px-5 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
-                          >
-                            <Briefcase size={13} /> Request pitch deck
                           </button>
                         </div>
                       </div>
@@ -464,21 +529,79 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
               )}
             </>
           ) : !user ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
-                <Lock size={26} />
+            <div className="max-w-md mx-auto py-4">
+              <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+                <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-black uppercase tracking-tight font-display mb-3">Sign in to apply</h2>
-              <p className="text-sm text-brand-text-secondary font-medium max-w-md mx-auto leading-relaxed mb-8">
-                Log in with Google or email first, then register as an investor.
+              <h2 className="text-2xl font-black uppercase tracking-tight font-display mb-2 text-center">
+                {authMode === 'signup' ? 'Join as an investor' : 'Investor sign in'}
+              </h2>
+              <p className="text-sm text-brand-text-secondary font-medium text-center mb-7 leading-relaxed">
+                {authMode === 'signup'
+                  ? 'Create your investor account to register and browse matched startups.'
+                  : 'Sign in to register and browse matched startups.'}
               </p>
-              <button
-                onClick={onOpenAccess}
-                className="inline-flex items-center gap-3 px-10 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20"
-              >
-                <Lock className="w-4 h-4" />
-                Sign in
-              </button>
+
+              <div className="space-y-4">
+                {authMode === 'signup' && (
+                  <div>
+                    <label className={labelClass}><UserIcon size={14} className="text-brand-accent" /> Full name</label>
+                    <input value={authName} onChange={(e) => setAuthName(e.target.value)} placeholder="Jane Doe" className={fieldClass} />
+                  </div>
+                )}
+                <div>
+                  <label className={labelClass}><Mail size={14} className="text-brand-accent" /> Email</label>
+                  <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="you@email.com" className={fieldClass} />
+                </div>
+                <div>
+                  <label className={labelClass}><Lock size={14} className="text-brand-accent" /> Password</label>
+                  <input
+                    type="password"
+                    value={authPass}
+                    onChange={(e) => setAuthPass(e.target.value)}
+                    placeholder="••••••••"
+                    className={fieldClass}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAuthEmail(); }}
+                  />
+                </div>
+
+                {authErr && (
+                  <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3">{authErr}</p>
+                )}
+
+                <button
+                  onClick={handleAuthEmail}
+                  disabled={authBusy}
+                  className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-huge shadow-brand-accent/20 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {authBusy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                  {authMode === 'signup' ? 'Create account' : 'Log in'}
+                </button>
+
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">or</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+
+                <button
+                  onClick={handleAuthGoogle}
+                  disabled={authBusy}
+                  className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Continue with Google
+                </button>
+
+                <p className="text-center text-xs text-brand-text-secondary font-medium pt-2">
+                  {authMode === 'signup' ? 'Already have an account?' : 'New investor?'}{' '}
+                  <button
+                    onClick={() => { setAuthErr(''); setAuthMode(authMode === 'signup' ? 'login' : 'signup'); }}
+                    className="text-brand-accent font-black hover:underline"
+                  >
+                    {authMode === 'signup' ? 'Log in' : 'Create an account'}
+                  </button>
+                </p>
+              </div>
             </div>
           ) : tier === 'choose' ? (
             <>
@@ -543,6 +666,10 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
                   <label className={labelClass}><Search size={14} className="text-brand-accent" /> Niches you invest in</label>
                   <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">{nicheOptions.map((n) => chip(n, niches, setNiches))}</div>
                 </div>
+                <div>
+                  <label className={labelClass}><Briefcase size={14} className="text-brand-accent" /> Business models you back</label>
+                  <div className="flex flex-wrap gap-2">{BUSINESS_MODELS.map((b) => chip(b, businessModels, setBusinessModels))}</div>
+                </div>
                 {error && <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3">{error}</p>}
                 <button onClick={handleSubmitOrganization} disabled={submitting} className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-huge shadow-brand-accent/20 disabled:opacity-50 disabled:hover:scale-100">
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
@@ -587,6 +714,10 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
                 <div>
                   <label className={labelClass}><Search size={14} className="text-brand-accent" /> Niches you invest in</label>
                   <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">{nicheOptions.map((n) => chip(n, niches, setNiches))}</div>
+                </div>
+                <div>
+                  <label className={labelClass}><Briefcase size={14} className="text-brand-accent" /> Business models you back</label>
+                  <div className="flex flex-wrap gap-2">{BUSINESS_MODELS.map((b) => chip(b, businessModels, setBusinessModels))}</div>
                 </div>
                 {error && <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3">{error}</p>}
                 <button onClick={handleSubmitIndividual} disabled={submitting} className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-huge shadow-brand-accent/20 disabled:opacity-50 disabled:hover:scale-100">

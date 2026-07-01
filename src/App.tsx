@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { safeLocalStorage as localStorage } from './lib/storage';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -13,6 +12,7 @@ import PremiumPage from './pages/PremiumPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
+import InvestorMatchesPage from './pages/InvestorMatchesPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -125,7 +125,10 @@ function AppContent() {
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />
+
+          {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
+          <Route path="/investor-matches" element={<InvestorMatchesPage user={user} />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

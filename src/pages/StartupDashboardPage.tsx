@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { UserProfile, AnalysisReport } from '../types';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { Loader2, AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, RefreshCw, Briefcase, ArrowRight, Mail } from 'lucide-react';
 import ResultsDashboard from '../components/ResultsDashboard';
 
 interface StartupDashboardPageProps {
@@ -15,6 +15,8 @@ interface StartupDashboardPageProps {
 export default function StartupDashboardPage({ user, profile }: StartupDashboardPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cameFromInvestorList = searchParams.get('investor') === '1';
 
   const getInitialState = () => {
     if (id) {
@@ -232,10 +234,60 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
     );
   }
 
+  // Investor view: forced when opened from the investor list, or when the
+  // viewer isn't the owner. Founders viewing their own startup see everything.
+  const isOwnerViewing = !!analysis?.userId && analysis.userId === user?.uid;
+  const investorMode = cameFromInvestorList || (!!analysis?.userId && !isOwnerViewing);
+
+  const founderName =
+    (analysis as any)?.shareFounderName || (isOwnerViewing ? (profile?.fullName || user?.displayName || '') : '');
+  const founderEmail =
+    (analysis as any)?.shareFounderEmail || (isOwnerViewing ? ((profile as any)?.email || user?.email || '') : '');
+  const companyName = (analysis as any)?.startupProfile?.companyName || (analysis as any)?.ideaDescription || 'this startup';
+
+  const requestPitchDeck = () => {
+    const subject = encodeURIComponent(`Pitch deck request — ${companyName}`);
+    const body = encodeURIComponent(
+      `Hi${founderName ? ' ' + founderName : ''},\n\nI'm an investor on DecisionLab and I'd love to see the pitch deck for ${companyName}. Could you share it when you get a chance?\n\nThank you!`
+    );
+    window.location.href = `mailto:${founderEmail}?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="bg-[#102434] min-h-screen">
       <div className="max-w-[1400px] mx-auto py-12 md:py-24 px-4 sm:px-6">
-        <ResultsDashboard analysis={analysis} profile={profile} investorView={!!analysis?.userId && analysis.userId !== user?.uid} />
+        <ResultsDashboard analysis={analysis} profile={profile} investorView={investorMode} />
+
+        {investorMode && (
+          <div className="mt-10 bg-[#0b1a26] border border-white/10 rounded-[2rem] p-8 sm:p-10 text-center">
+            <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white font-display mb-2">
+              Interested in this startup?
+            </h3>
+            <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto leading-relaxed">
+              If it's a fit, request the pitch deck from the founder. If not, head back to your other matches.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={requestPitchDeck}
+                disabled={!founderEmail}
+                className="w-full sm:w-auto px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
+              >
+                <Briefcase size={15} /> Yes — request pitch deck
+              </button>
+              <button
+                onClick={() => navigate('/investor-network')}
+                className="w-full sm:w-auto px-8 py-4 bg-transparent border border-white/15 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={15} /> Not for me — view others
+              </button>
+            </div>
+            {founderEmail && (
+              <p className="mt-6 text-xs text-brand-text-muted font-medium flex items-center justify-center gap-2">
+                <Mail size={12} /> Founder: {founderName ? founderName + ' • ' : ''}{founderEmail}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
