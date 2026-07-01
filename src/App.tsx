@@ -13,6 +13,7 @@ import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
+import InvestorHistoryPage from './pages/InvestorHistoryPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -51,6 +52,40 @@ function AppContent() {
       }
     }
   }, [user, profile, loading, navigate]);
+
+  // Hard role separation: investor accounts can never open founder pages
+  // (dashboard/portfolio, idea analysis, comparisons, pitch deck). If they try,
+  // send them to their matches. Report pages (/dashboard/startup/...) stay open
+  // so investors can view matched startups.
+  React.useEffect(() => {
+    if (loading) return;
+    const isInvestor = (profile as any)?.accountType === 'investor';
+    if (!isInvestor) return;
+    const p = location.pathname;
+    const founderOnly =
+      p === '/dashboard' ||
+      p === '/analyze' ||
+      p === '/compare' ||
+      p.startsWith('/pitch-deck');
+    if (founderOnly) {
+      navigate('/investor-matches', { replace: true });
+    }
+  }, [profile, loading, location.pathname, navigate]);
+
+  // Founder pages require a login. Logged-out visitors can't see the
+  // dashboard/portfolio, comparisons, or pitch deck (browser cache no longer
+  // exposes them). They're sent home to sign in first.
+  React.useEffect(() => {
+    if (loading || user) return;
+    const p = location.pathname;
+    const needsLogin =
+      p === '/dashboard' ||
+      p === '/compare' ||
+      p.startsWith('/pitch-deck');
+    if (needsLogin) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, location.pathname, navigate]);
 
   if (loading) {
     return (
@@ -129,6 +164,7 @@ function AppContent() {
           {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
           <Route path="/investor-matches" element={<InvestorMatchesPage user={user} />} />
+          <Route path="/investor-history" element={<InvestorHistoryPage user={user} />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

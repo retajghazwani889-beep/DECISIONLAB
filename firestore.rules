@@ -1,163 +1,57 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
-    match /{document=**} {
-      allow read, write: if false;
-    }
 
-    // --- Helper Functions ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isVerified() {
-      return isSignedIn();
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'retajghazwani889@gmail.com';
-    }
-
-    function isApprovedInvestor() {
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && request.auth.token.email == 'retajghazwani889@gmail.com'; }
+    function isInvestor() {
       return isSignedIn() &&
-             exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.accountType == 'investor';
+        exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.accountType == 'investor';
     }
 
-    // --- Entity Validations ---
-
-    function isValidUserProfile(data) {
-      return (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128)) &&
-             (!data.keys().contains('uid') || (data.uid is string && data.uid.size() <= 128)) &&
-             (!data.keys().contains('email') || (data.email is string && data.email.size() <= 150)) &&
-             (!data.keys().contains('onboardingCompleted') || data.onboardingCompleted is bool) &&
-             (!data.keys().contains('updatedAt') || (data.updatedAt == request.time || data.updatedAt is timestamp || data.updatedAt is string));
-    }
-
-    function isValidVentureAnalysis(data) {
-      return data.keys().hasAll(['id', 'userId', 'ideaDescription', 'status', 'createdAt']) &&
-             data.userId == request.auth.uid &&
-             data.id is string && data.id.size() <= 128 &&
-             data.status in ['pending', 'processing', 'completed', 'failed'] &&
-             data.ideaDescription is string && data.ideaDescription.size() <= 5000 &&
-             (data.createdAt == request.time || data.createdAt is timestamp);
-    }
-
-    function isValidIntelligenceSession(data) {
-      return data.keys().hasAll(['userId', 'messages', 'createdAt', 'updatedAt']) &&
-             data.userId == request.auth.uid &&
-             data.messages is list && data.messages.size() <= 200 &&
-             (data.createdAt == request.time || data.createdAt is timestamp) &&
-             (data.updatedAt == request.time || data.updatedAt is timestamp);
-    }
-
-    function isValidPitchDeck(data) {
-      return data.userId == request.auth.uid &&
-             (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
-             (!data.keys().contains('projectName') || (data.projectName is string && data.projectName.size() <= 200)) &&
-             (!data.keys().contains('slides') || data.slides is list);
-    }
-
-    function isValidSavedComparison(data) {
-      return data.userId == request.auth.uid &&
-             (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
-             (!data.keys().contains('name') || (data.name is string && data.name.size() <= 200)) &&
-             (!data.keys().contains('ids') || data.ids is list);
-    }
-
-    function isValidProject(data) {
-      return (!data.keys().contains('id') || (data.id is string && data.id.size() <= 128)) &&
-             (!data.keys().contains('name') || (data.name is string && data.name.size() <= 200));
-    }
-
-    // --- Matches ---
-
-    // 1. User Profiles
     match /profiles/{userId} {
-      allow get: if (isOwner(userId) || isAdmin()) && isValidId(userId);
-      allow create: if isOwner(userId) && isVerified() && isValidId(userId) && isValidUserProfile(incoming());
-      allow update: if (isOwner(userId) || isAdmin()) && (
-        isAdmin() || (
-          isValidUserProfile(incoming()) &&
-          (!existing().keys().contains('userId') || !incoming().keys().contains('userId') || incoming().userId == existing().userId) &&
-          (!existing().keys().contains('uid') || !incoming().keys().contains('uid') || incoming().uid == existing().uid)
-        )
-      );
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // 2. Venture Analyses
     match /analyses/{analysisId} {
-      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid || (existing().sharedWithInvestors == true && isApprovedInvestor()))) || isAdmin();
-      allow list: if (isSignedIn() && (resource.data.userId == request.auth.uid || (resource.data.sharedWithInvestors == true && isApprovedInvestor()))) || isAdmin();
-      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(analysisId) && isValidVentureAnalysis(incoming());
-      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid)
+                    || isAdmin()
+                    || (isInvestor() && resource.data.sharedWithInvestors == true);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
-    // 3. Intelligence Sessions
-    match /sessions/{sessionId} {
-      allow get: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(sessionId) && isValidIntelligenceSession(incoming());
-      allow update: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-    }
-
-    // 4. Pitch Decks
-    match /pitchDecks/{projectId} {
-      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid)) || isAdmin();
-      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if isSignedIn() && isVerified() && incoming().userId == request.auth.uid && isValidId(projectId) && isValidPitchDeck(incoming());
-      allow update: if (isSignedIn() && existing().userId == request.auth.uid && isValidPitchDeck(incoming())) || isAdmin();
-      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-    }
-
-    // 5. Saved Comparisons
-    match /savedComparisons/{comparisonId} {
-      allow get: if (isSignedIn() && (resource == null || existing().userId == request.auth.uid)) || isAdmin();
-      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if isSignedIn() && isValidId(comparisonId) && isValidSavedComparison(incoming());
-      allow update: if (isSignedIn() && existing().userId == request.auth.uid && isValidSavedComparison(incoming())) || isAdmin();
-      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
-    }
-
-    // 6. User Projects
-    match /users/{userId}/projects/{projectId} {
-      allow get, list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming());
-      allow update: if isOwner(userId) && isValidProject(incoming());
-      allow delete: if isOwner(userId) || isAdmin();
-    }
-
-    // 7. Investor Applications
-    match /investorApplications/{applicationId} {
-      allow create: if isSignedIn();
-      allow get: if isSignedIn() && (existing() == null || existing().uid == request.auth.uid) || isAdmin();
-      allow list: if (isSignedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+    match /investorApplications/{appId} {
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
-    // 8. Connection Test
-    match /_test_/connection {
-      allow read: if true;
+    match /sessions/{sessionId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    match /pitchDecks/{projectId} {
+      allow read: if (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid)) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    match /savedComparisons/{comparisonId} {
+      allow read: if (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid)) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    match /users/{userId}/projects/{projectId} {
+      allow read, create, update: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
     }
   }
 }

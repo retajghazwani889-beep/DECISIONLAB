@@ -1420,17 +1420,24 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
     setSavingShare(true);
     const score = getCalculatedVentureScore(currentAnalysis.scores);
     const stage = (displayProfile.stage || '').toString();
+    // Save the founder's own contact so matched investors can reach them.
+    const founderName = (profile as any)?.fullName || (profile as any)?.displayName || '';
+    const founderEmail = (profile as any)?.email || '';
     const updated: any = {
       ...currentAnalysis,
       sharedWithInvestors: choice,
       shareScore: score,
       shareStage: stage,
+      shareFounderName: founderName,
+      shareFounderEmail: founderEmail,
     };
     try {
       await updateDoc(doc(db, 'analyses', currentAnalysis.id), {
         sharedWithInvestors: choice,
         shareScore: score,
         shareStage: stage,
+        shareFounderName: founderName,
+        shareFounderEmail: founderEmail,
         updatedAt: serverTimestamp(),
       });
     } catch (err) {

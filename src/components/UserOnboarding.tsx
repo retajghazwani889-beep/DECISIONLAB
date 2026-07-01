@@ -18,6 +18,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { safeLocalStorage as localStorage } from '../lib/storage';
+import { formatAuthError } from '../lib/utils';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     fullName: ''
   });
   const [formData, setFormData] = useState({
+    fullName: '',
     startupName: '',
     roleType: '' as UserProfile['roleType']
   });
@@ -59,14 +61,53 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   }, [mode]);
 
+  // ── Step routing ─────────────────────────────────────────────────────────
+  // A user who hasn't finished onboarding must ALWAYS answer the questions
+  // (step 3) before they can ever reach the success screen (step 5). This is
+  // what stops the flow from jumping straight to "workspace activated" without
+  // the questions being answered. A returning user who genuinely completed
+  // onboarding is sent to the welcome-back screen — but only when they just
+  // signed in, never mid-signup (finalizeProfile owns that transition itself).
   useEffect(() => {
-    if (user && !profile && step < 3 && isOpen) {
-      setStep(3);
+    if (!isOpen) return;
+
+    if (user && (!profile || !profile.onboardingCompleted)) {
+      if (step < 3) setStep(3);
+      return;
     }
-    if (user && profile && profile.onboardingCompleted && step < 5 && isOpen) {
+
+    if (
+      user &&
+      profile?.onboardingCompleted &&
+      (profile as any)?.accountType !== 'investor' &&
+      flowContext === 'signin' &&
+      step < 5
+    ) {
       setStep(5);
     }
-  }, [user, profile, isOpen]);
+  }, [user, profile, isOpen, step, flowContext]);
+
+  // Investors never see the founder onboarding/welcome flow. The moment we know
+  // the signed-in account is an approved investor, close this modal and send them
+  // straight to their matches dashboard — not the founder "Welcome back" screen,
+  // and never the investor sign-in page while already logged in.
+  useEffect(() => {
+    if (!isOpen || !user || !profile) return;
+    if ((profile as any).accountType === 'investor') {
+      onClose();
+      navigate('/investor-matches');
+    }
+  }, [isOpen, user, profile, navigate, onClose]);
+
+  // Pre-fill the role step's name field with whatever we already know (the name
+  // typed at signup, or the Google display name) so the user can confirm or edit
+  // it rather than retype from scratch.
+  useEffect(() => {
+    if (step !== 3) return;
+    setFormData((f) =>
+      f.fullName ? f : { ...f, fullName: authForm.fullName || user?.displayName || '' }
+    );
+  }, [step, authForm.fullName, user]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +127,7 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setSuccessMsg("Reset link sent to your email.");
       }
     } catch (err: any) {
-      setError(err.message || "Authentication failed. Please try again.");
+      setError(formatAuthError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,11 +136,12 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const finalizeProfile = async () => {
     if (!user) return;
     setIsSubmitting(true);
+    const chosenName = formData.fullName.trim() || authForm.fullName || user.displayName || 'User';
     const profileData: UserProfile = {
       uid: user.uid,
       userId: user.uid,
-      fullName: authForm.fullName || user.displayName || 'User',
-      displayName: authForm.fullName || user.displayName || 'User',
+      fullName: chosenName,
+      displayName: chosenName,
       email: user.email!,
       photoURL: user.photoURL,
       subscriptionStatus: 'premium', // Automatically premium for institutional setup
@@ -333,6 +375,21 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                     <div className="space-y-4">
                       <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Full Name</label>
+                        <div className="relative">
+                          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                          <input
+                            type="text"
+                            value={formData.fullName}
+                            onChange={e => setFormData({...formData, fullName: e.target.value})}
+                            placeholder="John Doe"
+                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 pl-11 pr-4 text-sm text-brand-text-primary focus:border-brand-accent/50 outline-none transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary ml-1">Role</label>
                         <select 
                           value={formData.roleType}
@@ -363,7 +420,7 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                     <button
                       onClick={finalizeProfile}
-                      disabled={isSubmitting || !formData.roleType}
+                      disabled={isSubmitting || !formData.roleType || !formData.fullName.trim()}
                       className="w-full py-4 bg-brand-accent text-[#08131D] font-bold text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-accent/20"
                     >
                       {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { STARTUP_STAGES, INDUSTRIES } from '../constants';
-import { cn } from '../lib/utils';
+import { cn, formatAuthError } from '../lib/utils';
 import {
   Building2,
   Globe,
@@ -49,7 +49,10 @@ const normalizeUrl = (raw: string) => {
 };
 
 export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetworkPageProps) {
-  const { profile, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  // refreshProfile is pulled in so we can force the in-memory profile to reload
+  // the moment an investor is approved — otherwise the redirect to
+  // /investor-matches sees a stale profile (no accountType) and bounces back.
+  const { profile, signInWithGoogle, signInWithEmail, signUpWithEmail, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   const stageOptions = toLabels(STARTUP_STAGES as any[]);
@@ -87,7 +90,7 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
         await signInWithEmail(authEmail.trim(), authPass);
       }
     } catch (err: any) {
-      setAuthErr(err?.message?.replace('Firebase:', '').trim() || 'Could not sign in. Check your details and try again.');
+      setAuthErr(formatAuthError(err));
     }
     setAuthBusy(false);
   };
@@ -98,7 +101,7 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      setAuthErr(err?.message?.replace('Firebase:', '').trim() || 'Google sign-in failed.');
+      setAuthErr(formatAuthError(err));
     }
     setAuthBusy(false);
   };
@@ -232,6 +235,11 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
         { merge: true }
       );
     }
+    // CRITICAL: reload the in-memory profile so accountType:'investor' is live
+    // before we redirect to /investor-matches. Without this the matches page's
+    // guard reads a stale profile, decides you're not an investor, and bounces
+    // you straight back here — the "takes me back" loop.
+    await refreshProfile();
   };
 
   const handleSubmitOrganization = async () => {

@@ -17,14 +17,35 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
 
-  const isRetajProfile = 
-    user?.email?.toLowerCase().includes('retaj') || 
-    user?.email?.toLowerCase().includes('assad') ||
-    user?.email?.toLowerCase() === 'retajghazwani889@gmail.com' ||
-    user?.displayName?.toLowerCase().includes('retaj') ||
-    user?.displayName?.toLowerCase().includes('assad') ||
-    profile?.email?.toLowerCase().includes('retaj') ||
-    profile?.displayName?.toLowerCase().includes('retaj');
+  // Investor accounts get their own minimal nav — never the founder pages.
+  const isInvestor = (profile as any)?.accountType === 'investor';
+  // Investor "portal" area: also true (even when logged out) on investor pages,
+  // so the investor sign-in page shows no founder nav and no founder ENTER button.
+  const investorArea = isInvestor || location.pathname.startsWith('/investor-');
+  const founderLinks = [
+    { label: 'HOME', path: '/' },
+    { label: 'ABOUT US', path: '/about' },
+    { label: 'DASHBOARD', path: '/dashboard', hidden: !user },
+    { label: 'PRICING', path: '/pricing' },
+    { label: 'INVESTOR NETWORK', path: '/investor-network' },
+  ];
+  const investorLinks = [
+    { label: 'MATCHES', path: '/investor-matches' },
+    { label: 'MATCH HISTORY', path: '/investor-history' },
+  ];
+  // Logged-in investor → matches link. Investor pages while logged out → no
+  // center links (clean portal). Everyone else → founder links.
+  const navLinks = isInvestor ? investorLinks : (investorArea ? [] : founderLinks);
+
+  // Real identity, straight from the signed-in user's profile. `fullName` is what
+  // the dropdown shows; `firstName` keeps the compact button tidy; `roleLabel` is
+  // the role they chose at onboarding (or their investor badge). No hardcoded names.
+  const fullName =
+    profile?.displayName || (profile as any)?.fullName || user?.displayName || 'Member';
+  const firstName = fullName.split(' ')[0] || fullName;
+  const roleLabel = isInvestor
+    ? ((profile as any)?.investorBadge || 'Investor')
+    : ((profile as any)?.roleType || 'Member');
 
   const handleLogout = async () => {
     try {
@@ -46,14 +67,8 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-2 flex-row flex-nowrap whitespace-nowrap">
-            {[
-              { label: 'HOME', path: '/' },
-              { label: 'ABOUT US', path: '/about' },
-              { label: 'DASHBOARD', path: '/dashboard', hidden: !user && !localStorage.getItem('cached_analyses') },
-              { label: 'PRICING', path: '/pricing' },
-              { label: 'INVESTOR NETWORK', path: '/investor-network' },
-            ].map(link => {
-              if (link.hidden) return null;
+            {navLinks.map(link => {
+              if ((link as any).hidden) return null;
               const isActive = location.pathname === link.path;
               return (
                 <Link 
@@ -96,10 +111,10 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                   </div>
                   <div className="flex flex-col items-start leading-none gap-2">
                     <span className="text-sm font-black text-brand-text-primary uppercase tracking-tight whitespace-nowrap">
-                      RETAJ
+                      {firstName}
                     </span>
                     <span className="text-[12px] font-semibold text-[#5da9ff] uppercase tracking-[0.02em] opacity-95 whitespace-nowrap">
-                      CHIEF EDITOR
+                      {roleLabel}
                     </span>
                   </div>
                   <ChevronDown size={14} className={cn("text-brand-accent transition-transform duration-300", dropdownOpen && "rotate-180")} />
@@ -114,29 +129,44 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                       className="absolute right-0 mt-4 w-72 bg-brand-section/95 backdrop-blur-3xl border border-brand-accent/20 rounded-[2.5rem] shadow-huge overflow-hidden z-[100] p-3"
                     >
                       <div className="px-6 py-5 border-b border-brand-accent/10 mb-3 bg-brand-accent/5 rounded-t-[2rem]">
-                        <p className="text-sm font-black text-brand-text-primary uppercase tracking-tight truncate whitespace-nowrap">RETAJ GHAZWANI</p>
+                        <p className="text-sm font-black text-brand-text-primary uppercase tracking-tight truncate whitespace-nowrap">{fullName}</p>
                         <p className="text-[10px] font-black text-brand-accent uppercase tracking-widest mt-1 opacity-60">ID: {user.uid.slice(0, 8)}</p>
                       </div>
                       <div className="space-y-1">
-                        <Link
-                          to="/dashboard"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
-                        >
-                          <div className="flex items-center gap-4">
-                            <Database size={18} className="text-brand-accent" /> Dashboard
-                          </div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </Link>
-                        <Link
-                          to="/pricing"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 rounded-xl transition-all"
-                        >
-                          <div className="flex items-center gap-4">
-                            <Zap size={18} fill="currentColor" /> Pricing
-                          </div>
-                        </Link>
+                        {isInvestor ? (
+                          <Link
+                            to="/investor-matches"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <Database size={18} className="text-brand-accent" /> My Matches
+                            </div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </Link>
+                        ) : (
+                          <>
+                            <Link
+                              to="/dashboard"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Database size={18} className="text-brand-accent" /> Dashboard
+                              </div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                            <Link
+                              to="/pricing"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 rounded-xl transition-all"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Zap size={18} fill="currentColor" /> Pricing
+                              </div>
+                            </Link>
+                          </>
+                        )}
                       </div>
                       <div className="mt-3 pt-3 border-t border-brand-accent/10">
                         <button
@@ -150,7 +180,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                   )}
                 </AnimatePresence>
               </div>
-            ) : (
+            ) : investorArea ? null : (
               <button
                 onClick={onOpenAccess}
                 className="flex items-center gap-3 px-10 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 group relative overflow-hidden"

@@ -108,3 +108,36 @@ export function withOklchHtml2CanvasPatch<T>(fn: () => Promise<T>): Promise<T> {
     window.getComputedStyle = originalGetComputedStyle;
   });
 }
+
+export function formatAuthError(error: any): string {
+  if (!error) return 'Authentication failed. Please check your credentials and try again.';
+  
+  const code = error.code || '';
+  const message = error.message || String(error);
+
+  if (code === 'auth/email-already-in-use' || message.includes('email-already-in-use') || message.includes('auth/email-already-in-use')) {
+    return 'This email is already in use. Please sign in instead.';
+  }
+  if (code === 'auth/invalid-credential' || message.includes('invalid-credential') || message.includes('auth/invalid-credential')) {
+    return 'Invalid email or password. Please double check your credentials.';
+  }
+  if (code === 'auth/weak-password' || message.includes('weak-password') || message.includes('auth/weak-password')) {
+    return 'Password must be at least 6 characters long.';
+  }
+  if (code === 'auth/invalid-email' || message.includes('invalid-email') || message.includes('auth/invalid-email')) {
+    return 'Please enter a valid email address.';
+  }
+  if (code === 'auth/user-not-found' || message.includes('user-not-found') || message.includes('auth/user-not-found')) {
+    return 'No account was found with this email.';
+  }
+  if (code === 'auth/wrong-password' || message.includes('wrong-password') || message.includes('auth/wrong-password')) {
+    return 'Incorrect password. Please try again.';
+  }
+
+  // Strip "Firebase:" prefix if present
+  let cleanMsg = message;
+  if (cleanMsg.startsWith('Firebase:')) {
+    cleanMsg = cleanMsg.replace(/^Firebase:\s*(Error\s*)?(\([^)]+\))?:?\s*/, '').trim();
+  }
+  return cleanMsg || 'Authentication failed. Please check your details.';
+}

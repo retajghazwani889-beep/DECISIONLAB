@@ -3,8 +3,9 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { UserProfile, AnalysisReport } from '../types';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { Loader2, AlertCircle, ArrowLeft, RefreshCw, Briefcase, ArrowRight, Mail } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import ResultsDashboard from '../components/ResultsDashboard';
 
 interface StartupDashboardPageProps {
@@ -17,6 +18,9 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cameFromInvestorList = searchParams.get('investor') === '1';
+  // Only needed so a freshly-logged pitch-deck request appears in Match History
+  // right away rather than after a manual reload.
+  const { refreshProfile } = useAuth();
 
   const getInitialState = () => {
     if (id) {
@@ -42,6 +46,9 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
   const [status, setStatus] = useState<'loading' | 'completed' | 'failed'>(initialState.status);
   const [error, setError] = useState<string | null>(initialState.error);
   const [retryKey, setRetryKey] = useState(0);
+  // Founder contact resolved by looking up the founder's profile, used as a
+  // fallback for older shares whose analysis doc never saved the contact.
+  const [resolvedFounder, setResolvedFounder] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (status === 'completed' && analysis) {
@@ -191,6 +198,55 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
     fetchProject();
   }, [id, navigate, retryKey]);
 
+  // Auto-fill founder contact on a shared startup the FIRST time its owner
+  // opens it, so matched investors can always see name + email (and the
+  // "Request pitch deck" button works) without any manual step.
+  useEffect(() => {
+    const a: any = analysis;
+    if (!a || !user?.uid) return;
+    const isOwner = a.userId === user.uid;
+    const isShared = a.sharedWithInvestors === true;
+    const missingContact = !a.shareFounderName || !a.shareFounderEmail;
+    if (isOwner && isShared && missingContact) {
+      const nm = (profile as any)?.fullName || (profile as any)?.displayName || user.displayName || '';
+      const em = (profile as any)?.email || user.email || '';
+      if (nm || em) {
+        updateDoc(doc(db, 'analyses', a.id || id || ''), {
+          shareFounderName: nm,
+          shareFounderEmail: em,
+        }).catch((err) => console.warn('Could not backfill founder contact:', err));
+      }
+    }
+  }, [analysis, user, profile, id]);
+
+  // Investor-side fallback: if an investor opens a startup whose share never
+  // saved the founder contact (older shares, before auto-save), look the founder
+  // up by their userId so the contact shows and the pitch-deck button enables —
+  // without waiting for the founder to re-open their own report. Best-effort;
+  // silently skipped if the profile read is denied by rules.
+  useEffect(() => {
+    const a: any = analysis;
+    if (!a || a.shareFounderEmail || !a.userId) return;
+    const isInvestorAcct = (profile as any)?.accountType === 'investor';
+    const isOwner = a.userId === user?.uid;
+    if (!isInvestorAcct || isOwner) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'profiles', a.userId));
+        if (!cancelled && snap.exists()) {
+          const p = snap.data() as any;
+          setResolvedFounder({ name: p.displayName || p.fullName || '', email: p.email || '' });
+        }
+      } catch (_) {
+        /* read denied or offline — leave the button disabled */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [analysis, profile, user]);
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-[#08131D] flex items-center justify-center p-8">
@@ -237,15 +293,43 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
   // Investor view: forced when opened from the investor list, or when the
   // viewer isn't the owner. Founders viewing their own startup see everything.
   const isOwnerViewing = !!analysis?.userId && analysis.userId === user?.uid;
-  const investorMode = cameFromInvestorList || (!!analysis?.userId && !isOwnerViewing);
+  const isInvestorAccount = (profile as any)?.accountType === 'investor';
+  // Only investor accounts ever see the investor view / "Interested?" bar.
+  // Founder accounts always get the normal dashboard, on every project.
+  const investorMode = isInvestorAccount && (cameFromInvestorList || (!!analysis?.userId && !isOwnerViewing));
 
   const founderName =
-    (analysis as any)?.shareFounderName || (isOwnerViewing ? (profile?.fullName || user?.displayName || '') : '');
+    (analysis as any)?.shareFounderName ||
+    resolvedFounder?.name ||
+    (isOwnerViewing ? (profile?.fullName || user?.displayName || '') : '');
   const founderEmail =
-    (analysis as any)?.shareFounderEmail || (isOwnerViewing ? ((profile as any)?.email || user?.email || '') : '');
+    (analysis as any)?.shareFounderEmail ||
+    resolvedFounder?.email ||
+    (isOwnerViewing ? ((profile as any)?.email || user?.email || '') : '');
   const companyName = (analysis as any)?.startupProfile?.companyName || (analysis as any)?.ideaDescription || 'this startup';
 
-  const requestPitchDeck = () => {
+  const requestPitchDeck = async () => {
+    // Save this startup to the investor's Match History so they can find it later,
+    // then refresh the profile so it shows up immediately.
+    if (user?.uid) {
+      try {
+        await setDoc(
+          doc(db, 'profiles', user.uid),
+          {
+            requestedStartups: arrayUnion({
+              id: (analysis as any)?.id || id || '',
+              companyName,
+              founderName: founderName || '',
+              founderEmail: founderEmail || '',
+            }),
+          },
+          { merge: true }
+        );
+        await refreshProfile();
+      } catch (e) {
+        console.warn('Could not save request history:', e);
+      }
+    }
     const subject = encodeURIComponent(`Pitch deck request — ${companyName}`);
     const body = encodeURIComponent(
       `Hi${founderName ? ' ' + founderName : ''},\n\nI'm an investor on DecisionLab and I'd love to see the pitch deck for ${companyName}. Could you share it when you get a chance?\n\nThank you!`

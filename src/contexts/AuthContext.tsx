@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, email, pass);
     } catch (error) {
-      console.error("Login Error:", error);
+      console.warn("Login Error:", error);
       throw error;
     }
   };
@@ -222,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(result.user, { displayName: fullName });
       }
     } catch (error) {
-      console.error("Signup Error:", error);
+      console.warn("Signup Error:", error);
       throw error;
     }
   };
@@ -231,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (error) {
-      console.error("Password Reset Error:", error);
+      console.warn("Password Reset Error:", error);
       throw error;
     }
   };
