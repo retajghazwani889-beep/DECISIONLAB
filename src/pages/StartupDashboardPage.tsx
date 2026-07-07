@@ -70,10 +70,10 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
       try {
         setStatus('loading');
         setError(null);
-        
+
         console.log("Fetching project from firestore:", id);
         const docRef = doc(db, 'analyses', id);
-        
+
         let docSnap;
         let isLoaded = false;
 
@@ -86,7 +86,7 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
               setAnalysis(data);
               setStatus('completed');
               isLoaded = true;
-              
+
               try {
                 const cached = localStorage.getItem('cached_analyses');
                 let list: any[] = cached ? JSON.parse(cached) : [];
@@ -122,7 +122,7 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
                   setAnalysis(data);
                   setStatus('completed');
                   isLoaded = true;
-                  
+
                   try {
                     const cached = localStorage.getItem('cached_analyses');
                     let list: any[] = cached ? JSON.parse(cached) : [];
@@ -172,17 +172,10 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
 
         // FIX: Tier 4 used to be a "Dynamic on-the-fly analytical synthesis fallback"
         // that fabricated a completely fake but professional-looking completed
-        // analysis (hardcoded scores: overall 85, ideaStrength 75, marketFit 80,
-        // execution 82, scalability 85, competition 88, investorAppeal 84;
-        // fake competitors, fake TAM/SAM/SOM, fake investor matches, etc.) whenever
-        // the real project genuinely could not be found anywhere — Firestore, the
-        // server proxy, and local cache all came up empty. That fake data was
-        // indistinguishable from a real analysis in the UI, which is part of why
-        // scores looked "stuck" on the same numbers across different ideas.
-        // We no longer fabricate a stand-in analysis. If the project truly isn't
-        // found anywhere, show a real error and let the person retry or go back —
-        // never silently substitute invented numbers for a venture they asked
-        // DecisionLab to analyze.
+        // analysis (hardcoded scores) whenever the real project genuinely could not
+        // be found anywhere. We no longer fabricate a stand-in analysis. If the
+        // project truly isn't found anywhere, show a real error and let the person
+        // retry or go back — never silently substitute invented numbers.
         if (!isLoaded) {
           console.warn("Project not found in Firestore, proxy API, or local cache:", id);
           setError("This venture analysis could not be found. It may still be generating, or the connection was interrupted before it finished saving.");
@@ -341,6 +334,7 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
     <div className="bg-[#102434] min-h-screen">
       <div className="max-w-[1400px] mx-auto py-12 md:py-24 px-4 sm:px-6">
         <ResultsDashboard analysis={analysis} profile={profile} investorView={investorMode} />
+
 
         {investorMode && (
           <div className="mt-10 bg-[#0b1a26] border border-white/10 rounded-[2rem] p-8 sm:p-10 text-center">

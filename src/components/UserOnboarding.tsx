@@ -186,7 +186,7 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setFlowContext('signin'); // Default to signin context for Google, profile check will fix if new
       await signInWithGoogle();
     } catch (err: any) {
-      setError("Secure tunnel initialization failed.");
+      setError(formatAuthError(err));
     } finally {
       setIsSubmitting(false);
     }

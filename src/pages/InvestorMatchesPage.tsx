@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, getDocs, getDoc, doc, query, where } from 'firebase/firestore';
 import { cn } from '../lib/utils';
-import { Loader2, ArrowRight, Search, Lock, Mail, ShieldCheck, Send } from 'lucide-react';
+import { Loader2, ArrowRight, Search, Lock, Mail } from 'lucide-react';
+import TimelineStrip from '../components/TimelineStrip';
 
 interface InvestorMatchesPageProps {
   user: any;
@@ -37,7 +38,6 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
       navigate('/investor-network');
       return;
     }
-    // profile still loading -> wait
     if (profile === null || profile === undefined) return;
     if (!isApprovedInvestor) {
       navigate('/investor-network');
@@ -56,6 +56,8 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
         const filtered = rows.filter((r) => {
           const score = Number(r.shareScore ?? 0);
           if (score < 80) return false; // shared + 80%+ implies a Growth founder opted in
+          // Submitted decks live under SUBMISSIONS, not Matches — hide them here.
+          if (r.submittedToInvestors === true) return false;
           const stage = (r.shareStage || r.startupProfile?.stage || '')
             .toString().toLowerCase().replace(/\./g, '').trim();
           const stageOk =
@@ -69,11 +71,7 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
           return stageOk && nicheOk && modelOk;
         });
 
-        // Best-effort contact backfill: older shares (created before the founder
-        // contact was auto-saved onto the analysis) have no shareFounderEmail. For
-        // those, look up the founder's own profile by userId so their name + email
-        // still show and the pitch-deck button works. Silently skipped if the read
-        // is denied by rules — the card just falls back to "contact will appear".
+        // Best-effort contact backfill for older shares (see Submissions page too).
         const enriched = await Promise.all(
           filtered.map(async (r) => {
             if (r.shareFounderEmail || !r.userId) return r;
@@ -123,7 +121,7 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
             <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-3">Investor Network</span>
             <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight font-display leading-[0.95]">Matched startups</h1>
             <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed max-w-xl">
-              Founders who opted in, scored 80% or higher, and fit your stages, niches, and business models.
+              Founders who opted in, scored 80% or higher, and fit your stages, niches, and business models. Follow each founder's progress below.
             </p>
           </div>
           <div className="flex flex-col items-end gap-3 shrink-0">
@@ -174,22 +172,6 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
               const founderName = m.shareFounderName || (m.userId === user?.uid ? (profile?.fullName || user?.displayName || '') : '');
               const founderEmail = m.shareFounderEmail || (m.userId === user?.uid ? ((profile as any)?.email || user?.email || '') : '');
 
-              // Open the investor's mail client with a pre-filled request to the
-              // founder. The investor's own address is the "from", so the founder
-              // can reply directly with their deck.
-              const requestDeck = () => {
-                if (!founderEmail) return;
-                const investorName =
-                  (profile as any)?.displayName || (profile as any)?.fullName || user?.displayName || 'an investor';
-                const subject = encodeURIComponent(`Pitch deck request — ${name}`);
-                const body = encodeURIComponent(
-                  `Hi${founderName ? ' ' + founderName : ''},\n\n` +
-                    `I'm ${investorName} on DecisionLab and I'd love to see the pitch deck for ${name}. ` +
-                    `Could you share it when you get a chance?\n\nThank you!`
-                );
-                window.location.href = `mailto:${founderEmail}?subject=${subject}&body=${body}`;
-              };
-
               return (
                 <div key={m.id} className="p-6 bg-brand-card border border-white/5 rounded-[1.75rem] hover:border-brand-accent/40 transition-all">
                   <div className="flex items-start justify-between gap-4">
@@ -210,6 +192,9 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
                     </div>
                   </div>
 
+                  {/* Founder progress timeline */}
+                  <TimelineStrip analysis={m} />
+
                   <div className="mt-5 pt-5 border-t border-white/5">
                     <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-2">Founder</div>
                     {founderEmail ? (
@@ -224,20 +209,12 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
                     )}
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <div className="mt-5">
                     <button
                       onClick={() => navigate(`/dashboard/startup/${m.id}/overview?investor=1`)}
-                      className="px-6 py-3 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2"
+                      className="px-6 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                     >
                       View report <ArrowRight size={13} />
-                    </button>
-                    <button
-                      onClick={requestDeck}
-                      disabled={!founderEmail}
-                      title={founderEmail ? 'Email the founder to request their pitch deck' : 'Founder contact not shared yet'}
-                      className="px-6 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                    >
-                      <Send size={13} /> Request pitch deck
                     </button>
                   </div>
                 </div>

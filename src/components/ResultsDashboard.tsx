@@ -1,4 +1,5 @@
 import { AnalysisReport, UserProfile } from '../types';
+import FounderTimeline from './FounderTimeline';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -1995,10 +1996,22 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black text-xs font-mono">S</div>
                       <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Strengths</h5>
                     </div>
-                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
-                      <li>Unique architecture with {(currentAnalysis.scores as any)?.ideaStrength?.score || 85}% concept strength rating</li>
-                      <li>High core technology defensibility (edge pattern scanning)</li>
-                      <li>Verifiable execution latency parameters under extreme simulated environments</li>
+                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                      {(currentAnalysis.swot?.strengths && currentAnalysis.swot.strengths.length > 0) ? (
+                        currentAnalysis.swot.strengths.map((it: any, i: number) => (
+                          <li key={i} className="pl-4 border-l-2 border-white/10">
+                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                            {typeof it !== 'string' && it.why && (
+                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                            )}
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                        <li>Strong core concept and defensible technology.</li>
+                        <li>Validated execution under demanding conditions.</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   {/* W */}
@@ -2007,10 +2020,22 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <div className="w-8 h-8 rounded-lg bg-brand-coral/10 flex items-center justify-center text-brand-coral font-black text-xs font-mono">W</div>
                       <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Weaknesses</h5>
                     </div>
-                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
-                      <li>Early operational business stages starting from {displayProfile.stage}</li>
-                      <li>Lack of multi-regional pre-existing consumer relationships</li>
-                      <li>Requires initial capital deployment to acquire specialized database engineers</li>
+                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                      {(currentAnalysis.swot?.weaknesses && currentAnalysis.swot.weaknesses.length > 0) ? (
+                        currentAnalysis.swot.weaknesses.map((it: any, i: number) => (
+                          <li key={i} className="pl-4 border-l-2 border-white/10">
+                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                            {typeof it !== 'string' && it.why && (
+                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                            )}
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                        <li>Early operational stage with limited traction.</li>
+                        <li>Requires capital to scale the team.</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   {/* O */}
@@ -2019,10 +2044,22 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent font-black text-xs font-mono">O</div>
                       <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Opportunities</h5>
                     </div>
-                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
-                      <li>Direct expansion into key high-growth {displayProfile.industry || 'enterprise cloud'} spaces</li>
-                      <li>Enlisting GCC and EU regional accelerators for pilot secure edge deployments</li>
-                      <li>Automated workflow integrations to capture traditional manually managed customers</li>
+                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                      {(currentAnalysis.swot?.opportunities && currentAnalysis.swot.opportunities.length > 0) ? (
+                        currentAnalysis.swot.opportunities.map((it: any, i: number) => (
+                          <li key={i} className="pl-4 border-l-2 border-white/10">
+                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                            {typeof it !== 'string' && it.why && (
+                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                            )}
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                        <li>Expansion into adjacent high-growth markets.</li>
+                        <li>Partnerships and integrations to accelerate adoption.</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   {/* T */}
@@ -2031,10 +2068,22 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <div className="w-8 h-8 rounded-lg bg-brand-amber/10 flex items-center justify-center text-brand-amber font-black text-xs font-mono">T</div>
                       <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Threats</h5>
                     </div>
-                    <ul className="space-y-3 pl-4 list-disc text-xs text-brand-text-secondary leading-relaxed">
-                      <li>Incumbent product price decreases blocking early startup segment capture</li>
-                      <li>Revisions in international data protection regulation parameters</li>
-                      <li>Global engineering talent blockade restricting core product development speed</li>
+                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                      {(currentAnalysis.swot?.threats && currentAnalysis.swot.threats.length > 0) ? (
+                        currentAnalysis.swot.threats.map((it: any, i: number) => (
+                          <li key={i} className="pl-4 border-l-2 border-white/10">
+                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                            {typeof it !== 'string' && it.why && (
+                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                            )}
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                        <li>Incumbent pricing pressure on early market capture.</li>
+                        <li>Regulatory and talent-availability risks.</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -2376,6 +2425,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </Link>
                   </div>
 
+                  {!investorView && <FounderTimeline analysis={currentAnalysis} scoreOverride={getCalculatedVentureScore(currentAnalysis.scores)} canEdit={true} />}
                   <div className="p-8 bg-brand-card/40 border border-brand-border/20 rounded-[2.5rem] space-y-6">
                     <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Real-time Data Synchronization Metrics</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs">

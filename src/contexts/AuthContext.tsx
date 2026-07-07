@@ -169,11 +169,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error && (error.code === 'auth/popup-closed-by-user' || error.message?.includes('popup-closed-by-user'))) {
-        console.warn("Google authentication closed or cancelled by user.");
-        return;
+      const code = error?.code || '';
+      const msg = error?.message || '';
+      const isPopupIssue = 
+        code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request' ||
+        code === 'auth/popup-blocked' ||
+        msg.includes('popup-closed-by-user') ||
+        msg.includes('cancelled-popup-request') ||
+        msg.includes('popup-blocked');
+
+      if (isPopupIssue) {
+        console.warn("Google authentication popup closed, cancelled, or blocked:", error);
+      } else {
+        console.error("Auth Error:", error);
       }
-      console.error("Auth Error:", error);
       throw error;
     }
   };
@@ -192,11 +202,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return null;
     } catch (error: any) {
-      const isPopupClosed = error && (error.code === 'auth/popup-closed-by-user' || error.message?.includes('popup-closed-by-user'));
+      const code = error?.code || '';
+      const msg = error?.message || '';
+      const isPopupClosed = 
+        code === 'auth/popup-closed-by-user' || 
+        code === 'auth/cancelled-popup-request' ||
+        code === 'auth/popup-blocked' ||
+        msg.includes('popup-closed-by-user') ||
+        msg.includes('cancelled-popup-request') ||
+        msg.includes('popup-blocked');
+
       if (isPopupClosed) {
-        console.warn("Google Workspace connection closed by user (auth/popup-closed-by-user).");
+        console.warn("Google Workspace connection closed, cancelled, or blocked by user/iframe context:", error);
         setGoogleWorkspaceError(
-          "The Google authentication window was closed or blocked by browser security settings. When previewing within the workspace, secure connection popups can be restricted. Please open the application in a new tab using the 'Open in New Tab' button or the top-right launch icon (↗) to connect successfully."
+          "The Google authentication window was closed, cancelled, or blocked by browser security settings. When previewing within the workspace iframe, secure connection popups can be restricted. Please open the application in a new tab using the 'Open in New Tab' button or the top-right launch icon (↗) to connect successfully."
         );
         return null;
       }

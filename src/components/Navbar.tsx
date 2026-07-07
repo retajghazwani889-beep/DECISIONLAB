@@ -31,6 +31,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   ];
   const investorLinks = [
     { label: 'MATCHES', path: '/investor-matches' },
+    { label: 'SUBMISSIONS', path: '/investor-submissions' },
     { label: 'MATCH HISTORY', path: '/investor-history' },
   ];
   // Logged-in investor → matches link. Investor pages while logged out → no
@@ -134,16 +135,28 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                       </div>
                       <div className="space-y-1">
                         {isInvestor ? (
-                          <Link
-                            to="/investor-matches"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
-                          >
-                            <div className="flex items-center gap-4">
-                              <Database size={18} className="text-brand-accent" /> My Matches
-                            </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </Link>
+                          <>
+                            <Link
+                              to="/investor-matches"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Database size={18} className="text-brand-accent" /> My Matches
+                              </div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                            <Link
+                              to="/investor-submissions"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
+                            >
+                              <div className="flex items-center gap-4">
+                                <Database size={18} className="text-brand-accent" /> Submissions
+                              </div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                          </>
                         ) : (
                           <>
                             <Link

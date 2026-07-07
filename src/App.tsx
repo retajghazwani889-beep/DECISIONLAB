@@ -14,6 +14,7 @@ import AboutPage from './pages/AboutPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
+import InvestorSubmissionsPage from './pages/InvestorSubmissionsPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -164,6 +165,7 @@ function AppContent() {
           {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
           <Route path="/investor-matches" element={<InvestorMatchesPage user={user} />} />
+          <Route path="/investor-submissions" element={<InvestorSubmissionsPage user={user} />} />
           <Route path="/investor-history" element={<InvestorHistoryPage user={user} />} />
 
           {/* ── Analysis ── */}

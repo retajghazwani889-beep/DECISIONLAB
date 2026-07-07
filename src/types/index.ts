@@ -293,6 +293,12 @@ export interface AnalysisReport {
   competitorAnalysis?: CompetitorAnalysis;
   riskMatrix?: any;
   risks?: any;
+  swot?: {
+    strengths: { point: string; why: string }[];
+    weaknesses: { point: string; why: string }[];
+    opportunities: { point: string; why: string }[];
+    threats: { point: string; why: string }[];
+  };
   keyInsights?: string[];
   growthPotential?: GrowthPotential;
   pitchReadiness?: any;

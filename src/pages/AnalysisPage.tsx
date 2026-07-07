@@ -388,6 +388,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
 
       try {
         await setDoc(doc(db, 'analyses', analysisId), {
+          userId: user!.uid,
           status: 'failed',
           failureReason: reason,
           updatedAt: serverTimestamp()

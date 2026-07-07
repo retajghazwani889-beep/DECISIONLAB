@@ -4,7 +4,9 @@ import path from "path";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc as clientDoc, getDoc as clientGetDoc, setDoc as clientSetDoc } from "firebase/firestore";
+import admin from "firebase-admin";
+import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import fs from "fs";
 
 dotenv.config();
@@ -18,8 +20,27 @@ try {
   console.error("Failed to read firebase config in server.ts:", err);
 }
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+let useAdminSdk = false;
+let adminDb: any = null;
+let clientDb: any = null;
+
+try {
+  // Initialize firebase-admin with Project ID from config
+  const adminApp = admin.initializeApp({
+    projectId: firebaseConfig.projectId,
+  });
+  adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+  useAdminSdk = true;
+  console.log("Firestore Admin SDK initialized successfully in server.ts.");
+} catch (adminErr) {
+  console.warn("Could not initialize Firestore Admin SDK (falling back to Client SDK):", adminErr);
+  try {
+    const firebaseApp = initializeApp(firebaseConfig);
+    clientDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+  } catch (clientErr) {
+    console.error("Failed to initialize Firestore Client SDK on server:", clientErr);
+  }
+}
 
 async function startServer() {
   const app = express();
@@ -31,12 +52,22 @@ async function startServer() {
   app.get("/api/analyses/:id", async (req, res) => {
     const { id } = req.params;
     try {
-      const docRef = doc(db, 'analyses', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        res.json({ found: true, data: docSnap.data() });
+      if (useAdminSdk && adminDb) {
+        const docRef = adminDb.collection('analyses').doc(id);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+          res.json({ found: true, data: docSnap.data() });
+        } else {
+          res.json({ found: false });
+        }
       } else {
-        res.json({ found: false });
+        const docRef = clientDoc(clientDb, 'analyses', id);
+        const docSnap = await clientGetDoc(docRef);
+        if (docSnap.exists()) {
+          res.json({ found: true, data: docSnap.data() });
+        } else {
+          res.json({ found: false });
+        }
       }
     } catch (error: any) {
       console.warn("Server API Firestore fetch warning (this is expected if Firestore is still being provisioned):", error);
@@ -49,9 +80,15 @@ async function startServer() {
     const { id } = req.params;
     const body = req.body;
     try {
-      const docRef = doc(db, 'analyses', id);
-      await setDoc(docRef, body, { merge: true });
-      res.json({ success: true });
+      if (useAdminSdk && adminDb) {
+        const docRef = adminDb.collection('analyses').doc(id);
+        await docRef.set(body, { merge: true });
+        res.json({ success: true });
+      } else {
+        const docRef = clientDoc(clientDb, 'analyses', id);
+        await clientSetDoc(docRef, body, { merge: true });
+        res.json({ success: true });
+      }
     } catch (error: any) {
       console.error("Server API Firestore write error:", error);
       res.status(500).json({ success: false, error: error.message });
@@ -347,6 +384,10 @@ async function startServer() {
         1. Market Analysis (TAM/SAM/SOM sizing and CAGRs)
         2. Competitor Analysis (gaps in legacy options, competitor profiling)
         3. SWOT Analysis (precise strengths, risks, threats, opportunities)
+        SWOT (CRITICAL — investor-facing): Populate the \`swot\` object with 3-4 items each for strengths, weaknesses, opportunities, threats, ALL specific to THIS venture (never generic). For every item provide:
+          - \`point\`: the specific factor in a short phrase, and
+          - \`why\`: 1-2 full sentences explaining WHY it matters to an investor — the concrete consequence, risk, or advantage. For weaknesses and threats, explain plainly why it is a problem and what it could cost. Base every item on the actual analysis (scores, market, competitors, stage, risks) — not boilerplate.
+
         4. Business Model Analysis (pricing, margin structure)
         5. Investor Readiness Analysis (validation metrics, scores)
         6. Growth Analysis (milestones, customer acquisition pathways)
@@ -515,7 +556,11 @@ async function startServer() {
 
         11. DecisionLab Final Verdict:
             Compile overall ratings, validation scores, investor scores, risk scores, and success probability. Identify Top 5 strengths, Top 5 weaknesses, and dynamic next actions.
-            
+        SWOT (CRITICAL — investor-facing): Populate the \`swot\` object with 3-4 items each for strengths, weaknesses, opportunities, threats, ALL specific to THIS venture (never generic). For every item provide:
+          - \`point\`: the specific factor in a short phrase, and
+          - \`why\`: 1-2 full sentences explaining WHY it matters to an investor — the concrete consequence, risk, or advantage. For weaknesses and threats, explain plainly why it is a problem and what it could cost. Base every item on the actual analysis (scores, market, competitors, stage, risks) — not boilerplate.
+
+
         ### LATENCY & SPEED OPTIMIZATION DIRECTIVE:
         - Keep descriptions punchy, conciseness-optimized, and VC-styled. Avoid generic business boilerplate.
       `;
@@ -647,6 +692,48 @@ async function startServer() {
             },
             required: ["market", "execution", "competition", "financial"]
           },
+          swot: {
+            type: Type.OBJECT,
+            properties: {
+              strengths: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              weaknesses: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              opportunities: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              threats: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              }
+            },
+            required: ["strengths", "weaknesses", "opportunities", "threats"]
+          },
           keyInsights: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
@@ -730,7 +817,7 @@ async function startServer() {
             required: ["status", "description"]
           }
         },
-        required: ["scores", "startupProfile", "marketAnalysis", "competitorAnalysis", "riskMatrix", "keyInsights", "growthPotential", "pitchReadiness", "roadmap", "investorMatching", "finalVerdict"]
+        required: ["scores", "startupProfile", "marketAnalysis", "competitorAnalysis", "riskMatrix", "keyInsights", "swot", "growthPotential", "pitchReadiness", "roadmap", "investorMatching", "finalVerdict"]
       };
 
       const prompt = `
@@ -996,6 +1083,10 @@ async function startServer() {
 
         11. DecisionLab Final Verdict:
             Compile overall ratings, validation scores, investor scores, risk scores, and success probability. Identify Top 5 strengths, Top 5 weaknesses, and dynamic next actions.
+        SWOT (CRITICAL — investor-facing): Populate the \`swot\` object with 3-4 items each for strengths, weaknesses, opportunities, threats, ALL specific to THIS venture (never generic). For every item provide:
+          - \`point\`: the specific factor in a short phrase, and
+          - \`why\`: 1-2 full sentences explaining WHY it matters to an investor — the concrete consequence, risk, or advantage. For weaknesses and threats, explain plainly why it is a problem and what it could cost. Base every item on the actual analysis (scores, market, competitors, stage, risks) — not boilerplate.
+
 
         ### INTERACTIVE FORMAT & STYLE REQUIREMENT:
         - All output must be designed as interactive UI blocks, not plain text.
@@ -1117,6 +1208,48 @@ async function startServer() {
             },
             required: ["market", "execution", "competition", "financial"]
           },
+          swot: {
+            type: Type.OBJECT,
+            properties: {
+              strengths: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              weaknesses: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              opportunities: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              },
+              threats: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: { point: { type: Type.STRING }, why: { type: Type.STRING } },
+                  required: ["point", "why"]
+                },
+                minItems: 3, maxItems: 4
+              }
+            },
+            required: ["strengths", "weaknesses", "opportunities", "threats"]
+          },
           keyInsights: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
@@ -1156,7 +1289,7 @@ async function startServer() {
         },
         required: [
           "summary", "scores", "funding", "investorMatching", "traction", 
-          "riskMatrix", "keyInsights", "roadmap", "finalVerdict", 
+          "riskMatrix", "keyInsights", "swot", "roadmap", "finalVerdict", 
           "pitchDeckRecommendation", "investorReadinessRouting"
         ]
       };

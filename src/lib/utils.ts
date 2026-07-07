@@ -115,6 +115,15 @@ export function formatAuthError(error: any): string {
   const code = error.code || '';
   const message = error.message || String(error);
 
+  if (code === 'auth/cancelled-popup-request' || message.includes('cancelled-popup-request')) {
+    return "The sign-in popup was cancelled by the browser, likely because a new auth request was initiated, third-party cookies are blocked, or secure popups are restricted in this iframe. Please open the app in a new tab by clicking the launch icon (↗) in the top-right corner to authenticate securely, or sign in with your email and password instead.";
+  }
+  if (code === 'auth/popup-closed-by-user' || message.includes('popup-closed-by-user')) {
+    return "The sign-in window was closed before completion. If you are previewing inside an iframe, secure popups can be restricted. Try opening the application in a new tab (↗) to authenticate securely, or use email sign-in.";
+  }
+  if (code === 'auth/popup-blocked' || message.includes('popup-blocked')) {
+    return "The sign-in popup was blocked by your browser. Please allow popups for this site, or open the application in a new tab (↗) and try again.";
+  }
   if (code === 'auth/email-already-in-use' || message.includes('email-already-in-use') || message.includes('auth/email-already-in-use')) {
     return 'This email is already in use. Please sign in instead.';
   }
