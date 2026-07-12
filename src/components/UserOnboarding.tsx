@@ -29,6 +29,7 @@ const ROLES = [
   { id: 'Founder', desc: 'Venture Leader' },
   { id: 'Builder', desc: 'Product & Eng' },
   { id: 'Investor', desc: 'Capital & Strategy' },
+  { id: 'Team Member', desc: 'Join a Startup Team' },
   { id: 'Operator', desc: 'Growth & Systems' },
   { id: 'Student', desc: 'Academic Research' }
 ] as const;
@@ -96,6 +97,9 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     if ((profile as any).accountType === 'investor') {
       onClose();
       navigate('/investor-matches');
+    } else if ((profile as any).accountType === 'teamMember') {
+      onClose();
+      navigate('/team');
     }
   }, [isOpen, user, profile, navigate, onClose]);
 
@@ -147,6 +151,7 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       subscriptionStatus: 'premium', // Automatically premium for institutional setup
       startupName: formData.startupName,
       roleType: (formData.roleType as any) || 'Founder',
+      ...(formData.roleType === 'Team Member' ? { accountType: 'teamMember' } : {}),
       onboardingCompleted: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()

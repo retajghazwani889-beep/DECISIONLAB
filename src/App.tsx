@@ -15,6 +15,7 @@ import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
 import InvestorSubmissionsPage from './pages/InvestorSubmissionsPage';
+import TeamMemberDashboardPage from './pages/TeamMemberDashboardPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -60,6 +61,17 @@ function AppContent() {
   // so investors can view matched startups.
   React.useEffect(() => {
     if (loading) return;
+    const isTeamMember = (profile as any)?.accountType === 'teamMember';
+    if (isTeamMember) {
+      const p = location.pathname;
+      const notForTeamMember =
+        p === '/dashboard' || p === '/analyze' || p === '/compare' ||
+        p.startsWith('/pitch-deck') || p.startsWith('/investor-');
+      if (notForTeamMember) {
+        navigate('/team', { replace: true });
+      }
+      return;
+    }
     const isInvestor = (profile as any)?.accountType === 'investor';
     if (!isInvestor) return;
     const p = location.pathname;
@@ -167,6 +179,7 @@ function AppContent() {
           <Route path="/investor-matches" element={<InvestorMatchesPage user={user} />} />
           <Route path="/investor-submissions" element={<InvestorSubmissionsPage user={user} />} />
           <Route path="/investor-history" element={<InvestorHistoryPage user={user} />} />
+          <Route path="/team" element={<TeamMemberDashboardPage user={user} />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

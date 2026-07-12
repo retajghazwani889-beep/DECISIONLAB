@@ -1,5 +1,6 @@
 import { AnalysisReport, UserProfile } from '../types';
 import FounderTimeline from './FounderTimeline';
+import TeamLabPanel from './TeamLabPanel';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -7,8 +8,7 @@ import {
   Zap, Download, Target, Shield, MapPin, Briefcase, Activity, 
   ChevronRight, X, Edit3, CheckCircle2, Globe, Rocket, Info, ShieldAlert,
   Wand2, Image as ImageIcon, Loader2, BarChart3, PieChart, TrendingUp,
-  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User
-} from 'lucide-react';
+  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users} from 'lucide-react';
 import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
@@ -1025,7 +1025,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   const [savingShare, setSavingShare] = useState(false);
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any;
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'risk' | 'growth' | 'investors' | 'reports' | 'architect'>(() => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'risk' | 'growth' | 'team' | 'investors' | 'reports' | 'architect'>(() => {
     if (initialTab && ['overview', 'analysis', 'risk', 'growth', 'investors', 'reports', 'architect'].includes(initialTab)) {
       return initialTab;
     }
@@ -1769,6 +1769,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           { id: 'analysis', label: '02 / Key Insights', icon: <BarChart3 size={15} /> },
           { id: 'risk', label: '03 / Risks', icon: <ShieldAlert size={15} /> },
           { id: 'growth', label: '04 / Growth Opportunities', icon: <TrendingUp size={15} /> },
+          { id: 'team', label: 'TeamLab', icon: <Users size={15} /> },
           { id: 'investors', label: '05 / Investors', icon: <Handshake size={15} /> },
           { id: 'reports', label: '06 / Reports', icon: <FileText size={15} /> },
           { id: 'architect', label: '07 / Pitch Deck Architect', icon: <Presentation size={15} /> },
@@ -1799,7 +1800,143 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           className="space-y-12 min-h-[500px]"
         >
           {/* ==================== 01 / OVERVIEW TAB ==================== */}
-          {effectiveTab === 'overview' && (
+          {effectiveTab === 'overview' && investorView && (
+            <div className="space-y-8">
+              {/* ── Idea summary + score ─────────────────────────────────── */}
+              <section className="bg-brand-section p-8 lg:p-12 rounded-[3rem] border border-brand-border shadow-huge">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.35em] block mb-3">Investor Brief</span>
+                    <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4">
+                      {(currentAnalysis.startupProfile?.companyName || 'This Venture').replace(/\./g, '')}
+                    </h3>
+                    <p className="text-base text-slate-200 font-medium leading-relaxed max-w-2xl">
+                      {(currentAnalysis.startupProfile?.businessDescription || currentAnalysis.ideaDescription || currentAnalysis.marketAnalysis?.overview || 'A high-scoring venture opportunity.').replace(/\./g, '. ').trim()}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-5">
+                      {currentAnalysis.startupProfile?.industry && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-accent bg-brand-accent/10 px-3 py-1.5 rounded-lg border border-brand-accent/20">{currentAnalysis.startupProfile.industry}</span>
+                      )}
+                      {currentAnalysis.startupProfile?.stage && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#5da9ff] bg-[#5da9ff]/10 px-3 py-1.5 rounded-lg border border-[#5da9ff]/20">{currentAnalysis.startupProfile.stage}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-center bg-[#0c1421] rounded-[2rem] border border-white/5 px-8 py-6">
+                    <div className="text-5xl font-black text-brand-accent tabular-nums leading-none">{getCalculatedVentureScore(currentAnalysis.scores)}%</div>
+                    <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-[0.3em] mt-2">Venture Score</div>
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Market + Competition side by side ─────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section className="bg-brand-section p-8 rounded-[2.5rem] border border-brand-border">
+                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-5">Market Opportunity</h4>
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    <div className="bg-[#0c1421] rounded-2xl p-4 border border-white/5">
+                      <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-1">Size</div>
+                      <div className="text-base font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</div>
+                    </div>
+                    <div className="bg-[#0c1421] rounded-2xl p-4 border border-white/5">
+                      <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-1">Demand</div>
+                      <div className="text-base font-black text-[#5ce1e6]">{extractStatusWord(currentAnalysis.marketAnalysis?.demandSignals, 'Moderate')}</div>
+                    </div>
+                    <div className="bg-[#0c1421] rounded-2xl p-4 border border-white/5">
+                      <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-1">Growth</div>
+                      <div className="text-base font-black text-emerald-400">{extractStatusWord(currentAnalysis.marketAnalysis?.growthTrends, 'Steady')}</div>
+                    </div>
+                  </div>
+                  <ul className="space-y-2 text-sm text-brand-text-secondary leading-relaxed">
+                    {summarizeToBullets(currentAnalysis.marketAnalysis?.overview || 'Large active market with room for focused solutions', 3).map((b, i) => (
+                      <li key={i} className="flex gap-2"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0" />{b}</li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="bg-brand-section p-8 rounded-[2.5rem] border border-brand-border">
+                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-5">Competition &amp; Edge</h4>
+                  <div className="bg-[#0c1421] rounded-2xl p-4 border border-white/5 mb-5 inline-block">
+                    <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-1">Competition Level</div>
+                    <div className="text-base font-black text-amber-400">{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium', /low|medium|high/i)}</div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mb-2">Market Gap</div>
+                    <ul className="space-y-2 text-sm text-brand-text-secondary leading-relaxed">
+                      {summarizeToBullets(currentAnalysis.competitorAnalysis?.marketGaps || 'No clear leader on trust and pricing', 2).map((b, i) => (
+                        <li key={i} className="flex gap-2"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mb-2">Their Edge</div>
+                    <ul className="space-y-2 text-sm text-brand-text-secondary leading-relaxed">
+                      {summarizeToBullets(currentAnalysis.competitorAnalysis?.competitiveAdvantages || 'Better customer experience', 2).map((b, i) => (
+                        <li key={i} className="flex gap-2"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              </div>
+
+              {/* ── Key Insights ─────────────────────────────────────────── */}
+              {currentAnalysis.keyInsights && currentAnalysis.keyInsights.length > 0 && (
+                <section className="bg-brand-section p-8 rounded-[2.5rem] border border-brand-border">
+                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-5">Key Insights</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
+                      <div key={idx} className="bg-[#0c1421] rounded-2xl p-5 border border-white/5 flex gap-3">
+                        <span className="text-[10px] font-black text-brand-accent tabular-nums">{String(idx + 1).padStart(2, '0')}</span>
+                        <span className="text-sm text-brand-text-secondary font-medium leading-relaxed">{insight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ── SWOT ─────────────────────────────────────────────────── */}
+              <section className="bg-brand-section p-8 lg:p-12 rounded-[3rem] border border-brand-border shadow-huge">
+                <div className="mb-6">
+                  <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">SWOT Analysis</h4>
+                  <p className="text-sm text-brand-text-muted font-bold">Strengths, weaknesses, opportunities, and threats — with why each matters</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {([
+                    { key: 'strengths', label: 'Strengths', letter: 'S', cls: 'bg-emerald-500/10 text-emerald-400' },
+                    { key: 'weaknesses', label: 'Weaknesses', letter: 'W', cls: 'bg-rose-500/10 text-rose-400' },
+                    { key: 'opportunities', label: 'Opportunities', letter: 'O', cls: 'bg-sky-500/10 text-sky-400' },
+                    { key: 'threats', label: 'Threats', letter: 'T', cls: 'bg-amber-500/10 text-amber-400' },
+                  ] as any[]).map((q) => {
+                    const items = (currentAnalysis.swot?.[q.key]) || [];
+                    return (
+                      <div key={q.key} className="bg-[#0c1421] p-6 rounded-[2rem] border border-white/5">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs font-mono ${q.cls}`}>{q.letter}</div>
+                          <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">{q.label}</h5>
+                        </div>
+                        {items.length > 0 ? (
+                          <ul className="space-y-4">
+                            {items.map((it: any, i: number) => (
+                              <li key={i} className="pl-4 border-l-2 border-white/10">
+                                <span className="block text-sm text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                                {typeof it !== 'string' && it.why && (
+                                  <span className="block mt-1 text-xs text-brand-text-muted font-medium leading-relaxed">{it.why}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-brand-text-muted font-medium">Not available for this analysis.</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {effectiveTab === 'overview' && !investorView && (
             <div className="space-y-12">
               <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
@@ -2189,6 +2326,17 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           )}
 
           {/* ==================== 05 / INVESTOR MATCHING TAB ==================== */}
+          {effectiveTab === 'team' && (
+            <TeamLabPanel
+              startupId={(currentAnalysis as any).id || ''}
+              founderId={(currentAnalysis as any).userId || ''}
+              startupName={currentAnalysis.startupProfile?.companyName || currentAnalysis.ideaDescription}
+              industry={currentAnalysis.startupProfile?.industry}
+              stage={currentAnalysis.startupProfile?.stage}
+              canEdit={!investorView && (currentAnalysis as any).userId === ((profile as any)?.uid || (profile as any)?.userId)}
+            />
+          )}
+
           {effectiveTab === 'investors' && (() => {
             const ind = (currentAnalysis.startupProfile?.industry || 'Intelligent Systems').trim();
             const stage = (currentAnalysis.startupProfile?.stage || 'Idea Stage').trim();

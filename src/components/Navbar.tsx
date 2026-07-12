@@ -19,6 +19,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
 
   // Investor accounts get their own minimal nav — never the founder pages.
   const isInvestor = (profile as any)?.accountType === 'investor';
+  const isTeamMember = (profile as any)?.accountType === 'teamMember';
   // Investor "portal" area: also true (even when logged out) on investor pages,
   // so the investor sign-in page shows no founder nav and no founder ENTER button.
   const investorArea = isInvestor || location.pathname.startsWith('/investor-');
@@ -29,6 +30,11 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
     { label: 'PRICING', path: '/pricing' },
     { label: 'INVESTOR NETWORK', path: '/investor-network' },
   ];
+  const teamMemberLinks = [
+    { label: 'DASHBOARD', path: '/team' },
+    { label: 'BROWSE STARTUPS', path: '/team' },
+    { label: 'MY APPLICATIONS', path: '/team' },
+  ];
   const investorLinks = [
     { label: 'MATCHES', path: '/investor-matches' },
     { label: 'SUBMISSIONS', path: '/investor-submissions' },
@@ -36,7 +42,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   ];
   // Logged-in investor → matches link. Investor pages while logged out → no
   // center links (clean portal). Everyone else → founder links.
-  const navLinks = isInvestor ? investorLinks : (investorArea ? [] : founderLinks);
+  const navLinks = isTeamMember ? teamMemberLinks : (isInvestor ? investorLinks : (investorArea ? [] : founderLinks));
 
   // Real identity, straight from the signed-in user's profile. `fullName` is what
   // the dropdown shows; `firstName` keeps the compact button tidy; `roleLabel` is
@@ -44,9 +50,11 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   const fullName =
     profile?.displayName || (profile as any)?.fullName || user?.displayName || 'Member';
   const firstName = fullName.split(' ')[0] || fullName;
-  const roleLabel = isInvestor
-    ? ((profile as any)?.investorBadge || 'Investor')
-    : ((profile as any)?.roleType || 'Member');
+  const roleLabel = isTeamMember
+    ? 'Team Member'
+    : (isInvestor
+        ? ((profile as any)?.investorBadge || 'Investor')
+        : ((profile as any)?.roleType || 'Member'));
 
   const handleLogout = async () => {
     try {
