@@ -6,10 +6,20 @@ import {
   collection, query, where, getDocs, addDoc, updateDoc, setDoc, doc,
   serverTimestamp, increment,
 } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   LayoutDashboard, Search, FileText, Bookmark, User as UserIcon, Settings,
-  Loader2, Briefcase, MapPin, TrendingUp, ArrowRight, X, Check, Linkedin, Link2, Mail,
+  Loader2, Briefcase, MapPin, TrendingUp, ArrowRight, X, Check, Linkedin, Link2, Mail, Upload,
 } from 'lucide-react';
+
+// Same role list founders pick from in TeamLab, so profiles and positions match.
+const ROLE_OPTIONS = [
+  'Co-Founder (CTO)', 'Co-Founder (CEO)', 'Backend Developer', 'Frontend Developer',
+  'Full-Stack Developer', 'Mobile Developer', 'UI/UX Designer', 'Product Manager',
+  'Data Scientist', 'ML Engineer', 'DevOps Engineer', 'QA Engineer',
+  'Marketing Manager', 'Growth Lead', 'Sales Lead', 'Business Development',
+  'Operations Manager', 'Customer Success', 'Finance Lead', 'Advisor',
+];
 
 interface TeamMemberDashboardPageProps {
   user: any;
@@ -124,6 +134,8 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
         applicantHeadline: (profile as any)?.tmHeadline || null,
         applicantSkills: (profile as any)?.tmSkills || null,
         applicantLinkedin: (profile as any)?.tmLinkedin || null,
+        applicantCvUrl: (profile as any)?.tmCvUrl || cvUrl || null,
+        applicantCvName: (profile as any)?.tmCvName || cvName || null,
         message: applyMessage.trim() || null,
         status: 'pending',
         createdAt: serverTimestamp(),
@@ -147,6 +159,9 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
 
   // ── Profile form ────────────────────────────────────────────────────────
   const [pfHeadline, setPfHeadline] = useState((profile as any)?.tmHeadline || '');
+  const [customRole, setCustomRole] = useState(
+    Boolean((profile as any)?.tmHeadline && !ROLE_OPTIONS.includes((profile as any)?.tmHeadline))
+  );
   const [pfSkills, setPfSkills] = useState(((profile as any)?.tmSkills || []).join?.(', ') || (profile as any)?.tmSkills || '');
   const [pfLinkedin, setPfLinkedin] = useState((profile as any)?.tmLinkedin || '');
   const [pfPortfolio, setPfPortfolio] = useState((profile as any)?.tmPortfolio || '');
@@ -154,6 +169,37 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
   const [pfBusy, setPfBusy] = useState(false);
   const [pfNotice, setPfNotice] = useState('');
   const [pfError, setPfError] = useState('');
+
+  // ── CV upload (Firebase Storage) ────────────────────────────────────────
+  const [cvUrl, setCvUrl] = useState((profile as any)?.tmCvUrl || '');
+  const [cvName, setCvName] = useState((profile as any)?.tmCvName || '');
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvError, setCvError] = useState('');
+
+  const uploadCv = async (file: File) => {
+    setCvError('');
+    if (file.size > 5 * 1024 * 1024) return setCvError('CV must be under 5MB.');
+    const okTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!okTypes.includes(file.type)) return setCvError('Upload a PDF or Word document.');
+    setCvUploading(true);
+    try {
+      const storage = getStorage();
+      const ext = file.name.split('.').pop() || 'pdf';
+      const ref = storageRef(storage, `cvs/${user.uid}/cv.${ext}`);
+      await uploadBytes(ref, file);
+      const url = await getDownloadURL(ref);
+      setCvUrl(url);
+      setCvName(file.name);
+      // Persist immediately so it's never lost even if they skip Save Profile.
+      await setDoc(doc(db, 'profiles', user.uid), { tmCvUrl: url, tmCvName: file.name }, { merge: true });
+      await refreshProfile();
+    } catch (e) {
+      console.warn('CV upload failed:', e);
+      setCvError('Upload failed. If this keeps happening, file storage may not be enabled yet — you can paste a link to your CV in the Portfolio field instead.');
+    } finally {
+      setCvUploading(false);
+    }
+  };
 
   const saveProfile = async () => {
     setPfNotice(''); setPfError('');
@@ -391,7 +437,49 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
               <div className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8 space-y-5">
                 <div>
                   <label className={labelCls}>Headline / Role</label>
-                  <input value={pfHeadline} onChange={(e) => setPfHeadline(e.target.value)} placeholder="e.g. Full-Stack Developer" className={fieldCls} />
+                  {!customRole ? (
+                    <select
+                      value={ROLE_OPTIONS.includes(pfHeadline) ? pfHeadline : ''}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') { setCustomRole(true); setPfHeadline(''); }
+                        else setPfHeadline(e.target.value);
+                      }}
+                      className={fieldCls + ' appearance-none'}
+                    >
+                      <option value="" disabled className="bg-[#102434]">Select your role</option>
+                      {ROLE_OPTIONS.map((r) => (
+                        <option key={r} value={r} className="bg-[#102434]">{r}</option>
+                      ))}
+                      <option value="__custom__" className="bg-[#102434]">+ Custom role…</option>
+                    </select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input value={pfHeadline} onChange={(e) => setPfHeadline(e.target.value)} placeholder="Type your role" className={fieldCls} autoFocus />
+                      <button type="button" onClick={() => { setCustomRole(false); setPfHeadline(''); }} className="px-4 rounded-2xl bg-brand-card border border-white/10 text-brand-text-muted hover:text-white text-[10px] font-black uppercase tracking-widest">List</button>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className={labelCls}>CV / Resume</label>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label className={`flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all active:scale-95 ${cvUploading ? 'opacity-50 pointer-events-none' : ''} bg-brand-card border-white/10 text-brand-text-primary hover:border-brand-accent/40`}>
+                      {cvUploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                      {cvUrl ? 'Replace CV' : 'Upload CV'}
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCv(f); e.target.value = ''; }}
+                      />
+                    </label>
+                    {cvUrl && (
+                      <a href={cvUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-bold text-brand-accent hover:underline truncate">
+                        <FileText size={14} /> {cvName || 'View uploaded CV'}
+                      </a>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-brand-text-muted font-medium mt-2">PDF or Word, up to 5MB. Sent to founders with every application.</p>
+                  {cvError && <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3 mt-2">{cvError}</p>}
                 </div>
                 <div>
                   <label className={labelCls}>Skills (comma separated)</label>
@@ -458,7 +546,7 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
               className={fieldCls}
             />
             <p className="text-[10px] text-brand-text-muted font-medium mt-3">
-              Your name, email, and profile (headline, skills, LinkedIn) are sent with the application.
+              Your name, email, profile (headline, skills, LinkedIn){(profile as any)?.tmCvUrl || cvUrl ? ', and CV' : ''} are sent with the application.
             </p>
             {applyError && <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3 mt-4">{applyError}</p>}
             <button onClick={submitApplication} disabled={applyBusy} className="w-full mt-5 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
