@@ -202,14 +202,22 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                 </AnimatePresence>
               </div>
             ) : investorArea ? null : (
-              <button
-                onClick={onOpenAccess}
-                className="flex items-center gap-3 px-10 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                <Lock className="w-4 h-4" />
-                Enter
-              </button>
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-brand-text-secondary hover:text-white transition-colors whitespace-nowrap"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="flex items-center gap-3 px-10 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 group relative overflow-hidden whitespace-nowrap"
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <Lock className="w-4 h-4" />
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>
