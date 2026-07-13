@@ -18,6 +18,9 @@ import InvestorSubmissionsPage from './pages/InvestorSubmissionsPage';
 import TeamMemberDashboardPage from './pages/TeamMemberDashboardPage';
 import LoginPage from './pages/LoginPage';
 import SignUpChoosePage from './pages/SignUpChoosePage';
+import FounderSignUpPage from './pages/FounderSignUpPage';
+import InvestorSignUpPage from './pages/InvestorSignUpPage';
+import TeamMemberSignUpPage from './pages/TeamMemberSignUpPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -182,6 +185,9 @@ function AppContent() {
           <Route path="/team" element={<TeamMemberDashboardPage user={user} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpChoosePage />} />
+          <Route path="/signup/founder" element={<FounderSignUpPage />} />
+          <Route path="/signup/investor" element={<InvestorSignUpPage />} />
+          <Route path="/signup/team" element={<TeamMemberSignUpPage />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />
