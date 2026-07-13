@@ -16,6 +16,8 @@ import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
 import InvestorSubmissionsPage from './pages/InvestorSubmissionsPage';
 import TeamMemberDashboardPage from './pages/TeamMemberDashboardPage';
+import LoginPage from './pages/LoginPage';
+import SignUpChoosePage from './pages/SignUpChoosePage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -67,9 +69,7 @@ function AppContent() {
       const notForTeamMember =
         p === '/dashboard' || p === '/analyze' || p === '/compare' ||
         p.startsWith('/pitch-deck') || p.startsWith('/investor-');
-      if (notForTeamMember) {
-        navigate('/team', { replace: true });
-      }
+      if (notForTeamMember) navigate('/team', { replace: true });
       return;
     }
     const isInvestor = (profile as any)?.accountType === 'investor';
@@ -180,6 +180,8 @@ function AppContent() {
           <Route path="/investor-submissions" element={<InvestorSubmissionsPage user={user} />} />
           <Route path="/investor-history" element={<InvestorHistoryPage user={user} />} />
           <Route path="/team" element={<TeamMemberDashboardPage user={user} />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpChoosePage />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

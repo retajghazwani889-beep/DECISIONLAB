@@ -151,8 +151,8 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       subscriptionStatus: 'premium', // Automatically premium for institutional setup
       startupName: formData.startupName,
       roleType: (formData.roleType as any) || 'Founder',
-      ...(formData.roleType === 'Team Member' ? { accountType: 'teamMember' } : {}),
       onboardingCompleted: true,
+      ...(formData.roleType === 'Team Member' ? { accountType: 'teamMember' } : {}),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
