@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { formatAuthError } from '../lib/utils';
 
 export default function TeamMemberSignUpPage() {
-  const { signUpWithEmail, refreshProfile } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -56,6 +56,46 @@ export default function TeamMemberSignUpPage() {
     }
   };
 
+  const doGoogle = async () => {
+    setErr('');
+    setBusy(true);
+    try {
+      await signInWithGoogle();
+      const u = auth.currentUser;
+      if (u) {
+        const ref = doc(db, 'profiles', u.uid);
+        let existing: any = null;
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            existing = snap.data();
+          } else {
+            await setDoc(ref, {
+              uid: u.uid,
+              email: u.email || '',
+              displayName: u.displayName || 'Team Member',
+              photoURL: u.photoURL || null,
+              accountType: 'teamMember',
+              roleType: 'Team Member',
+              onboardingCompleted: true,
+              createdAt: serverTimestamp(),
+            });
+          }
+          await refreshProfile();
+        } catch (e) {
+          console.warn('Profile save failed (offline mode?):', e);
+        }
+        const t = existing?.accountType || existing?.role;
+        if (t === 'investor') navigate('/investor-matches', { replace: true });
+        else if (t && t !== 'teamMember') navigate('/dashboard', { replace: true });
+        else navigate('/team', { replace: true });
+      }
+    } catch (e: any) {
+      setErr(formatAuthError(e));
+      setBusy(false);
+    }
+  };
+
   const field = 'w-full bg-brand-card border border-white/5 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:border-brand-accent/40 focus:outline-none transition-colors';
 
   return (
@@ -95,6 +135,13 @@ export default function TeamMemberSignUpPage() {
 
             <button onClick={doSignUp} disabled={busy} className="w-full py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
               {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} Create Team Member Account
+            </button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-white/10" /><span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">or</span><div className="flex-1 h-px bg-white/10" />
+            </div>
+            <button onClick={doGoogle} disabled={busy} className="w-full py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all">
+              Continue with Google
             </button>
 
             <p className="text-center text-xs text-brand-text-secondary font-medium pt-2">

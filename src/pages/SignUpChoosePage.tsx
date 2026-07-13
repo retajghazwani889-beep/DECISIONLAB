@@ -23,7 +23,10 @@ export default function SignUpChoosePage() {
       title: 'Investor',
       body: 'Discover, evaluate, and connect with startups.',
       cta: 'Continue as Investor',
-      path: '/signup/investor',
+      // Investors use the existing investor registration flow.
+      // If your investor registration lives at a different address,
+      // change ONLY the line below to that path.
+      path: '/investor-network',
     },
     {
       id: 'teamMember',
