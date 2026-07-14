@@ -22,6 +22,7 @@ import FounderSignUpPage from './pages/FounderSignUpPage';
 import InvestorSignUpPage from './pages/InvestorSignUpPage';
 import TeamMemberSignUpPage from './pages/TeamMemberSignUpPage';
 import FounderWelcomePage from './pages/FounderWelcomePage';
+import StartupSetupWizard from './pages/StartupSetupWizard';
 
 // Components
 import Navbar from './components/Navbar';
@@ -75,7 +76,7 @@ function AppContent() {
         p.startsWith('/pitch-deck') || p.startsWith('/investor-');
       if (notForTeamMember) navigate('/team', { replace: true });
       return;
-    }
+    } 
     const isInvestor = (profile as any)?.accountType === 'investor';
     if (!isInvestor) return;
     const p = location.pathname;
@@ -192,6 +193,7 @@ function AppContent() {
           <Route path="/signup/investor" element={<InvestorSignUpPage />} />
           <Route path="/signup/team" element={<TeamMemberSignUpPage />} />
           <Route path="/welcome/founder" element={<FounderWelcomePage />} />
+          <Route path="/setup/startup" element={<StartupSetupWizard />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />
