@@ -3,15 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, MapPin, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { formatAuthError } from '../lib/utils';
 
 export default function FounderSignUpPage() {
   const { signUpWithEmail, signInWithGoogle, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -21,25 +21,23 @@ export default function FounderSignUpPage() {
 
   const doSignUp = async () => {
     setErr('');
-    if (!firstName.trim()) return setErr('Enter your first name.');
-    if (!lastName.trim()) return setErr('Enter your last name.');
+    if (!fullName.trim()) return setErr('Enter your full name.');
+    if (!country.trim()) return setErr('Enter your country.');
     if (!email.includes('@')) return setErr('Enter a valid email.');
     if (password.length < 6) return setErr('Password must be at least 6 characters.');
     if (password !== confirm) return setErr('Passwords do not match.');
     if (!agreed) return setErr('Please agree to the Terms & Privacy Policy.');
     setBusy(true);
     try {
-      const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      await signUpWithEmail(email.trim(), password, fullName);
+      await signUpWithEmail(email.trim(), password, fullName.trim());
       const uid = auth.currentUser?.uid;
       if (uid) {
         try {
           await setDoc(doc(db, 'profiles', uid), {
             uid,
             email: email.trim(),
-            displayName: fullName,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
+            displayName: fullName.trim(),
+            country: country.trim(),
             photoURL: null,
             accountType: 'founder',
             roleType: 'Founder',
@@ -52,7 +50,7 @@ export default function FounderSignUpPage() {
           console.warn('Profile save failed (offline mode?):', e);
         }
       }
-      navigate('/dashboard', { replace: true });
+      navigate('/welcome/founder', { replace: true });
     } catch (e: any) {
       setErr(formatAuthError(e));
       setBusy(false);
@@ -93,7 +91,8 @@ export default function FounderSignUpPage() {
         const t = existing?.accountType || existing?.role;
         if (t === 'investor') navigate('/investor-matches', { replace: true });
         else if (t === 'teamMember') navigate('/team', { replace: true });
-        else navigate('/dashboard', { replace: true });
+        else if (existing) navigate('/dashboard', { replace: true });
+        else navigate('/welcome/founder', { replace: true });
       }
     } catch (e: any) {
       setErr(formatAuthError(e));
@@ -112,15 +111,13 @@ export default function FounderSignUpPage() {
           <p className="text-sm text-brand-text-secondary font-medium mb-8">Build, validate, and grow startups.</p>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={field} />
-              </div>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={field} />
-              </div>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className={field} />
+            </div>
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+              <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country (e.g. Bahrain)" className={field} />
             </div>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />

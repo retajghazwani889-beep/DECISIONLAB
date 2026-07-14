@@ -5,7 +5,7 @@ import { EMPLOYMENT_TYPES, WORK_TYPES, EXPERIENCE_LEVELS } from '../TeamLab';
 import type { EmploymentType, WorkType, ExperienceLevel } from '../TeamLab';
 import {
   Users, UserPlus, Plus, X, Loader2, Briefcase, MapPin, TrendingUp,
-  Linkedin, Mail, Trash2, Check, Search,
+  Linkedin, Mail, Trash2, Check, Search, FileText, ChevronDown,
 } from 'lucide-react';
 
 // Common roles for the dropdown, grouped so founders pick fast. "Suggested"
@@ -50,15 +50,25 @@ interface TeamLabPanelProps {
   canEdit: boolean;
 }
 
+const APP_STATUS_STYLE: Record<string, string> = {
+  pending: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+  accepted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  rejected: 'bg-brand-coral/10 text-brand-coral border-brand-coral/20',
+};
+
 export default function TeamLabPanel({ startupId, founderId, startupName, industry, stage, canEdit }: TeamLabPanelProps) {
   const [team, setTeam] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [showMemberForm, setShowMemberForm] = useState(false);
   const [showPositionForm, setShowPositionForm] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Which position's applicant list is expanded.
+  const [openApplicants, setOpenApplicants] = useState<string | null>(null);
 
   const [mForm, setMForm] = useState({ fullName: '', position: '', linkedin: '', email: '' });
   const [customTitle, setCustomTitle] = useState(false);
@@ -71,12 +81,14 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
     setLoading(true);
     setError('');
     try {
-      const [tSnap, pSnap] = await Promise.all([
+      const [tSnap, pSnap, aSnap] = await Promise.all([
         getDocs(query(collection(db, 'teams'), where('startupId', '==', startupId))),
         getDocs(query(collection(db, 'positions'), where('startupId', '==', startupId))),
+        getDocs(query(collection(db, 'applications'), where('startupId', '==', startupId))),
       ]);
       setTeam(tSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
       setPositions(pSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+      setApps(aSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
     } catch (e) {
       console.warn('TeamLab load failed:', e);
       setError('Could not load TeamLab data.');
@@ -86,6 +98,39 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
   };
 
   useEffect(() => { if (startupId) load(); }, [startupId]);
+
+  const appsFor = (positionId: string) => apps.filter((a) => a.positionId === positionId);
+
+  // Accept / reject an application. The team member sees this status change
+  // instantly in their "My Applications" tab. Accepting also adds them to
+  // the Current Team list.
+  const setAppStatus = async (app: any, status: 'accepted' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'applications', app.id), { status, decidedAt: serverTimestamp() });
+      setApps((arr) => arr.map((a) => (a.id === app.id ? { ...a, status } : a)));
+      if (status === 'accepted') {
+        const already = team.some((m) => m.applicantId === app.applicantId);
+        if (!already) {
+          const ref = await addDoc(collection(db, 'teams'), {
+            startupId, founderId,
+            fullName: app.applicantName || 'Team Member',
+            position: app.positionTitle || app.applicantHeadline || 'Team Member',
+            linkedin: app.applicantLinkedin || null,
+            email: app.applicantEmail || null,
+            applicantId: app.applicantId || null,
+            createdAt: serverTimestamp(),
+          });
+          setTeam((t) => [...t, {
+            id: ref.id,
+            fullName: app.applicantName, position: app.positionTitle || app.applicantHeadline,
+            linkedin: app.applicantLinkedin, email: app.applicantEmail, applicantId: app.applicantId,
+          }]);
+        }
+      }
+    } catch (e) {
+      console.warn('Application status update failed:', e);
+    }
+  };
 
   const addMember = async () => {
     setError('');
@@ -260,30 +305,109 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
           <p className="text-sm text-brand-text-muted font-medium py-4">No open positions yet.</p>
         ) : (
           <div className="space-y-3">
-            {positions.map((p) => (
-              <div key={p.id} className="bg-brand-card rounded-2xl p-6 border border-white/5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h5 className="text-base font-black text-brand-text-primary uppercase tracking-tight">{p.title}</h5>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {p.employmentType && <span className="text-[9px] font-black uppercase text-brand-accent tracking-widest bg-brand-accent/5 px-2.5 py-1 rounded-lg border border-brand-accent/10">{p.employmentType}</span>}
-                      {p.workType && <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10">{p.workType}</span>}
-                      {p.experienceLevel && <span className="text-[9px] font-black uppercase text-amber-400 tracking-widest bg-amber-400/5 px-2.5 py-1 rounded-lg border border-amber-400/10">{p.experienceLevel}</span>}
+            {positions.map((p) => {
+              const positionApps = appsFor(p.id);
+              const expanded = openApplicants === p.id;
+              return (
+                <div key={p.id} className="bg-brand-card rounded-2xl p-6 border border-white/5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h5 className="text-base font-black text-brand-text-primary uppercase tracking-tight">{p.title}</h5>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {p.employmentType && <span className="text-[9px] font-black uppercase text-brand-accent tracking-widest bg-brand-accent/5 px-2.5 py-1 rounded-lg border border-brand-accent/10">{p.employmentType}</span>}
+                        {p.workType && <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10">{p.workType}</span>}
+                        {p.experienceLevel && <span className="text-[9px] font-black uppercase text-amber-400 tracking-widest bg-amber-400/5 px-2.5 py-1 rounded-lg border border-amber-400/10">{p.experienceLevel}</span>}
+                      </div>
                     </div>
+                    <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${p.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/5 text-brand-text-muted border-white/10'}`}>{p.status === 'open' ? 'Open' : 'Closed'}</span>
                   </div>
-                  <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${p.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/5 text-brand-text-muted border-white/10'}`}>{p.status === 'open' ? 'Open' : 'Closed'}</span>
-                </div>
-                {p.description && <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed">{p.description}</p>}
-                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-white/5">
-                  <span className="text-xs font-black text-brand-text-muted uppercase tracking-widest">Applicants: {p.applicantCount || 0}</span>
-                  {canEdit && (
-                    <button onClick={() => togglePosition(p)} className="ml-auto text-[10px] font-black uppercase tracking-widest text-brand-text-muted hover:text-white transition-colors">
-                      {p.status === 'open' ? 'Close Position' : 'Reopen'}
+                  {p.description && <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed">{p.description}</p>}
+
+                  <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-white/5">
+                    <button
+                      onClick={() => setOpenApplicants(expanded ? null : p.id)}
+                      className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${positionApps.length > 0 ? 'text-brand-accent hover:underline' : 'text-brand-text-muted'}`}
+                    >
+                      Applicants: {positionApps.length}
+                      {positionApps.length > 0 && <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />}
                     </button>
+                    {canEdit && (
+                      <button onClick={() => togglePosition(p)} className="ml-auto text-[10px] font-black uppercase tracking-widest text-brand-text-muted hover:text-white transition-colors">
+                        {p.status === 'open' ? 'Close Position' : 'Reopen'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ── Applicants list ── */}
+                  {expanded && positionApps.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {positionApps.map((a) => (
+                        <div key={a.id} className="bg-brand-section rounded-2xl p-5 border border-white/5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-4 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent font-black text-sm shrink-0">
+                                {(a.applicantName || '?').slice(0, 2).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-black text-brand-text-primary truncate">{a.applicantName || 'Applicant'}</div>
+                                {a.applicantHeadline && <div className="text-xs text-brand-text-muted font-medium">{a.applicantHeadline}</div>}
+                              </div>
+                            </div>
+                            <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${APP_STATUS_STYLE[a.status] || APP_STATUS_STYLE.pending}`}>
+                              {a.status || 'pending'}
+                            </span>
+                          </div>
+
+                          {(a.applicantSkills || []).length > 0 && (
+                            <p className="text-xs text-brand-text-muted font-medium mt-3">
+                              <span className="font-black uppercase tracking-widest text-[9px]">Skills:</span>{' '}
+                              {Array.isArray(a.applicantSkills) ? a.applicantSkills.join(', ') : a.applicantSkills}
+                            </p>
+                          )}
+                          {a.message && (
+                            <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed">"{a.message}"</p>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-white/5">
+                            {a.applicantCvUrl && (
+                              <a href={a.applicantCvUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-bold text-brand-accent hover:underline">
+                                <FileText size={14} /> View CV
+                              </a>
+                            )}
+                            {a.applicantLinkedin && (
+                              <a href={a.applicantLinkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-bold text-brand-accent hover:underline">
+                                <Linkedin size={14} /> LinkedIn
+                              </a>
+                            )}
+                            {a.applicantEmail && (
+                              <a href={`mailto:${a.applicantEmail}`} className="flex items-center gap-1.5 text-xs font-bold text-brand-accent hover:underline">
+                                <Mail size={14} /> Email
+                              </a>
+                            )}
+                            {canEdit && (a.status || 'pending') === 'pending' && (
+                              <div className="ml-auto flex items-center gap-2">
+                                <button
+                                  onClick={() => setAppStatus(a, 'accepted')}
+                                  className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+                                >
+                                  <Check size={13} /> Accept
+                                </button>
+                                <button
+                                  onClick={() => setAppStatus(a, 'rejected')}
+                                  className="px-4 py-2 bg-brand-coral/10 text-brand-coral border border-brand-coral/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-coral/20 active:scale-95 transition-all flex items-center gap-1.5"
+                                >
+                                  <X size={13} /> Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

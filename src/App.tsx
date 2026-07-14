@@ -21,6 +21,7 @@ import SignUpChoosePage from './pages/SignUpChoosePage';
 import FounderSignUpPage from './pages/FounderSignUpPage';
 import InvestorSignUpPage from './pages/InvestorSignUpPage';
 import TeamMemberSignUpPage from './pages/TeamMemberSignUpPage';
+import FounderWelcomePage from './pages/FounderWelcomePage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -97,7 +98,9 @@ function AppContent() {
     const needsLogin =
       p === '/dashboard' ||
       p === '/compare' ||
-      p.startsWith('/pitch-deck');
+      p.startsWith('/pitch-deck') ||
+      p.startsWith('/welcome') ||
+      p.startsWith('/setup');
     if (needsLogin) {
       navigate('/', { replace: true });
     }
@@ -188,6 +191,7 @@ function AppContent() {
           <Route path="/signup/founder" element={<FounderSignUpPage />} />
           <Route path="/signup/investor" element={<InvestorSignUpPage />} />
           <Route path="/signup/team" element={<TeamMemberSignUpPage />} />
+          <Route path="/welcome/founder" element={<FounderWelcomePage />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />
