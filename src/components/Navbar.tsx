@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Rocket, User as UserIcon, LogOut, ChevronDown, Zap, Lock, Database, CreditCard, Bell, Settings } from 'lucide-react';
+import { Rocket, User as UserIcon, LogOut, ChevronDown, Zap, Lock, Database, CreditCard, Bell, Settings, Home, Menu, X as CloseX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { safeLocalStorage as localStorage } from '../lib/storage';
@@ -15,7 +15,12 @@ interface NavbarProps {
 export default function Navbar({ onOpenAccess }: NavbarProps) {
   const { user, profile, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Close the mobile menu whenever the route changes.
+  React.useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   // Investor accounts get their own minimal nav — never the founder pages.
   const isInvestor = (profile as any)?.accountType === 'investor';
@@ -36,6 +41,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
     { label: 'MY APPLICATIONS', path: '/team' },
   ];
   const investorLinks = [
+    { label: 'HOME', path: '/' },
     { label: 'MATCHES', path: '/investor-matches' },
     { label: 'SUBMISSIONS', path: '/investor-submissions' },
     { label: 'MATCH HISTORY', path: '/investor-history' },
@@ -60,6 +66,8 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
     try {
       await logout();
       setDropdownOpen(false);
+      // Always leave protected pages on logout — for every account type.
+      navigate('/', { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -101,7 +109,14 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
             })}
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Menu"
+              className="lg:hidden p-2.5 rounded-xl bg-brand-card border border-white/10 text-brand-text-primary hover:border-brand-accent/40 active:scale-95 transition-all"
+            >
+              {mobileOpen ? <CloseX size={18} /> : <Menu size={18} />}
+            </button>
             {user ? (
               <div className="relative">
                 <button
@@ -183,8 +198,23 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                   )}
                 </AnimatePresence>
               </div>
-            ) : investorArea ? null : (
-              <div className="flex items-center gap-3">
+            ) : investorArea ? (
+              <div className="hidden lg:flex items-center gap-3">
+                <Link
+                  to="/"
+                  className="px-5 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] text-brand-text-secondary hover:text-white transition-colors whitespace-nowrap flex items-center gap-2"
+                >
+                  <Home size={14} /> Back to Home
+                </Link>
+                <Link
+                  to="/login"
+                  className="px-6 py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all whitespace-nowrap"
+                >
+                  Log In
+                </Link>
+              </div>
+            ) : (
+              <div className="hidden lg:flex items-center gap-3">
                 <Link
                   to="/login"
                   className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-brand-text-secondary hover:text-white transition-colors whitespace-nowrap"
@@ -203,6 +233,46 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
             )}
           </div>
         </div>
+
+        {/* ── Mobile menu panel ── */}
+        {mobileOpen && (
+          <div className="lg:hidden pb-6 border-t border-white/5 pt-4 space-y-1">
+            {navLinks.map((link) => {
+              if ((link as any).hidden) return null;
+              return (
+                <Link
+                  key={'m-' + link.path + link.label}
+                  to={link.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "block px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-[0.05em]",
+                    location.pathname === link.path ? "bg-brand-accent/10 text-white" : "text-brand-text-secondary hover:text-white"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+            {!user && (
+              <div className="pt-3 mt-2 border-t border-white/5 space-y-2">
+                {investorArea && (
+                  <Link to="/" onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-[0.05em] text-brand-text-secondary hover:text-white">
+                    ← Back to Home
+                  </Link>
+                )}
+                <Link to="/login" onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-center bg-brand-card border border-white/10 text-brand-text-primary">
+                  Log In
+                </Link>
+                <Link to="/signup" onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-center bg-brand-accent text-brand-bg">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );

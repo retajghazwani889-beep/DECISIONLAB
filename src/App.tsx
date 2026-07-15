@@ -12,6 +12,8 @@ import PremiumPage from './pages/PremiumPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import TeamMembersLandingPage from './pages/TeamMembersLandingPage';
+import { PrivacyPolicyPage, TermsOfServicePage } from './pages/LegalPages';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
@@ -112,13 +114,18 @@ function AppContent() {
     if (loading || user) return;
     const p = location.pathname;
     const needsLogin =
-      p === '/dashboard' ||
+      p.startsWith('/dashboard') ||   // includes /dashboard/startup/... report pages
       p === '/compare' ||
+      p === '/analyze' ||
+      p === '/team' ||
+      p.startsWith('/investor-matches') ||
+      p.startsWith('/investor-submissions') ||
+      p.startsWith('/investor-history') ||
       p.startsWith('/pitch-deck') ||
       p.startsWith('/welcome') ||
       p.startsWith('/setup') ||
       p.startsWith('/startups') ||
-      p === '/profile' || p === '/billing' || p === '/notifications' || p === '/settings';
+      p.startsWith('/profile') || p === '/billing' || p === '/notifications' || p === '/settings';
     if (needsLogin) {
       navigate('/', { replace: true });
     }
@@ -195,6 +202,9 @@ function AppContent() {
           <Route path="/"        element={<HomePage user={user} profile={profile} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
           <Route path="/about"   element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/team-members" element={<TeamMembersLandingPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import {
   Sparkles, Inbox, Bookmark, User as UserIcon, CreditCard, Loader2, ArrowRight,
   FileText, Presentation, Mail, Trash2, Check, MapPin, TrendingUp, Search,
@@ -67,9 +67,12 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
 
   // Route protection: investor accounts only.
   useEffect(() => {
-    if (user === undefined || profile === undefined || profile === null) return;
+    if (user === undefined) return;
     if (!user) { navigate('/investor-network'); return; }
-    if (!isInvestor) navigate('/');
+    if (profile === undefined || profile === null) return;
+    // Only eject once the REAL profile has loaded — avoids bouncing brand-new
+    // investors during the moment a temporary default profile exists.
+    if ((profile as any).onboardingCompleted && !isInvestor) navigate('/');
   }, [user, profile, isInvestor, navigate]);
 
   // Load every startup visible to investors.
@@ -154,8 +157,15 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
   const submissions = rows.filter((a) => a.submittedToInvestors === true).filter(matchesSearch);
   const savedRows = rows.filter((a) => savedIds.includes(a.id));
 
-  const contactFounder = (a: any) => {
-    const email = founderEmailOf(a);
+  const contactFounder = async (a: any) => {
+    let email = founderEmailOf(a);
+    // Fall back to the founder's profile email when the analysis lacks one.
+    if (!email && a.userId) {
+      try {
+        const snap = await getDoc(doc(db, 'profiles', a.userId));
+        if (snap.exists()) email = (snap.data() as any)?.email || null;
+      } catch { /* profile may be private */ }
+    }
     const subject = encodeURIComponent(`Interested in ${nameOf(a)} — via DecisionLab`);
     const body = encodeURIComponent(
       `Hi ${founderOf(a)},\n\nI reviewed ${nameOf(a)} on DecisionLab and I'm interested in learning more.\n\nCould we set up a time to talk?\n\nBest regards,\n${p.displayName || 'Investor'}${p.company ? '\n' + p.company : ''}`

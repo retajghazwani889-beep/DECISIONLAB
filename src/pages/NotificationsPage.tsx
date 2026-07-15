@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { Bell, Loader2, Users, Check, X, Eye, ArrowRight, Inbox } from 'lucide-react';
+import { Bell, Loader2, Users, Check, X, Eye, ArrowRight, Inbox, CheckCheck } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationsPage — real events, no fake feed:
@@ -117,10 +117,7 @@ export default function NotificationsPage() {
         }
 
         list.sort((a, b) => (b.at?.getTime?.() || 0) - (a.at?.getTime?.() || 0));
-        if (!cancelled) setItems(list);
-
-        // Mark as seen.
-        await setDoc(doc(db, 'profiles', user.uid), { notificationsSeenAt: serverTimestamp() }, { merge: true });
+        if (!cancelled) setItems(list.slice(0, 30)); // newest 30 — keeps the page fast
       } catch (e) { console.warn('Notifications load failed:', e); }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -138,7 +135,22 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-brand-bg text-brand-text-primary px-6 py-14">
       <div className="max-w-2xl mx-auto">
         <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-3">Account</span>
-        <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display mb-10">Notifications</h1>
+        <div className="flex items-end justify-between gap-4 mb-10">
+          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display">Notifications</h1>
+          {items.length > 0 && (
+            <button
+              onClick={async () => {
+                try {
+                  await setDoc(doc(db, 'profiles', user!.uid), { notificationsSeenAt: serverTimestamp() }, { merge: true });
+                  setSeenAt(new Date());
+                } catch (e) { console.warn(e); }
+              }}
+              className="shrink-0 px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-secondary text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <CheckCheck size={13} /> Mark all as read
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="py-24 flex justify-center"><Loader2 size={24} className="animate-spin text-brand-accent" /></div>

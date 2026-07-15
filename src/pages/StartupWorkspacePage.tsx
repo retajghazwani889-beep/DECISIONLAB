@@ -156,7 +156,7 @@ export default function StartupWorkspacePage() {
   const quickActions = [
     { icon: BarChart3, title: analysis ? 'Re-run Analysis' : 'Analyze Startup', onClick: goAnalyze },
     { icon: Presentation, title: 'Build Pitch Deck', onClick: () => navigate(analysis ? `/pitch-deck?projectId=${analysis.id}` : '/pitch-deck') },
-    { icon: Handshake, title: 'Find Investors', onClick: () => navigate('/investor-network') },
+    { icon: Handshake, title: 'Find Investors', onClick: () => (analysis ? openReport() : goAnalyze()) },
     { icon: Users, title: 'TeamLab', onClick: () => (analysis ? openReport() : goAnalyze()) },
   ];
 

@@ -31,7 +31,8 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link to="/" className="text-brand-text-secondary hover:text-brand-accent">Free Analysis</Link></li>
               <li><Link to="/pricing" className="text-brand-text-secondary hover:text-brand-accent">Pricing</Link></li>
-              <li><Link to="/pricing" className="text-brand-text-secondary hover:text-brand-accent">Investors</Link></li>
+              <li><Link to="/investor-network" className="text-brand-text-secondary hover:text-brand-accent">For Investors</Link></li>
+              <li><Link to="/team-members" className="text-brand-text-secondary hover:text-brand-accent">For Team Members</Link></li>
             </ul>
           </div>
 
@@ -40,8 +41,8 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link to="/about" className="text-brand-text-secondary hover:text-brand-accent">About Us</Link></li>
               <li><Link to="/contact" className="text-brand-text-secondary hover:text-brand-accent">Contact Us</Link></li>
-              <li><a href="#" className="text-brand-text-secondary hover:text-brand-accent">Privacy Policy</a></li>
-              <li><a href="#" className="text-brand-text-secondary hover:text-brand-accent">Terms of Service</a></li>
+              <li><Link to="/privacy" className="text-brand-text-secondary hover:text-brand-accent">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-brand-text-secondary hover:text-brand-accent">Terms of Service</Link></li>
             </ul>
           </div>
         </div>

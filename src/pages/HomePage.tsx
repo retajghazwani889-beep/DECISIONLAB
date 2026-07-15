@@ -10,6 +10,7 @@ import {
   Shield, 
   TrendingUp, 
   Users, 
+  Rocket, 
   Target, 
   BarChart3, 
   Globe, 
@@ -243,6 +244,99 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
                 </button>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Team Network Section — after Founder Matching */}
+      <section className="py-48 px-4 bg-brand-section relative overflow-hidden border-t border-white/5">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-brand-accent/[0.03] blur-[160px] rounded-full -z-0 pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-24">
+            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-white/5 text-brand-accent text-xs font-black uppercase tracking-[0.4em] mb-12">
+              Team Network
+            </div>
+            <h2 className="text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
+              TEAM <br />
+              <span className="text-[#8cb5e4]">MATCHING</span>
+            </h2>
+            <p className="text-xl md:text-2xl text-[#dfe8ed] font-medium max-w-3xl mx-auto leading-relaxed opacity-[0.95] tracking-[0.02em]">
+              Founders publish the roles they need — developers, designers, marketers, and advisors apply and join the team
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* ── Linking-members graphic ── */}
+            <div className="relative mx-auto w-full max-w-[440px] aspect-square select-none">
+              {/* Connector lines */}
+              <svg viewBox="0 0 400 400" className="absolute inset-0 w-full h-full">
+                {[
+                  [200, 200, 200, 52], [200, 200, 330, 118], [200, 200, 330, 282],
+                  [200, 200, 200, 348], [200, 200, 70, 282], [200, 200, 70, 118],
+                ].map(([x1, y1, x2, y2], i) => (
+                  <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                    stroke="rgba(93,169,255,0.25)" strokeWidth="1.5" strokeDasharray="4 5" />
+                ))}
+                {[[200, 52], [330, 118], [330, 282], [200, 348], [70, 282], [70, 118]].map(([cx, cy], i) => (
+                  <circle key={'d' + i} cx={cx} cy={cy} r="3" fill="#5da9ff" opacity="0.7" />
+                ))}
+              </svg>
+
+              {/* Center: the startup */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-[2rem] bg-brand-bg border border-brand-accent/40 shadow-huge shadow-brand-accent/10 flex flex-col items-center justify-center gap-1.5 animate-pulse">
+                <Rocket size={26} className="text-brand-accent" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-brand-text-muted">Startup</span>
+              </div>
+
+              {/* Member nodes around it */}
+              {[
+                { role: 'Developer', initials: 'DV', top: '13%', left: '50%' },
+                { role: 'Designer', initials: 'DS', top: '29.5%', left: '82.5%' },
+                { role: 'Marketing', initials: 'MK', top: '70.5%', left: '82.5%' },
+                { role: 'Advisor', initials: 'AD', top: '87%', left: '50%' },
+                { role: 'Sales', initials: 'SL', top: '70.5%', left: '17.5%' },
+                { role: 'Co-Founder', initials: 'CF', top: '29.5%', left: '17.5%' },
+              ].map((m) => (
+                <div key={m.role} style={{ top: m.top, left: m.left }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
+                  <div className="w-14 h-14 rounded-2xl bg-brand-card border border-[#5da9ff]/25 flex items-center justify-center text-[#8cb5e4] font-black text-sm shadow-lg hover:border-[#5da9ff]/60 hover:scale-110 transition-all">
+                    {m.initials}
+                  </div>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-brand-text-muted whitespace-nowrap">{m.role}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Copy + CTAs ── */}
+            <div>
+              <ul className="space-y-6 mb-12">
+                {[
+                  'Founders publish open positions for the exact roles they need',
+                  'Team members apply with their profile, skills, and CV in one click',
+                  'Accept an applicant and they join your team instantly — with direct contact both ways',
+                ].map((t, i) => (
+                  <li key={i} className="flex items-start gap-5 text-base md:text-lg font-medium text-white leading-relaxed">
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-[#5da9ff] bg-[#5da9ff]/20 mt-2 shrink-0" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => navigate('/team-members')}
+                  className="px-10 py-5 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 flex items-center justify-center gap-2"
+                >
+                  <Users size={16} /> Join a Team
+                </button>
+                <button
+                  onClick={() => navigate(user ? '/startups' : '/signup/founder')}
+                  className="px-10 py-5 bg-brand-bg border border-[#5da9ff]/20 text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:border-[#5da9ff]/50 active:scale-95 transition-all"
+                >
+                  Hire for My Startup
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
