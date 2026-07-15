@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { EMPLOYMENT_TYPES, WORK_TYPES, EXPERIENCE_LEVELS } from '../TeamLab';
 import type { EmploymentType, WorkType, ExperienceLevel } from '../TeamLab';
 import {
   Users, UserPlus, Plus, X, Loader2, Briefcase, MapPin, TrendingUp,
-  Linkedin, Mail, Trash2, Check, Search, FileText, ChevronDown,
+  Linkedin, Mail, Trash2, Check, Search, FileText, ChevronDown, Target,
 } from 'lucide-react';
 
 // Common roles for the dropdown, grouped so founders pick fast. "Suggested"
@@ -57,6 +58,7 @@ const APP_STATUS_STYLE: Record<string, string> = {
 };
 
 export default function TeamLabPanel({ startupId, founderId, startupName, industry, stage, canEdit }: TeamLabPanelProps) {
+  const navigate = useNavigate();
   const [team, setTeam] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [apps, setApps] = useState<any[]>([]);
@@ -98,6 +100,53 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
   };
 
   useEffect(() => { if (startupId) load(); }, [startupId]);
+
+  // ── Team gaps: the roles the founder said they're LOOKING FOR in the
+  // setup wizard. TeamLab's startupId is the analysis id; the analysis
+  // points at its startup record, which carries lookingFor.
+  const [lookingFor, setLookingFor] = useState<string[]>([]);
+  useEffect(() => {
+    if (!startupId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const aSnap = await getDoc(doc(db, 'analyses', startupId));
+        const linkedStartupId = (aSnap.exists() ? (aSnap.data() as any)?.startupId : null) || null;
+        if (!linkedStartupId) return;
+        const sSnap = await getDoc(doc(db, 'startups', linkedStartupId));
+        if (!cancelled && sSnap.exists()) {
+          setLookingFor(((sSnap.data() as any)?.lookingFor || []) as string[]);
+        }
+      } catch (e) { /* non-fatal — gaps board simply hides */ }
+    })();
+    return () => { cancelled = true; };
+  }, [startupId]);
+
+  // Map wizard roles to publishable titles + matching keywords.
+  const GAP_ROLE_MAP: Record<string, { title: string; match: string[] }> = {
+    'Co-founder': { title: 'Co-Founder (CTO)', match: ['co-founder', 'cofounder', 'cto', 'ceo'] },
+    'Developer': { title: 'Full-Stack Developer', match: ['developer', 'engineer'] },
+    'Designer': { title: 'UI/UX Designer', match: ['design'] },
+    'Marketing': { title: 'Marketing Manager', match: ['marketing', 'growth'] },
+    'Sales': { title: 'Sales Lead', match: ['sales', 'business development'] },
+    'Operations': { title: 'Operations Manager', match: ['operations', 'ops'] },
+    'Finance': { title: 'Finance Lead', match: ['finance', 'cfo'] },
+    'Advisor': { title: 'Advisor', match: ['advisor', 'mentor'] },
+  };
+  const gapStatus = (role: string): { state: 'filled' | 'open' | 'missing'; who?: string } => {
+    const keys = GAP_ROLE_MAP[role]?.match || [role.toLowerCase()];
+    const member = team.find((m) => keys.some((k) => (m.position || '').toLowerCase().includes(k)));
+    if (member) return { state: 'filled', who: member.fullName };
+    const openPos = positions.find((p) => p.status === 'open' && keys.some((k) => (p.title || '').toLowerCase().includes(k)));
+    if (openPos) return { state: 'open' };
+    return { state: 'missing' };
+  };
+  const publishForRole = (role: string) => {
+    setCustomTitle(false);
+    setPForm((f) => ({ ...f, title: GAP_ROLE_MAP[role]?.title || role }));
+    setShowPositionForm(true);
+    setError('');
+  };
 
   const appsFor = (positionId: string) => apps.filter((a) => a.positionId === positionId);
 
@@ -235,7 +284,13 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent font-black text-sm shrink-0">{(m.fullName || '?').slice(0, 2).toUpperCase()}</div>
                   <div className="min-w-0">
-                    <div className="text-sm font-black text-brand-text-primary truncate">{m.fullName}</div>
+                    {m.applicantId ? (
+                      <button onClick={() => navigate(`/profile/${m.applicantId}`)} className="text-sm font-black text-brand-text-primary truncate hover:text-brand-accent hover:underline transition-colors text-left">
+                        {m.fullName}
+                      </button>
+                    ) : (
+                      <div className="text-sm font-black text-brand-text-primary truncate">{m.fullName}</div>
+                    )}
                     <div className="text-xs text-brand-text-muted font-medium">{m.position}</div>
                   </div>
                 </div>
@@ -249,6 +304,44 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
           </div>
         )}
       </section>
+
+      {/* ── Team Gaps ────────────────────────────────────────────────────── */}
+      {lookingFor.length > 0 && (
+        <section className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8">
+          <h4 className="text-lg font-black uppercase tracking-tight font-display flex items-center gap-3 mb-2">
+            <Target size={20} className="text-brand-accent" /> Team Gaps
+          </h4>
+          <p className="text-sm text-brand-text-secondary font-medium mb-6">The roles you said you're looking for — filled, open, or still missing.</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between bg-brand-card rounded-2xl px-5 py-3.5 border border-emerald-500/10">
+              <span className="text-sm font-black text-brand-text-primary">Founder</span>
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400"><Check size={13} /> You</span>
+            </div>
+            {lookingFor.map((role) => {
+              const g = gapStatus(role);
+              return (
+                <div key={role} className="flex items-center justify-between gap-3 bg-brand-card rounded-2xl px-5 py-3.5 border border-white/5">
+                  <span className="text-sm font-black text-brand-text-primary">{role}</span>
+                  {g.state === 'filled' ? (
+                    <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400"><Check size={13} /> {g.who}</span>
+                  ) : g.state === 'open' ? (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#5da9ff]">Position open — receiving applications</span>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Missing</span>
+                      {canEdit && (
+                        <button onClick={() => publishForRole(role)} className="px-4 py-2 bg-brand-accent text-brand-bg text-[9px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all">
+                          Find Team Members
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Open Positions ───────────────────────────────────────────────── */}
       <section className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8">
@@ -349,7 +442,13 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                                 {(a.applicantName || '?').slice(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-sm font-black text-brand-text-primary truncate">{a.applicantName || 'Applicant'}</div>
+                                {a.applicantId ? (
+                                  <button onClick={() => navigate(`/profile/${a.applicantId}`)} className="text-sm font-black text-brand-text-primary truncate hover:text-brand-accent hover:underline transition-colors text-left">
+                                    {a.applicantName || 'Applicant'}
+                                  </button>
+                                ) : (
+                                  <div className="text-sm font-black text-brand-text-primary truncate">{a.applicantName || 'Applicant'}</div>
+                                )}
                                 {a.applicantHeadline && <div className="text-xs text-brand-text-muted font-medium">{a.applicantHeadline}</div>}
                               </div>
                             </div>

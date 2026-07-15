@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import {
-  collection, query, where, getDocs, addDoc, updateDoc, setDoc, doc,
+  collection, query, where, getDocs, addDoc, updateDoc, setDoc, doc, getDoc,
   serverTimestamp, increment,
 } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -89,6 +89,29 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
   }, [user, isTeamMember]);
 
   const appliedIds = new Set(applications.map((a) => a.positionId));
+
+  // ── Founder contacts for ACCEPTED applications ─────────────────────────
+  // Your spec: an accepted applicant receives the founder's contact details
+  // (email / LinkedIn) to continue outside the platform.
+  const [founderContacts, setFounderContacts] = useState<Record<string, any>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set(
+      applications.filter((a) => a.status === 'accepted' && a.founderId).map((a) => a.founderId)
+    )).filter((id) => !(id in founderContacts));
+    if (ids.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const entries: Record<string, any> = {};
+      await Promise.all(ids.map(async (fid) => {
+        try {
+          const snap = await getDoc(doc(db, 'profiles', fid));
+          entries[fid] = snap.exists() ? snap.data() : null;
+        } catch { entries[fid] = null; }
+      }));
+      if (!cancelled) setFounderContacts((m) => ({ ...m, ...entries }));
+    })();
+    return () => { cancelled = true; };
+  }, [applications]);
 
   // ── Saved positions (stored on the profile) ─────────────────────────────
   const [savedIds, setSavedIds] = useState<string[]>(
@@ -396,7 +419,8 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
               ) : (
                 <div className="space-y-3">
                   {applications.map((a) => (
-                    <div key={a.id} className="bg-brand-card rounded-2xl p-6 border border-white/5 flex items-start justify-between gap-4">
+                    <div key={a.id} className="bg-brand-card rounded-2xl p-6 border border-white/5">
+                      <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <h5 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">{a.positionTitle || 'Position'}</h5>
                         {a.startupName && <p className="text-xs text-brand-text-secondary font-bold mt-1">{a.startupName}</p>}
@@ -405,6 +429,43 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
                       <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${STATUS_STYLE[a.status] || STATUS_STYLE.pending}`}>
                         {a.status || 'pending'}
                       </span>
+                      </div>
+                      {a.status === 'accepted' && (() => {
+                        const f = a.founderId ? founderContacts[a.founderId] : null;
+                        const fEmail = f?.email;
+                        const fLinkedin = f?.pfLinkedin || null;
+                        const fName = f?.displayName || f?.fullName || 'the founder';
+                        return (
+                          <div className="mt-4 pt-4 border-t border-emerald-500/10 bg-emerald-500/5 -mx-6 -mb-6 px-6 py-5 rounded-b-2xl">
+                            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-400 mb-3">
+                              <PartyPopper size={14} /> You're in! Continue with {fName} directly:
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              {fEmail && (
+                                <a href={`mailto:${fEmail}?subject=${encodeURIComponent(`Joining ${a.startupName || 'your startup'} — ${a.positionTitle || ''}`)}`}
+                                  className="px-5 py-2.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                                  <Mail size={12} /> Email Founder
+                                </a>
+                              )}
+                              {fLinkedin && (
+                                <a href={fLinkedin.startsWith('http') ? fLinkedin : `https://${fLinkedin}`} target="_blank" rel="noreferrer"
+                                  className="px-5 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2">
+                                  <Linkedin size={12} /> LinkedIn
+                                </a>
+                              )}
+                              {a.founderId && (
+                                <button onClick={() => navigate(`/profile/${a.founderId}`)}
+                                  className="px-5 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2">
+                                  <UserIcon size={12} /> View Profile
+                                </button>
+                              )}
+                              {!fEmail && !fLinkedin && !a.founderId && (
+                                <p className="text-xs font-medium text-brand-text-muted">Founder contact details are not available yet.</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

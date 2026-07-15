@@ -4,9 +4,11 @@ import { User } from 'firebase/auth';
 import { UserProfile, AnalysisReport } from '../types';
 import { db } from '../lib/firebase';
 import { doc, getDoc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
-import { Loader2, AlertCircle, ArrowLeft, RefreshCw, Briefcase, ArrowRight, Mail } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, RefreshCw, Briefcase, ArrowRight, Mail, Presentation, Bell, Check, User as UserAvatarIcon, Linkedin, ChevronLeft, ChevronRight, X as CloseIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import ResultsDashboard from '../components/ResultsDashboard';
+import FounderTimeline from '../components/FounderTimeline';
+import SlideCanvas from '../components/SlideCanvas';
 
 interface StartupDashboardPageProps {
   user: User | null;
@@ -49,6 +51,9 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
   // Founder contact resolved by looking up the founder's profile, used as a
   // fallback for older shares whose analysis doc never saved the contact.
   const [resolvedFounder, setResolvedFounder] = useState<{ name: string; email: string } | null>(null);
+  const [notifySaved, setNotifySaved] = useState(false);
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
 
   useEffect(() => {
     if (status === 'completed' && analysis) {
@@ -301,6 +306,32 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
     (isOwnerViewing ? ((profile as any)?.email || user?.email || '') : '');
   const companyName = (analysis as any)?.startupProfile?.companyName || (analysis as any)?.ideaDescription || 'this startup';
 
+  // The founder's deck lives on the analysis as slides (same source the
+  // submissions viewer renders). Submitted = slides exist.
+  const deckSlides: any[] = (analysis as any)?.pitchDeckData?.slides || (analysis as any)?.pitchReadiness?.slides || [];
+  // A deck is only visible to investors once the founder OFFICIALLY submits.
+  // Built-but-unsubmitted decks stay private — investors see the founder's
+  // timeline instead, until submission.
+  const deckSubmitted = deckSlides.length > 0 && (analysis as any)?.submittedToInvestors === true;
+
+  // "Notify me when the deck is ready" — saved on the investor's own profile.
+  // New submissions already appear in the investor's Notifications, so the
+  // promise is kept automatically the moment the founder submits.
+  const alreadyNotifying = ((profile as any)?.deckNotifyIds || []).includes((analysis as any)?.id || id || '');
+  // Inline deck viewer — opens THIS startup's deck right here, no redirects.
+  const deckTemplate: string | undefined =
+    (analysis as any)?.pitchDeckTemplate || (analysis as any)?.pitchDeckData?.template || undefined;
+  const notifyMe = async () => {
+    if (!user?.uid) return;
+    try {
+      await setDoc(doc(db, 'profiles', user.uid), {
+        deckNotifyIds: arrayUnion((analysis as any)?.id || id || ''),
+      }, { merge: true });
+      setNotifySaved(true);
+      refreshProfile().catch(() => {});
+    } catch (e) { console.warn('Notify save failed:', e); }
+  };
+
   const requestPitchDeck = async () => {
     // Save this startup to the investor's Match History so they can find it later,
     // then refresh the profile so it shows up immediately.
@@ -337,32 +368,127 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
 
 
         {investorMode && (
-          <div className="mt-10 bg-[#0b1a26] border border-white/10 rounded-[2rem] p-8 sm:p-10 text-center">
-            <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white font-display mb-2">
-              Interested in this startup?
-            </h3>
-            <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto leading-relaxed">
-              If it's a fit, request the pitch deck from the founder. If not, head back to your other matches.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={requestPitchDeck}
-                disabled={!founderEmail}
-                className="w-full sm:w-auto px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
-              >
-                <Briefcase size={15} /> Yes — request pitch deck
-              </button>
-              <button
-                onClick={() => navigate('/investor-network')}
-                className="w-full sm:w-auto px-8 py-4 bg-transparent border border-white/15 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <ArrowLeft size={15} /> Not for me — view others
-              </button>
-            </div>
-            {founderEmail && (
-              <p className="mt-6 text-xs text-brand-text-muted font-medium flex items-center justify-center gap-2">
-                <Mail size={12} /> Founder: {founderName ? founderName + ' • ' : ''}{founderEmail}
-              </p>
+          <div className="mt-10 space-y-6">
+
+            {deckSubmitted ? (
+              /* ── Deck submitted: view it ── */
+              <div className="bg-[#0b1a26] border border-emerald-500/20 rounded-[2rem] p-8 sm:p-10 text-center">
+                <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-5">
+                  <Check size={12} /> Pitch Deck Submitted
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white font-display mb-2">
+                  The founder's pitch deck is ready
+                </h3>
+                <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto leading-relaxed">
+                  Review the full deck, then reach out if it's a fit.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <button
+                    onClick={() => { setSlideIdx(0); setDeckOpen((v) => !v); }}
+                    className="w-full sm:w-auto px-8 py-4 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    {deckOpen ? <CloseIcon size={15} /> : <Presentation size={15} />}
+                    {deckOpen ? 'Close Deck' : `View Pitch Deck — ${deckSlides.length} Slides`}
+                  </button>
+                  <button
+                    onClick={() => navigate('/investor-network')}
+                    className="w-full sm:w-auto px-8 py-4 bg-transparent border border-white/15 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ArrowLeft size={15} /> Not for me — view others
+                  </button>
+                </div>
+
+                {deckOpen && deckSlides.length > 0 && (
+                  <div className="mt-8 text-left">
+                    <div className="rounded-[1.5rem] overflow-hidden border border-white/10 bg-black/30">
+                      <SlideCanvas slide={deckSlides[slideIdx] || {}} templateName={deckTemplate} />
+                    </div>
+                    <div className="flex items-center justify-center gap-4 mt-4">
+                      <button
+                        onClick={() => setSlideIdx((i) => Math.max(0, i - 1))}
+                        disabled={slideIdx === 0}
+                        className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted tabular-nums">
+                        Slide {slideIdx + 1} of {deckSlides.length}
+                      </span>
+                      <button
+                        onClick={() => setSlideIdx((i) => Math.min(deckSlides.length - 1, i + 1))}
+                        disabled={slideIdx === deckSlides.length - 1}
+                        className="p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── No deck yet: show where the founder has reached ── */
+              <div className="bg-[#0b1a26] border border-white/10 rounded-[2rem] p-8 sm:p-10">
+                <div className="text-center mb-8">
+                  <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-4 py-1.5 rounded-full mb-5">
+                    Pitch Deck Not Submitted Yet
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white font-display mb-2">
+                    Where the founder has reached
+                  </h3>
+                  <p className="text-sm text-brand-text-secondary font-medium max-w-md mx-auto leading-relaxed">
+                    Follow the journey below — you'll be notified the moment the pitch deck is submitted.
+                  </p>
+                </div>
+                <FounderTimeline analysis={analysis as any} canEdit={false} />
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+                  <button
+                    onClick={notifyMe}
+                    disabled={notifySaved || alreadyNotifying}
+                    className="w-full sm:w-auto px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100"
+                  >
+                    {(notifySaved || alreadyNotifying) ? <><Check size={15} /> You'll be notified</> : <><Bell size={15} /> Notify me when it's ready</>}
+                  </button>
+                  <button
+                    onClick={() => navigate('/investor-network')}
+                    className="w-full sm:w-auto px-8 py-4 bg-transparent border border-white/15 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ArrowLeft size={15} /> Not for me — view others
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Founder contact card ── */}
+            {(founderName || founderEmail) && (
+              <div className="bg-[#0b1a26] border border-white/10 rounded-[2rem] p-8 flex flex-col sm:flex-row items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent font-black text-xl shrink-0">
+                  {(founderName || 'F').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <div className="text-lg font-black uppercase tracking-tight text-white truncate">{founderName || 'Founder'}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted mt-1">
+                    Founder of {typeof companyName === 'string' ? companyName.slice(0, 60) : 'this startup'}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
+                  {(analysis as any)?.userId && (
+                    <button
+                      onClick={() => navigate(`/profile/${(analysis as any).userId}`)}
+                      className="px-6 py-3.5 bg-brand-card border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <UserAvatarIcon size={13} /> View Profile
+                    </button>
+                  )}
+                  {founderEmail && (
+                    <button
+                      onClick={requestPitchDeck}
+                      className="px-6 py-3.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <Mail size={13} /> Contact Founder
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         )}

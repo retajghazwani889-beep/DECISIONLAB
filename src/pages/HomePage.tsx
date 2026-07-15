@@ -78,7 +78,11 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             transition={{ delay: 0.4, type: 'spring' }}
             className="relative z-10 perspective-1000"
           >
-            <StartupForm user={user} profile={profile} onOpenAccess={onOpenAccess || (() => {})} />
+            {/* Logged-out visitors who submit an idea are sent to the signup
+                role picker (Founder / Investor / Team Member) instead of the
+                old access modal. Their idea is remembered and the analysis
+                resumes automatically after they finish signing up. */}
+            <StartupForm user={user} profile={profile} onOpenAccess={() => navigate('/signup')} />
           </motion.div>
         </div>
       </section>

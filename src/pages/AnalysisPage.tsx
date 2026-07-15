@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+   import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,6 +91,9 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { saveAnalysisToHistory } = useAuth();
+  // Link this analysis to a startup workspace when launched from one.
+  const linkedStartupId: string | null = (location.state as any)?.startupId || null;
+  const returnTo: string | null = (location.state as any)?.returnTo || null;
 
   const getInitialState = () => {
     if (id) {
@@ -345,6 +348,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
     const placeholderRecord = {
       id: analysisId,
       userId: user!.uid,
+      startupId: linkedStartupId,
       ideaDescription: idea,
       projectName: preliminaryName,
       projectDescription: idea,
@@ -547,6 +551,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       const finalAnalysis = {
         id: targetAnalysisId,
         userId: user!.uid,
+        startupId: linkedStartupId,
         ideaDescription: idea,
         ...results,
         startupProfile: {
@@ -637,7 +642,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       setBenchmarkComplete(true);
 
       console.log("ROUTE_TO_REPORT");
-      navigate(`/dashboard/startup/${targetAnalysisId}/overview`, { replace: true });
+      navigate(returnTo || `/dashboard/startup/${targetAnalysisId}/overview`, { replace: true });
 
     } catch (err: any) {
       clearTimeout(timeoutTimer);
@@ -710,4 +715,4 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
   }
 
   return null;
-}
+}                                                               

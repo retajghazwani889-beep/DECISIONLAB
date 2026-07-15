@@ -53,6 +53,7 @@ export default function StartupSetupWizard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const resumeId = searchParams.get('id');
+  const startupKind = searchParams.get('kind') || null; // 'new' | 'existing'
 
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
@@ -104,6 +105,7 @@ export default function StartupSetupWizard() {
       wizardStep,
       updatedAt: serverTimestamp(),
     };
+    if (startupKind) record.startupKind = startupKind;
     try {
       if (startupId) {
         await updateDoc(doc(db, 'startups', startupId), record);
@@ -142,7 +144,9 @@ export default function StartupSetupWizard() {
     setSaving(true);
     const id = await persist('complete', STEPS.length - 1);
     setSaving(false);
-    if (id) setDone(true);
+    // The congratulations + choices now live at the startup's permanent
+    // workspace page, so the founder can always come back to them.
+    if (id) navigate(`/startups/${id}`, { state: { justCreated: true } });
   };
 
   const uploadFile = async (file: File, fieldKey: string, kind: 'image' | 'doc') => {

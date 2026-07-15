@@ -23,6 +23,13 @@ import InvestorSignUpPage from './pages/InvestorSignUpPage';
 import TeamMemberSignUpPage from './pages/TeamMemberSignUpPage';
 import FounderWelcomePage from './pages/FounderWelcomePage';
 import StartupSetupWizard from './pages/StartupSetupWizard';
+import MyStartupsPage from './pages/MyStartupsPage';
+import PersonalProfilePage from './pages/PersonalProfilePage';
+import PublicProfilePage from './pages/PublicProfilePage';
+import BillingPage from './pages/BillingPage';
+import NotificationsPage from './pages/NotificationsPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
+import StartupWorkspacePage from './pages/StartupWorkspacePage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -42,14 +49,21 @@ function AppContent() {
   // Hide navbar/footer on the pitch deck editor so it gets the full viewport
   const isArchitect = location.pathname.startsWith('/pitch-deck');
 
-  // Trigger onboarding for new users
+  // Trigger onboarding for new users — but never during the new signup /
+  // welcome / plan / setup flow, which handles onboarding itself. The old
+  // "Finalize" modal must not pop over those pages.
   React.useEffect(() => {
     if (user && !loading) {
+      const p = location.pathname;
+      const inNewSignupFlow =
+        p.startsWith('/signup') || p.startsWith('/welcome') ||
+        p.startsWith('/setup') || p.startsWith('/startups') || p === '/login';
+      if (inNewSignupFlow) return;
       if (!profile || !profile.onboardingCompleted) {
         setIsOnboardingOpen(true);
       }
     }
-  }, [user, profile, loading]);
+  }, [user, profile, loading, location.pathname]);
 
   // Resume a pending idea analysis after login / onboarding
   React.useEffect(() => {
@@ -76,7 +90,7 @@ function AppContent() {
         p.startsWith('/pitch-deck') || p.startsWith('/investor-');
       if (notForTeamMember) navigate('/team', { replace: true });
       return;
-    } 
+    }
     const isInvestor = (profile as any)?.accountType === 'investor';
     if (!isInvestor) return;
     const p = location.pathname;
@@ -101,7 +115,9 @@ function AppContent() {
       p === '/compare' ||
       p.startsWith('/pitch-deck') ||
       p.startsWith('/welcome') ||
-      p.startsWith('/setup');
+      p.startsWith('/setup') ||
+      p.startsWith('/startups') ||
+      p === '/profile' || p === '/billing' || p === '/notifications' || p === '/settings';
     if (needsLogin) {
       navigate('/', { replace: true });
     }
@@ -194,6 +210,13 @@ function AppContent() {
           <Route path="/signup/team" element={<TeamMemberSignUpPage />} />
           <Route path="/welcome/founder" element={<FounderWelcomePage />} />
           <Route path="/setup/startup" element={<StartupSetupWizard />} />
+          <Route path="/startups" element={<MyStartupsPage />} />
+          <Route path="/profile" element={<PersonalProfilePage />} />
+          <Route path="/profile/:uid" element={<PublicProfilePage />} />
+          <Route path="/billing" element={<BillingPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/settings" element={<AccountSettingsPage />} />
+          <Route path="/startups/:id" element={<StartupWorkspacePage />} />
 
           {/* ── Analysis ── */}
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />

@@ -193,46 +193,54 @@ async function startServer() {
   app.post("/api/notify", async (req, res) => {
     const { type, userData } = req.body;
     
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const host = process.env.SMTP_HOST || "";
+    const user = process.env.SMTP_USER || "";
+    const pass = process.env.SMTP_PASS || "";
+    const from = process.env.SMTP_FROM || "";
+
+    const isHostEmail = host.includes("@");
+    const isConfigured = host.trim().length > 0 && !isHostEmail && user.trim().length > 0 && pass.trim().length > 0;
+
+    if (!isConfigured) {
+      console.warn('Email system bypass: SMTP host, user, or pass not configured or invalid (e.g. host contains "@" or is empty).');
+      return res.json({ success: true, message: 'Notification skipped (not configured)' });
+    }
 
     try {
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.warn('Email system bypass: SMTP credentials not configured.');
-        return res.json({ success: true, message: 'Notification skipped (not configured)' });
-      }
+      const transporter = nodemailer.createTransport({
+        host: host,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
+        auth: {
+          user: user,
+          pass: pass,
+        },
+      });
 
       if (type === 'welcome') {
         const { email, fullName } = userData;
         const firstName = fullName.split(' ')[0];
         
-        if (process.env.SMTP_USER) {
-          await transporter.sendMail({
-            from: process.env.SMTP_FROM,
-            to: email,
-            subject: "Welcome to DecisionLab",
-            text: `Hello ${firstName},\n\nWelcome to DecisionLab.\n\nYour workspace has been successfully activated and is ready for venture analysis, strategic review, and execution planning.\n\nYou can now access your dashboard and begin using the platform.\n\n— DecisionLab`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #08131D; line-height: 1.6;">
-                <p>Hello ${firstName},</p>
-                <p>Welcome to DecisionLab.</p>
-                <p>Your workspace has been successfully activated and is ready for venture analysis, strategic review, and execution planning.</p>
-                <p>You can now access your dashboard and begin using the platform.</p>
-                <p>— DecisionLab</p>
-              </div>
-            `
-          });
+        await transporter.sendMail({
+          from: from || user,
+          to: email,
+          subject: "Welcome to DecisionLab",
+          text: `Hello ${firstName},\n\nWelcome to DecisionLab.\n\nYour workspace has been successfully activated and is ready for venture analysis, strategic review, and execution planning.\n\nYou can now access your dashboard and begin using the platform.\n\n— DecisionLab`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #08131D; line-height: 1.6;">
+              <p>Hello ${firstName},</p>
+              <p>Welcome to DecisionLab.</p>
+              <p>Your workspace has been successfully activated and is ready for venture analysis, strategic review, and execution planning.</p>
+              <p>You can now access your dashboard and begin using the platform.</p>
+              <p>— DecisionLab</p>
+            </div>
+          `
+        });
 
-          // Send admin notification
+        // Send admin notification if ADMIN_EMAIL is configured
+        if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.includes('@')) {
           await transporter.sendMail({
-            from: process.env.SMTP_FROM,
+            from: from || user,
             to: process.env.ADMIN_EMAIL,
             subject: `[INTERNAL] New Intelligence Activation: ${fullName}`,
             html: `
@@ -254,10 +262,10 @@ async function startServer() {
       } else {
         res.status(400).json({ error: 'Invalid notification type' });
       }
-    } catch (error) {
-      console.error('Email notification failed:', error);
-      // We don't want to break the signup flow if email fails, but we should log it
-      res.json({ success: false, error: 'Email service unavailable' });
+    } catch (error: any) {
+      console.warn('Email notification failed gracefully:', error.message || error);
+      // We don't want to break the signup flow if email fails, but we should log it as a warning
+      res.json({ success: true, bypassed: true, error: 'Email service unavailable' });
     }
   });
 

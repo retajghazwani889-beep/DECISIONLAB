@@ -50,7 +50,7 @@ export default function FounderSignUpPage() {
           console.warn('Profile save failed (offline mode?):', e);
         }
       }
-      navigate('/welcome/founder', { replace: true });
+      navigate('/pricing', { replace: true, state: { fromSignup: true } });
     } catch (e: any) {
       setErr(formatAuthError(e));
       setBusy(false);
@@ -92,7 +92,7 @@ export default function FounderSignUpPage() {
         if (t === 'investor') navigate('/investor-matches', { replace: true });
         else if (t === 'teamMember') navigate('/team', { replace: true });
         else if (existing) navigate('/dashboard', { replace: true });
-        else navigate('/welcome/founder', { replace: true });
+        else navigate('/pricing', { replace: true, state: { fromSignup: true } });
       }
     } catch (e: any) {
       setErr(formatAuthError(e));

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Zap, Rocket, Shield, Crown } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Check, Zap, Rocket, Shield, Crown, ArrowRight } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -16,6 +17,11 @@ interface PremiumPageProps {
 export default function PremiumPage({ user, profile }: PremiumPageProps) {
   const { signInWithGoogle } = useAuth();
   const [loadingTier, setLoadingTier] = useState<Tier | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Founders arriving from the signup flow get a "continue setup" path so
+  // they're never stranded here: choose a plan (or stay free) → onboarding.
+  const fromSignup = Boolean((location.state as any)?.fromSignup);
 
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
@@ -48,7 +54,12 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           updatedAt: serverTimestamp()
         });
         alert(`Success! You are now on the ${targetTier === 'growth' ? 'Startup Grow' : 'Startup Validation'} plan.`);
-        window.location.reload();
+        if (fromSignup) {
+          // Continue the founder's onboarding: welcome → startup setup wizard.
+          navigate('/welcome/founder', { replace: true });
+        } else {
+          window.location.reload();
+        }
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `profiles/${activeUser!.uid}`);
       } finally {
@@ -131,8 +142,108 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     );
   };
 
+  // ── Investor Pro ($199/mo) ────────────────────────────────────────────────
+  // A plan for INVESTOR accounts, separate from the founder tiers. Founders
+  // and logged-out visitors are sent to the Investor Network to create an
+  // investor account first; investors get the same simulated checkout.
+  const isInvestorAccount = (profile as any)?.accountType === 'investor';
+  const [investorLoading, setInvestorLoading] = useState(false);
+  const investorProActive = (profile as any)?.subscriptionStatus === 'investor_pro';
+
+  const handleInvestorPro = async () => {
+    if (!user || !isInvestorAccount) {
+      navigate('/investor-network');
+      return;
+    }
+    if (investorProActive) return;
+    setInvestorLoading(true);
+    setTimeout(async () => {
+      try {
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          subscriptionStatus: 'investor_pro',
+          updatedAt: serverTimestamp(),
+        });
+        alert('Success! You are now on the Investor Pro plan.');
+        window.location.reload();
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `profiles/${user.uid}`);
+      } finally {
+        setInvestorLoading(false);
+      }
+    }, 1500);
+  };
+
+  const INVESTOR_FEATURES = [
+    'Browse Unlimited Startups',
+    'Discover New Investment Opportunities',
+    'View Complete Startup Reports',
+    'See Startup Scores & Risk Ratings',
+    'Review Market & Competitor Analysis',
+    'View Founder Profiles & Contact Information',
+    'View Startup Team & Leadership',
+    'Save Favorite Startups',
+    'Compare Multiple Startups',
+    "Track Startups You're Interested In",
+    'Connect Directly with Founders',
+    'Download Startup Reports (PDF)',
+    'Personalized Investor Dashboard',
+    'Priority Support',
+  ];
+
+  const InvestorProCard = () => (
+    <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-card border-[#5da9ff]/30">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5da9ff] text-brand-bg text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest">
+        For Investors
+      </div>
+      <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">Investor Pro</h3>
+      <p className="text-[#5da9ff] text-sm font-bold uppercase tracking-wider mb-6">Discover · Evaluate · Invest</p>
+      <div className="mb-6 flex items-baseline gap-2">
+        <span className="text-5xl font-black font-display tracking-tighter text-brand-text-primary">$199</span>
+        <span className="text-[#5da9ff] text-sm font-bold">/mo</span>
+      </div>
+      <p className="text-sm text-brand-text-muted font-medium leading-relaxed mb-8">
+        Access validated startups, connect with founders, and manage your investment opportunities — all from one dashboard.
+      </p>
+      <ul className="space-y-3 mb-12">
+        {INVESTOR_FEATURES.map((f, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <div className="mt-1 p-0.5 rounded-full shrink-0 bg-[#5da9ff]/20 text-[#5da9ff]">
+              <Check size={13} strokeWidth={4} />
+            </div>
+            <span className="text-sm font-medium text-neutral-300">{f}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        onClick={handleInvestorPro}
+        disabled={investorLoading || investorProActive}
+        className={cn(
+          'w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95',
+          'bg-[#5da9ff] text-brand-bg hover:bg-[#5da9ff]/90 shadow-lg shadow-[#5da9ff]/20',
+          (investorLoading || investorProActive) && 'opacity-50 cursor-not-allowed'
+        )}
+      >
+        {investorLoading ? 'Processing…' : investorProActive ? 'Current Plan' : isInvestorAccount ? 'Choose Investor Pro' : 'Become an Investor'}
+      </button>
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      {fromSignup && (
+        <div className="mb-16 p-6 rounded-3xl bg-brand-accent/5 border border-brand-accent/20 flex flex-col sm:flex-row sm:items-center gap-5">
+          <p className="flex-1 text-sm font-medium text-brand-text-secondary">
+            <span className="font-black text-brand-text-primary uppercase tracking-wide">Almost there.</span>{' '}
+            Pick the plan that fits — or continue with the free plan and upgrade anytime.
+          </p>
+          <button
+            onClick={() => navigate('/welcome/founder')}
+            className="shrink-0 px-6 py-3.5 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+          >
+            Continue setting up your startup <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
       <div className="text-center mb-32 space-y-6">
         <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-brand-accent/10 text-brand-accent text-xs font-black uppercase tracking-[0.2em] mb-6 border border-brand-accent/20">
           Scale your startup
@@ -145,7 +256,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10 items-center">
         <PlanCard
           tier="free"
           title="Startup at a Glance"
@@ -177,7 +288,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Improvement Recommendations",
             "Validation Roadmap & Growth",
           ]}
-          cta="Choose Founder"
+          cta="Choose Validation"
         />
         <PlanCard
           tier="growth"
@@ -194,8 +305,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Side-by-Side Analysis",
             "Fundraising Preparation Tools",
           ]}
-          cta="Choose Growth"
+          cta="Choose Grow"
         />
+        <InvestorProCard />
       </div>
 
       <div className="mt-32 pt-20 border-t border-white/5 text-center">

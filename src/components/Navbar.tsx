@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Rocket, User as UserIcon, LogOut, ChevronDown, Zap, Lock, Database } from 'lucide-react';
+import { Rocket, User as UserIcon, LogOut, ChevronDown, Zap, Lock, Database, CreditCard, Bell, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { safeLocalStorage as localStorage } from '../lib/storage';
@@ -26,7 +26,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   const founderLinks = [
     { label: 'HOME', path: '/' },
     { label: 'ABOUT US', path: '/about' },
-    { label: 'DASHBOARD', path: '/dashboard', hidden: !user },
+    { label: 'MY STARTUPS', path: '/startups', hidden: !user },
     { label: 'PRICING', path: '/pricing' },
     { label: 'INVESTOR NETWORK', path: '/investor-network' },
   ];
@@ -142,52 +142,34 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                         <p className="text-[10px] font-black text-brand-accent uppercase tracking-widest mt-1 opacity-60">ID: {user.uid.slice(0, 8)}</p>
                       </div>
                       <div className="space-y-1">
-                        {isInvestor ? (
-                          <>
+                        {(() => {
+                          const item = (to: string, Icon: any, text: string) => (
                             <Link
-                              to="/investor-matches"
+                              key={to + text}
+                              to={to}
                               onClick={() => setDropdownOpen(false)}
                               className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
                             >
                               <div className="flex items-center gap-4">
-                                <Database size={18} className="text-brand-accent" /> My Matches
+                                <Icon size={18} className="text-brand-accent" /> {text}
                               </div>
                               <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
-                            <Link
-                              to="/investor-submissions"
-                              onClick={() => setDropdownOpen(false)}
-                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
-                            >
-                              <div className="flex items-center gap-4">
-                                <Database size={18} className="text-brand-accent" /> Submissions
-                              </div>
-                              <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </Link>
-                          </>
-                        ) : (
-                          <>
-                            <Link
-                              to="/dashboard"
-                              onClick={() => setDropdownOpen(false)}
-                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-accent/10 rounded-xl transition-all group"
-                            >
-                              <div className="flex items-center gap-4">
-                                <Database size={18} className="text-brand-accent" /> Dashboard
-                              </div>
-                              <div className="w-1.5 h-1.5 rounded-full bg-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </Link>
-                            <Link
-                              to="/pricing"
-                              onClick={() => setDropdownOpen(false)}
-                              className="flex items-center justify-between px-5 py-4 text-xs font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 rounded-xl transition-all"
-                            >
-                              <div className="flex items-center gap-4">
-                                <Zap size={18} fill="currentColor" /> Pricing
-                              </div>
-                            </Link>
-                          </>
-                        )}
+                          );
+                          const items = [item('/profile', UserIcon, 'Personal Profile')];
+                          if (isInvestor) {
+                            items.push(item('/investor-matches', Database, 'My Matches'));
+                            items.push(item('/investor-submissions', Database, 'Submissions'));
+                          } else if (isTeamMember) {
+                            items.push(item('/team', Database, 'Dashboard'));
+                          } else {
+                            items.push(item('/startups', Rocket, 'My Startups'));
+                            items.push(item('/billing', CreditCard, 'Billing & Subscription'));
+                          }
+                          items.push(item('/notifications', Bell, 'Notifications'));
+                          items.push(item('/settings', Settings, 'Account Settings'));
+                          return items;
+                        })()}
                       </div>
                       <div className="mt-3 pt-3 border-t border-brand-accent/10">
                         <button
