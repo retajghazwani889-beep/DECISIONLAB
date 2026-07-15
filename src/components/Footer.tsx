@@ -1,8 +1,16 @@
 import React from 'react';
-import { Rocket, Twitter, Linkedin, Github } from 'lucide-react';
+import { Rocket, Twitter, Linkedin, Instagram, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import Logo from './Logo';
+
+// TikTok icon (lucide has no TikTok) — matches the 20px stroke style.
+const TikTokIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 export default function Footer() {
   return (
@@ -31,6 +39,7 @@ export default function Footer() {
             <h4 className="font-semibold text-brand-text-primary mb-4 text-sm uppercase tracking-wider">Company</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/about" className="text-brand-text-secondary hover:text-brand-accent">About Us</Link></li>
+              <li><Link to="/contact" className="text-brand-text-secondary hover:text-brand-accent">Contact Us</Link></li>
               <li><a href="#" className="text-brand-text-secondary hover:text-brand-accent">Privacy Policy</a></li>
               <li><a href="#" className="text-brand-text-secondary hover:text-brand-accent">Terms of Service</a></li>
             </ul>
@@ -42,9 +51,11 @@ export default function Footer() {
             © {new Date().getFullYear()} DecisionLab All rights reserved
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Twitter size={20} /></a>
-            <a href="#" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Linkedin size={20} /></a>
-            <a href="#" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Github size={20} /></a>
+            <a href="https://www.instagram.com/decisionlabplatform/" target="_blank" rel="noreferrer" aria-label="Instagram" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Instagram size={20} /></a>
+            <a href="https://x.com/Decisionlab0" target="_blank" rel="noreferrer" aria-label="X (Twitter)" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Twitter size={20} /></a>
+            <a href="https://www.linkedin.com/in/decision-lab-5681aa422/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Linkedin size={20} /></a>
+            <a href="https://www.tiktok.com/@decisionlab0" target="_blank" rel="noreferrer" aria-label="TikTok" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><TikTokIcon size={20} /></a>
+            <a href="https://www.youtube.com/@DECISIONLAB0" target="_blank" rel="noreferrer" aria-label="YouTube" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Youtube size={20} /></a>
           </div>
         </div>
       </div>

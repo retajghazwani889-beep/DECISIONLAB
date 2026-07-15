@@ -11,6 +11,7 @@ import DashboardPage from './pages/DashboardPage';
 import PremiumPage from './pages/PremiumPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
@@ -193,6 +194,7 @@ function AppContent() {
           {/* ── Public pages ── */}
           <Route path="/"        element={<HomePage user={user} profile={profile} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
           <Route path="/about"   element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />

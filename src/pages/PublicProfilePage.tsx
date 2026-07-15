@@ -25,6 +25,7 @@ export default function PublicProfilePage() {
   const viewer: any = profile || {};
 
   const [target, setTarget] = useState<any | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [startups, setStartups] = useState<any[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,10 @@ export default function PublicProfilePage() {
           const anyAccepted = [...asApplicant.docs, ...asFounder.docs].some((d) => (d.data() as any).status === 'accepted');
           if (!cancelled) setConnected(anyAccepted);
         } catch { /* non-fatal */ }
-      } catch (e) { console.warn('Profile load failed:', e); }
+      } catch (e: any) {
+        console.warn('Profile load failed:', e);
+        if (!cancelled && e?.code === 'permission-denied') setBlocked(true);
+      }
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -71,7 +75,8 @@ export default function PublicProfilePage() {
   if (!target) {
     return (
       <div className="min-h-screen bg-brand-bg text-brand-text-primary flex flex-col items-center justify-center px-6 text-center">
-        <h2 className="text-2xl font-black uppercase tracking-tight font-display mb-3">Profile not found</h2>
+        <h2 className="text-2xl font-black uppercase tracking-tight font-display mb-3">{blocked ? 'This profile is private' : 'Profile not found'}</h2>
+        {blocked && <p className="text-sm text-brand-text-secondary font-medium mb-4 max-w-sm">The owner has set their profile to private.</p>}
         <button onClick={() => navigate(-1)} className="text-brand-accent text-xs font-black uppercase tracking-widest hover:underline">← Go back</button>
       </div>
     );

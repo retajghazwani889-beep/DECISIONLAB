@@ -9,7 +9,7 @@ import {
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   LayoutDashboard, Search, FileText, Bookmark, User as UserIcon, Settings,
-  Loader2, Briefcase, MapPin, TrendingUp, ArrowRight, X, Check, Linkedin, Link2, Mail, Upload,
+  Loader2, Briefcase, MapPin, TrendingUp, ArrowRight, X, Check, Linkedin, Link2, Mail, Upload, PartyPopper,
 } from 'lucide-react';
 
 // Same role list founders pick from in TeamLab, so profiles and positions match.

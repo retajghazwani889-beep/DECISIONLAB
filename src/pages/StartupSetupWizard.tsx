@@ -226,11 +226,11 @@ export default function StartupSetupWizard() {
               <div className="w-11 h-11 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent shrink-0"><Handshake size={20} /></div>
               <div><h3 className="text-sm font-black uppercase tracking-tight">Find Investors</h3><p className="text-xs text-brand-text-secondary font-medium mt-0.5">Explore the Investor Network.</p></div>
             </button>
-            <button onClick={() => navigate('/dashboard')} className={doneCard}>
+            <button onClick={() => navigate(startupId ? `/startups/${startupId}` : '/startups')} className={doneCard}>
               <div className="w-11 h-11 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent shrink-0"><Users size={20} /></div>
               <div><h3 className="text-sm font-black uppercase tracking-tight">Find Team</h3><p className="text-xs text-brand-text-secondary font-medium mt-0.5">Publish open positions in TeamLab.</p></div>
             </button>
-            <button onClick={() => navigate('/dashboard')} className={doneCard}>
+            <button onClick={() => navigate('/startups')} className={doneCard}>
               <div className="w-11 h-11 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent shrink-0"><LayoutDashboard size={20} /></div>
               <div><h3 className="text-sm font-black uppercase tracking-tight">Go to Dashboard</h3><p className="text-xs text-brand-text-secondary font-medium mt-0.5">See all your startups.</p></div>
             </button>

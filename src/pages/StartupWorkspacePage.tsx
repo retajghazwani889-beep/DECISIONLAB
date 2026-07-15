@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import {
   Loader2, ArrowLeft, ArrowRight, BarChart3, Presentation, Handshake,
   Users, LayoutDashboard, Pencil, MapPin, FileText, Target, TrendingUp,
@@ -76,6 +76,34 @@ export default function StartupWorkspacePage() {
     ? startup.updatedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
     : '—';
 
+  // ── Legacy analyses (created before the workspace era) can be linked ──
+  const [unlinked, setUnlinked] = useState<any[]>([]);
+  const [linkChoice, setLinkChoice] = useState('');
+  const [linking, setLinking] = useState(false);
+  useEffect(() => {
+    if (!user?.uid || analysis || loading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'analyses'), where('userId', '==', user.uid)));
+        if (!cancelled) {
+          setUnlinked(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })).filter((a) => !a.startupId && a.status !== 'failed'));
+        }
+      } catch (e) { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.uid, analysis, loading]);
+  const linkAnalysis = async () => {
+    if (!linkChoice) return;
+    setLinking(true);
+    try {
+      await updateDoc(doc(db, 'analyses', linkChoice), { startupId: startup.id });
+      const chosen = unlinked.find((a) => a.id === linkChoice);
+      if (chosen) setAnalysis({ ...chosen, startupId: startup.id });
+    } catch (e) { console.warn('Link failed:', e); }
+    finally { setLinking(false); }
+  };
+
   const goAnalyze = () => {
     // The FULL founder brief from the setup wizard, so every answer the
     // founder gave is evaluated in the analysis — not just the description.
@@ -129,7 +157,7 @@ export default function StartupWorkspacePage() {
     { icon: BarChart3, title: analysis ? 'Re-run Analysis' : 'Analyze Startup', onClick: goAnalyze },
     { icon: Presentation, title: 'Build Pitch Deck', onClick: () => navigate(analysis ? `/pitch-deck?projectId=${analysis.id}` : '/pitch-deck') },
     { icon: Handshake, title: 'Find Investors', onClick: () => navigate('/investor-network') },
-    { icon: Users, title: 'TeamLab', onClick: () => (analysis ? openReport() : navigate('/dashboard')) },
+    { icon: Users, title: 'TeamLab', onClick: () => (analysis ? openReport() : goAnalyze()) },
   ];
 
   const workspaceNav = ['Overview', 'Key Insights', 'Risks', 'Growth', 'Reports', 'Pitch Deck', 'TeamLab'];
@@ -188,11 +216,27 @@ export default function StartupWorkspacePage() {
             ))}
           </div>
           {!analysis && (
-            <div className="mt-6 pt-5 border-t border-white/5 flex flex-col sm:flex-row sm:items-center gap-4">
-              <p className="text-xs text-brand-text-secondary font-medium flex-1">Run the analysis to unlock your Startup Score, insights, risks, and reports.</p>
-              <button onClick={goAnalyze} className="shrink-0 px-6 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                <Sparkles size={13} /> Analyze Now
-              </button>
+            <div className="mt-6 pt-5 border-t border-white/5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <p className="text-xs text-brand-text-secondary font-medium flex-1">Run the analysis to unlock your Startup Score, insights, risks, and reports.</p>
+                <button onClick={goAnalyze} className="shrink-0 px-6 py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                  <Sparkles size={13} /> Analyze Now
+                </button>
+              </div>
+              {unlinked.length > 0 && (
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 bg-brand-card rounded-2xl px-5 py-4 border border-white/5">
+                  <p className="text-[11px] text-brand-text-muted font-bold flex-1">Already analyzed this startup before? Link the existing analysis:</p>
+                  <select value={linkChoice} onChange={(e) => setLinkChoice(e.target.value)}
+                    className="bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-xs text-brand-text-primary focus:outline-none appearance-none">
+                    <option value="" className="bg-[#102434]">Select an analysis…</option>
+                    {unlinked.map((a) => <option key={a.id} value={a.id} className="bg-[#102434]">{a.projectName || a.ideaDescription?.slice(0, 50) || a.id}</option>)}
+                  </select>
+                  <button onClick={linkAnalysis} disabled={!linkChoice || linking}
+                    className="shrink-0 px-5 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all disabled:opacity-50">
+                    {linking ? 'Linking…' : 'Link'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

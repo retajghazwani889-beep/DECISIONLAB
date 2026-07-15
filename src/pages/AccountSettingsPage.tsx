@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { updateProfile, sendPasswordResetEmail, deleteUser, verifyBeforeUpdateEmail } from 'firebase/auth';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { User as UserIcon, Mail, Lock, Trash2, Loader2, Check, Send } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +82,22 @@ export default function AccountSettingsPage() {
     if (!window.confirm('This permanently deletes your account and profile. Are you absolutely sure?')) return;
     setBusy('delete');
     try {
+      // Best-effort wipe of the user's data before removing the login.
+      const wipe = async (col: string, field: string) => {
+        try {
+          const snap = await getDocs(query(collection(db, col), where(field, '==', user!.uid)));
+          await Promise.all(snap.docs.map((d) => deleteDoc(d.ref).catch(() => {})));
+        } catch { /* keep going */ }
+      };
+      await Promise.all([
+        wipe('startups', 'founderId'),
+        wipe('analyses', 'userId'),
+        wipe('positions', 'founderId'),
+        wipe('teams', 'founderId'),
+        wipe('applications', 'applicantId'),
+        wipe('pitchDecks', 'userId'),
+        wipe('savedComparisons', 'userId'),
+      ]);
       try { await deleteDoc(doc(db, 'profiles', user!.uid)); } catch (e) { console.warn('Profile delete failed:', e); }
       await deleteUser(auth.currentUser!);
       navigate('/', { replace: true });
@@ -153,7 +169,7 @@ export default function AccountSettingsPage() {
         <div className="bg-brand-section border border-brand-coral/20 rounded-[2.5rem] p-8">
           <label className={label + ' flex items-center gap-2 text-brand-coral'}><Trash2 size={12} /> Delete Account</label>
           <p className="text-sm font-medium text-brand-text-secondary mb-4">
-            Permanently deletes your login and profile. Your startups and data may remain until removed. This cannot be undone.
+            Permanently deletes your login, profile, startups, analyses, and applications. This cannot be undone.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder='Type DELETE to confirm' className={field} />

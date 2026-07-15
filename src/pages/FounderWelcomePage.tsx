@@ -117,7 +117,7 @@ export default function FounderWelcomePage() {
 
         {step !== 'welcome' && (
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/startups')}
             className="mt-10 text-[10px] font-black text-brand-text-muted uppercase tracking-widest hover:text-white transition-colors"
           >
             Skip for now — go to dashboard
