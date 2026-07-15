@@ -10,7 +10,7 @@ export function dashboardPathFor(profile: any): string {
   const t = (profile as any)?.accountType || (profile as any)?.role;
   if (t === 'investor') return '/investor-matches';
   if (t === 'teamMember') return '/team';
-  return '/dashboard'; // founder (default)
+  return '/startups'; // founder (default) — My Startups is the founder homepage
 }
 
 export default function LoginPage() {

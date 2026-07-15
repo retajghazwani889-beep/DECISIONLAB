@@ -91,7 +91,7 @@ export default function FounderSignUpPage() {
         const t = existing?.accountType || existing?.role;
         if (t === 'investor') navigate('/investor-matches', { replace: true });
         else if (t === 'teamMember') navigate('/team', { replace: true });
-        else if (existing) navigate('/dashboard', { replace: true });
+        else if (existing) navigate('/startups', { replace: true });
         else navigate('/pricing', { replace: true, state: { fromSignup: true } });
       }
     } catch (e: any) {

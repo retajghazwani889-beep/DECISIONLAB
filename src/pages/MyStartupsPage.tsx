@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2 } from 'lucide-react';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MyStartupsPage — the founder's homepage. Every startup as a card with its
@@ -21,6 +21,23 @@ export default function MyStartupsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateChoice, setShowCreateChoice] = useState(false);
 
+  // ── Legacy analyses (pre-workspace, not linked to any startup) ──
+  const [legacy, setLegacy] = useState<any[]>([]);
+  const [linkTargets, setLinkTargets] = useState<Record<string, string>>({});
+  const [linkingId, setLinkingId] = useState('');
+  const linkLegacy = async (analysisId: string) => {
+    const target = linkTargets[analysisId];
+    if (!target) return;
+    setLinkingId(analysisId);
+    try {
+      await updateDoc(doc(db, 'analyses', analysisId), { startupId: target });
+      const a = legacy.find((x) => x.id === analysisId);
+      setLegacy((arr) => arr.filter((x) => x.id !== analysisId));
+      if (a) setAnalysesByStartup((m: any) => ({ ...m, [target]: m[target] || { ...a, startupId: target } }));
+    } catch (e) { console.warn('Link failed:', e); }
+    finally { setLinkingId(''); }
+  };
+
   useEffect(() => {
     if (!user?.uid) { setLoading(false); return; }
     let cancelled = false;
@@ -34,16 +51,19 @@ export default function MyStartupsPage() {
         const list = sSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
         list.sort((a, b) => (b.updatedAt?.toDate?.()?.getTime?.() || 0) - (a.updatedAt?.toDate?.()?.getTime?.() || 0));
         setStartups(list);
-        // Map the newest analysis to each startup (analyses saved with startupId).
+        // Map the newest analysis to each startup (analyses saved with startupId),
+        // and keep the unlinked ones for the Legacy section below the grid.
+        const all = aSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
         const map: Record<string, any> = {};
-        aSnap.docs.forEach((d) => {
-          const a = { id: d.id, ...(d.data() as any) };
+        all.forEach((a) => {
           if (!a.startupId) return;
           const prev = map[a.startupId];
           const t = (x: any) => x?.createdAt?.toDate?.()?.getTime?.() || 0;
           if (!prev || t(a) > t(prev)) map[a.startupId] = a;
         });
         setAnalysesByStartup(map);
+        setLegacy(all.filter((a) => !a.startupId && a.status !== 'failed')
+          .sort((a, b) => (b.createdAt?.toDate?.()?.getTime?.() || 0) - (a.createdAt?.toDate?.()?.getTime?.() || 0)));
       } catch (e) { console.warn('Startups load failed:', e); }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -161,6 +181,78 @@ export default function MyStartupsPage() {
           </div>
         )}
       </div>
+
+      {/* ── Legacy analyses & pitch decks (from before the workspace era) ── */}
+      {!loading && legacy.length > 0 && (
+        <div className="max-w-5xl mx-auto mt-16">
+          <div className="flex items-end justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-tight font-display">Standalone Analyses</h2>
+              <p className="text-xs text-brand-text-secondary font-medium mt-1">
+                Analyses not attached to a startup yet — including quick idea checks. Link one to a startup to bring its score and report into that workspace.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {legacy.map((a) => {
+              const score = Number(a.overallScore ?? a.shareScore ?? a.scores?.overall ?? NaN);
+              const deckSlides = a.pitchDeckData?.slides || a.pitchReadiness?.slides || [];
+              const created = a.createdAt?.toDate?.()
+                ? a.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+              return (
+                <div key={a.id} className="bg-brand-section border border-brand-border rounded-[1.75rem] p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-black uppercase tracking-tight truncate">
+                        {a.projectName || a.ideaDescription?.slice(0, 60) || 'Analysis'}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {!isNaN(score) && score > 0 && (
+                          <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">{Math.round(score)}% Score</span>
+                        )}
+                        {deckSlides.length > 0 && (
+                          <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10 flex items-center gap-1">
+                            <Presentation size={10} /> Deck · {deckSlides.length} slides
+                          </span>
+                        )}
+                        {created && <span className="text-[9px] font-black uppercase tracking-widest text-brand-text-muted">{created}</span>}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                      <button onClick={() => navigate(`/dashboard/startup/${a.id}/overview`)}
+                        className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-1.5">
+                        <FileText size={12} /> Open Report
+                      </button>
+                      {deckSlides.length > 0 && (
+                        <button onClick={() => navigate(`/pitch-deck?projectId=${a.id}`)}
+                          className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-1.5">
+                          <Presentation size={12} /> Open Deck
+                        </button>
+                      )}
+                      {startups.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={linkTargets[a.id] || ''}
+                            onChange={(e) => setLinkTargets((m) => ({ ...m, [a.id]: e.target.value }))}
+                            className="bg-brand-card border border-white/10 rounded-xl px-3 py-2.5 text-[11px] text-brand-text-primary focus:outline-none appearance-none max-w-[160px]"
+                          >
+                            <option value="" className="bg-[#102434]">Link to startup…</option>
+                            {startups.map((s) => <option key={s.id} value={s.id} className="bg-[#102434]">{s.name || 'Untitled'}</option>)}
+                          </select>
+                          <button onClick={() => linkLegacy(a.id)} disabled={!linkTargets[a.id] || linkingId === a.id}
+                            className="px-4 py-2.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5">
+                            {linkingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />} Link
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Create chooser: New Startup Idea vs Existing Startup */}
       {showCreateChoice && (

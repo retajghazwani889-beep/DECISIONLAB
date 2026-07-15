@@ -24,6 +24,11 @@ export default function StartupWorkspacePage() {
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Legacy analyses (created before the workspace era) can be linked ──
+  const [unlinked, setUnlinked] = useState<any[]>([]);
+  const [linkChoice, setLinkChoice] = useState('');
+  const [linking, setLinking] = useState(false);
+
   useEffect(() => {
     if (!id) { navigate('/startups'); return; }
     let cancelled = false;
@@ -52,6 +57,20 @@ export default function StartupWorkspacePage() {
     return () => { cancelled = true; };
   }, [id, user?.uid]);
 
+  useEffect(() => {
+    if (!user?.uid || analysis || loading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'analyses'), where('userId', '==', user.uid)));
+        if (!cancelled) {
+          setUnlinked(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })).filter((a) => !a.startupId && a.status !== 'failed'));
+        }
+      } catch (e) { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.uid, analysis, loading]);
+
   if (loading) {
     return <div className="min-h-screen bg-brand-bg flex items-center justify-center"><Loader2 size={24} className="animate-spin text-brand-accent" /></div>;
   }
@@ -75,24 +94,6 @@ export default function StartupWorkspacePage() {
   const lastUpdated = startup.updatedAt?.toDate?.()
     ? startup.updatedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
     : '—';
-
-  // ── Legacy analyses (created before the workspace era) can be linked ──
-  const [unlinked, setUnlinked] = useState<any[]>([]);
-  const [linkChoice, setLinkChoice] = useState('');
-  const [linking, setLinking] = useState(false);
-  useEffect(() => {
-    if (!user?.uid || analysis || loading) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const snap = await getDocs(query(collection(db, 'analyses'), where('userId', '==', user.uid)));
-        if (!cancelled) {
-          setUnlinked(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })).filter((a) => !a.startupId && a.status !== 'failed'));
-        }
-      } catch (e) { /* non-fatal */ }
-    })();
-    return () => { cancelled = true; };
-  }, [user?.uid, analysis, loading]);
   const linkAnalysis = async () => {
     if (!linkChoice) return;
     setLinking(true);

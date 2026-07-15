@@ -7,13 +7,13 @@ import { AlertTriangle, ExternalLink } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import AnalysisPage from './pages/AnalysisPage';
 import StartupDashboardPage from './pages/StartupDashboardPage';
-import DashboardPage from './pages/DashboardPage';
 import PremiumPage from './pages/PremiumPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import TeamMembersLandingPage from './pages/TeamMembersLandingPage';
 import { PrivacyPolicyPage, TermsOfServicePage } from './pages/LegalPages';
+import FAQPage from './pages/FAQPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
 import InvestorHistoryPage from './pages/InvestorHistoryPage';
@@ -32,6 +32,10 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import BillingPage from './pages/BillingPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
+import ContactPage from './pages/ContactPage';
+import TeamMembersLandingPage from './pages/TeamMembersLandingPage';
+import { PrivacyPolicyPage, TermsOfServicePage } from './pages/LegalPages';
+import FAQPage from './pages/FAQPage';
 import StartupWorkspacePage from './pages/StartupWorkspacePage';
 
 // Components
@@ -203,11 +207,17 @@ function AppContent() {
           <Route path="/about"   element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/team-members" element={<TeamMembersLandingPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/team-members" element={<TeamMembersLandingPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
 
           {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
@@ -234,7 +244,8 @@ function AppContent() {
           <Route path="/analyze" element={<AnalysisPage key="analyze" user={user} profile={profile} />} />
 
           {/* ── Dashboard ── */}
-          <Route path="/dashboard"                          element={<DashboardPage user={user} profile={profile} />} />
+          {/* Old dashboard retired — My Startups is the founder home. */}
+          <Route path="/dashboard"                          element={<Navigate to="/startups" replace />} />
           <Route path="/dashboard/startup/:id"              element={<StartupDashboardPage user={user} profile={profile} />} />
           <Route path="/dashboard/startup/:id/overview"    element={<StartupDashboardPage user={user} profile={profile} />} />
           <Route path="/dashboard/startup/:id/report"      element={<StartupDashboardPage user={user} profile={profile} />} />

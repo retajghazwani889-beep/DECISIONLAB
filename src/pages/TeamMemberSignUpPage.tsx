@@ -87,7 +87,7 @@ export default function TeamMemberSignUpPage() {
         }
         const t = existing?.accountType || existing?.role;
         if (t === 'investor') navigate('/investor-matches', { replace: true });
-        else if (t && t !== 'teamMember') navigate('/dashboard', { replace: true });
+        else if (t && t !== 'teamMember') navigate('/startups', { replace: true });
         else navigate('/team', { replace: true });
       }
     } catch (e: any) {
