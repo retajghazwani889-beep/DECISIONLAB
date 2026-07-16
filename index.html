@@ -27,6 +27,20 @@
     />
   </head>
   <body>
+    <!-- Static content for crawlers and JS-disabled browsers. React renders
+         the full app into #root; this block is what non-JS readers see. -->
+    <noscript>
+      <h1>DecisionLab — Analyze, Validate &amp; Grow Your Startup</h1>
+      <p>
+        DecisionLab is a startup platform for founders, investors, and team
+        members. Founders analyze and validate startup ideas with AI-powered
+        analysis, build investor-ready pitch decks, get matched with
+        investors, and recruit team members. Investors discover and evaluate
+        validated startups. Team members find open positions at
+        early-stage startups. DecisionLab requires JavaScript — please enable
+        it to use the app.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
