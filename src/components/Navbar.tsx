@@ -89,7 +89,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
               const isActive = location.pathname === link.path;
               return (
                 <Link 
-                  key={link.path}
+                  key={link.path + '-' + link.label}
                   to={link.path} 
                   className={cn(
                     "px-4 py-2.5 text-xs font-bold uppercase tracking-[0.05em] transition-all relative block select-none duration-300 font-sans whitespace-nowrap",

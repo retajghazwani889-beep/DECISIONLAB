@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc as clientDoc, getDoc as clientGetDoc, setDoc as clientSetDoc } from "firebase/firestore";
-import admin from "firebase-admin";
+import * as admin from "firebase-admin";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import fs from "fs";
 
@@ -45,7 +45,7 @@ try {
   const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (svcJson) {
     const adminApp = admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(svcJson)),
+      credential: (admin as any).credential.cert(JSON.parse(svcJson)),
       projectId: firebaseConfig.projectId,
     });
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);

@@ -111,6 +111,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (uid: string) => {
     const path = `profiles/${uid}`;
+    // Identity cache: the last real profile we loaded for this uid. Used by
+    // the fallbacks below so a slow/unreachable Firestore NEVER changes who
+    // the user is (beta bug: investors got renamed "Startup Founder" and
+    // routed to the founder side whenever the profile fetch failed).
+    const cacheKey = `profile_identity_${uid}`;
+    let cachedIdentity: any = null;
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) cachedIdentity = JSON.parse(raw);
+    } catch (_) {}
+
     try {
       const docSnap = await getDoc(doc(db, path));
 
@@ -119,6 +130,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // is set only by a verified payment flow — never inferred from email/name.
         const data = docSnap.data() as UserProfile;
         setProfile(data);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            displayName: (data as any).displayName || null,
+            accountType: (data as any).accountType || null,
+            roleType: (data as any).roleType || null,
+            subscriptionStatus: (data as any).subscriptionStatus || 'free',
+          }));
+        } catch (_) {}
       } else {
         // Brand-new user whose profile document hasn't been written yet
         // (the signup page writes it moments after account creation).
@@ -126,29 +145,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // profile previously claimed to be a fully-onboarded founder, which
         // made role guards eject brand-new team members and investors to the
         // homepage ("it just logged me out" in beta testing).
+        // Use the cached/auth identity — never invent a "Startup Founder" name.
         setProfile({
           uid,
-          email: auth.currentUser?.email || 'guest@startup.com',
-          displayName: auth.currentUser?.displayName || 'Startup Founder',
-          photoURL: null,
-          subscriptionStatus: 'free',
-          roleType: 'Founder',
+          email: auth.currentUser?.email || '',
+          displayName: cachedIdentity?.displayName || auth.currentUser?.displayName || 'New User',
+          photoURL: auth.currentUser?.photoURL || null,
+          subscriptionStatus: cachedIdentity?.subscriptionStatus || 'free',
+          ...(cachedIdentity?.accountType ? { accountType: cachedIdentity.accountType } : {}),
+          roleType: cachedIdentity?.roleType || 'Founder',
           onboardingCompleted: false,
           createdAt: new Date()
-        });
+        } as any);
       }
     } catch (error) {
       console.warn("Firestore profiles database unreachable. Operating in offline fallback session mode:", error);
+      // Offline fallback: keep the user's REAL name and role from the cache
+      // (or Firebase Auth) — do not rewrite an investor into a founder.
       setProfile({
         uid,
-        email: auth.currentUser?.email || 'guest@startup.com',
-        displayName: auth.currentUser?.displayName || 'Startup Founder',
-        photoURL: null,
-        subscriptionStatus: 'free',
-        roleType: 'Founder',
+        email: auth.currentUser?.email || '',
+        displayName: cachedIdentity?.displayName || auth.currentUser?.displayName || 'User',
+        photoURL: auth.currentUser?.photoURL || null,
+        subscriptionStatus: cachedIdentity?.subscriptionStatus || 'free',
+        ...(cachedIdentity?.accountType ? { accountType: cachedIdentity.accountType } : {}),
+        roleType: cachedIdentity?.roleType || 'Founder',
         onboardingCompleted: true,
         createdAt: new Date()
-      });
+      } as any);
     }
   };
 

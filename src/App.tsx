@@ -86,33 +86,50 @@ function AppContent() {
     }
   }, [user, profile, loading, navigate, location.pathname]);
 
-  // Hard role separation: investor accounts can never open founder pages
-  // (dashboard/portfolio, idea analysis, comparisons, pitch deck). If they try,
-  // send them to their matches. Report pages (/dashboard/startup/...) stay open
-  // so investors can view matched startups.
+  // ── HARD ROLE SEPARATION (all three roles) ────────────────────────────────
+  // Each role sees ONLY its own logged-in area:
+  //   · Team Member → /team (+ shared pages)
+  //   · Investor    → investor dashboards + viewing matched startup reports
+  //   · Founder     → founder dashboards/wizard/deck
+  // Public pages (home, pricing, about, landings, signup, login) stay open —
+  // switching roles is only possible by willingly logging out via the signup
+  // guards. Shared account pages (/profile, /billing, /notifications,
+  // /settings) stay open to every logged-in role.
   React.useEffect(() => {
-    if (loading) return;
-    const isTeamMember = (profile as any)?.accountType === 'teamMember';
-    if (isTeamMember) {
-      const p = location.pathname;
-      const notForTeamMember =
-        p === '/dashboard' || p === '/analyze' || p === '/compare' ||
-        p.startsWith('/pitch-deck') || p.startsWith('/investor-');
-      if (notForTeamMember) navigate('/team', { replace: true });
+    if (loading || !user || !profile) return;
+    const p = location.pathname;
+    const accountType = (profile as any)?.accountType || '';
+
+    if (accountType === 'teamMember') {
+      const blocked =
+        p.startsWith('/dashboard') || p === '/analyze' || p === '/compare' ||
+        p.startsWith('/pitch-deck') || p.startsWith('/startups') ||
+        p.startsWith('/setup') || p.startsWith('/welcome') ||
+        p.startsWith('/investor-matches') || p.startsWith('/investor-submissions') ||
+        p.startsWith('/investor-history') || p.startsWith('/analysis/');
+      if (blocked) navigate('/team', { replace: true });
       return;
     }
-    const isInvestor = (profile as any)?.accountType === 'investor';
-    if (!isInvestor) return;
-    const p = location.pathname;
-    const founderOnly =
-      p === '/dashboard' ||
-      p === '/analyze' ||
-      p === '/compare' ||
-      p.startsWith('/pitch-deck');
-    if (founderOnly) {
-      navigate('/investor-matches', { replace: true });
+
+    if (accountType === 'investor') {
+      const blocked =
+        p === '/dashboard' ||            // exact: /dashboard/startup/:id report pages stay open so investors can view matched startups
+        p === '/analyze' || p === '/compare' ||
+        p.startsWith('/pitch-deck') || p.startsWith('/startups') ||
+        p.startsWith('/setup') || p.startsWith('/welcome') ||
+        p === '/team';
+      if (blocked) navigate('/investor-matches', { replace: true });
+      return;
     }
-  }, [profile, loading, location.pathname, navigate]);
+
+    // Founder (default role): no investor dashboards, no team member dashboard.
+    const blocked =
+      p === '/team' ||
+      p.startsWith('/investor-matches') ||
+      p.startsWith('/investor-submissions') ||
+      p.startsWith('/investor-history');
+    if (blocked) navigate('/startups', { replace: true });
+  }, [user, profile, loading, location.pathname, navigate]);
 
   // Founder pages require a login. Logged-out visitors can't see the
   // dashboard/portfolio, comparisons, or pitch deck (browser cache no longer
