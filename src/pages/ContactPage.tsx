@@ -6,21 +6,16 @@ import { Mail, Send, Loader2, Check, LifeBuoy, Handshake } from 'lucide-react';
 // topic dropdown · first/last name · email · phone (optional) · message with
 // a 1000-character counter · required consent · anti-spam protection.
 //
-// SETUP (one time, 2 minutes):
-//   1. Go to https://web3forms.com — enter hello@decisionlabco.com → it emails
-//      you an ACCESS KEY instantly (free, no account needed).
-//   2. Paste the key into WEB3FORMS_ACCESS_KEY below.
-// Until the key is set, the form falls back to opening the visitor's email
-// app pre-filled to the business address — nothing is lost.
+// Submissions are delivered via Web3Forms to info@decisionlabhub.com.
 //
 // Anti-spam: a hidden "botcheck" honeypot field (Web3Forms built-in). Bots
 // fill it, humans never see it, and those submissions are dropped.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const WEB3FORMS_ACCESS_KEY = ''; // ← paste your access key here
-const BUSINESS_EMAIL = 'hello@decisionlabco.com';
-const SUPPORT_EMAIL = 'support@decisionlabco.com';
-const PARTNERS_EMAIL = 'contact@decisionlabco.com';
+const WEB3FORMS_ACCESS_KEY = '102db3b1-ba90-4b55-bacd-0921080808c1';
+const BUSINESS_EMAIL = 'info@decisionlabhub.com';
+const SUPPORT_EMAIL = 'support@decisionlabhub.com';
+const PARTNERS_EMAIL = 'info@decisionlabhub.com';
 
 const TOPICS = ['General Inquiry', 'Beta Feedback', 'Bug Report', 'Partnership', 'Investor Inquiry', 'Press & Media', 'Other'];
 const MAX_MESSAGE = 1000;

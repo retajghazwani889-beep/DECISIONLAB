@@ -7,7 +7,7 @@ import { Shield, FileText, Mail } from 'lucide-react';
 // with counsel-reviewed versions before public launch.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CONTACT = 'hello@decisionlabco.com';
+const CONTACT = 'info@decisionlabhub.com';
 const UPDATED = 'July 2026';
 
 function LegalShell({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
