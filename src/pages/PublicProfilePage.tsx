@@ -106,6 +106,20 @@ export default function PublicProfilePage() {
 
   const sectionCls = 'bg-brand-section border border-brand-border rounded-[2.5rem] p-8 mb-5';
 
+  // Pre-written intro so "Email" opens a ready-to-send message instead of a
+  // blank compose window.
+  const emailHref = () => {
+    const firstName = name.split(' ')[0];
+    const viewerName = (viewer.displayName || viewer.fullName || '').trim();
+    const startupBit = startups.length > 0 ? ` and your startup ${startups[0].name}` : '';
+    const opener = isInvestorViewer
+      ? `I came across your profile${startupBit} on DecisionLab and really liked your idea and pitch.`
+      : `I came across your profile${startupBit} on DecisionLab.`;
+    const subject = 'Connecting via DecisionLab';
+    const body = `Hi ${firstName},\n\n${opener} I'd love to talk more — are you open to scheduling a quick meeting?\n\nBest,\n${viewerName}`;
+    return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   const contactBtn = (href: string, Icon: any, text: string, primary = false) => (
     <a key={text} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
       className={`px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl active:scale-95 transition-all flex items-center gap-2 ${primary ? 'bg-brand-accent text-brand-bg hover:scale-105' : 'bg-brand-card border border-white/10 text-brand-text-primary hover:border-brand-accent/40'}`}>
@@ -152,7 +166,7 @@ export default function PublicProfilePage() {
           <div className="mt-6 pt-5 border-t border-white/5">
             {canSeeContact ? (
               <div className="flex flex-wrap items-center justify-center gap-2.5">
-                {email && contactBtn(`mailto:${email}`, Mail, 'Email', true)}
+                {email && contactBtn(emailHref(), Mail, 'Email', true)}
                 {phone && contactBtn(`tel:${phone}`, Phone, 'Phone')}
                 {linkedin && contactBtn(linkedin.startsWith('http') ? linkedin : `https://${linkedin}`, Linkedin, 'LinkedIn')}
                 {website && contactBtn(website.startsWith('http') ? website : `https://${website}`, Globe, 'Website')}
