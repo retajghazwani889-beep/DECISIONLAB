@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { PartyPopper, Rocket, Wrench, Sparkles, ArrowRight, Clock } from 'lucide-react';
+import { PartyPopper, Rocket, Wrench, Sparkles, ArrowRight } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FounderWelcomePage — shown right after a founder creates their account.
@@ -52,11 +52,8 @@ export default function FounderWelcomePage() {
             <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display mb-4">
               Welcome to DecisionLab{firstName ? `, ${firstName}` : ''}!
             </h1>
-            <p className="text-sm text-brand-text-secondary font-medium mb-3 leading-relaxed">
-              We're going to set up your workspace.
-            </p>
-            <p className="text-xs font-black text-brand-text-muted uppercase tracking-widest mb-10 flex items-center justify-center gap-2">
-              <Clock size={13} /> Estimated time: 3–5 minutes
+            <p className="text-sm text-brand-text-secondary font-medium mb-10 leading-relaxed">
+              Let's set up your first startup — you can save and finish anytime.
             </p>
             <button
               onClick={() => setStep('hasStartup')}

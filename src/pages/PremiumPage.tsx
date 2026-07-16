@@ -31,7 +31,12 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // replace this with a real PayPal flow where PayPal notifies your SERVER and
   // the server writes the tier. Otherwise a user could unlock tiers for free.
   const handleSelectPlan = async (targetTier: Tier) => {
-    if (targetTier === 'free') return; // nothing to buy
+    if (targetTier === 'free') {
+      // Logged-out visitors clicking "Start Free" begin signup; for
+      // logged-in users there's nothing to buy.
+      if (!user) navigate('/signup');
+      return;
+    }
 
     let activeUser = user;
     if (!activeUser) {
@@ -78,13 +83,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     const isLoading = loadingTier === tier;
     // A plan button is disabled if it's the user's current plan, or it's the
     // free plan (nothing to buy), or a payment is in progress.
-    const disabled = isCurrent || tier === 'free' || isLoading;
+    const disabled = isCurrent || (tier === 'free' && !!user) || isLoading;
 
     return (
       <div className={cn(
-        "relative p-8 rounded-3xl border-2 transition-all duration-500",
+        "relative p-8 rounded-3xl border-2 transition-all duration-500 h-full flex flex-col",
         popular
-        ? "bg-brand-section border-brand-accent shadow-2xl shadow-brand-accent/10 scale-105 z-10"
+        ? "bg-brand-section border-brand-accent shadow-2xl shadow-brand-accent/20 z-10"
         : "bg-brand-card border-brand-border/10"
       )}>
         {popular && (
@@ -105,7 +110,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           <span className="text-brand-accent text-sm font-bold">{price === '0' ? '' : '/mo'}</span>
         </div>
 
-        <ul className="space-y-4 mb-12">
+        <ul className="space-y-4 mb-12 flex-1">
           {features.map((f, i) => (
             <li key={i} className="flex items-start gap-4">
               <div className={cn("mt-1.5 p-0.5 rounded-full shrink-0", popular ? "bg-brand-accent text-brand-text-primary shadow-[0_0_10px_rgba(77,163,255,0.3)]" : "bg-brand-accent/20 text-brand-accent")}>
@@ -191,7 +196,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   ];
 
   const InvestorProCard = () => (
-    <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-card border-[#5da9ff]/30">
+    <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-card border-[#5da9ff]/30 h-full flex flex-col">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5da9ff] text-brand-bg text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest">
         For Investors
       </div>
@@ -204,7 +209,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       <p className="text-sm text-brand-text-muted font-medium leading-relaxed mb-8">
         Access validated startups, connect with founders, and manage your investment opportunities — all from one dashboard.
       </p>
-      <ul className="space-y-3 mb-12">
+      <ul className="space-y-3 mb-12 flex-1">
         {INVESTOR_FEATURES.map((f, i) => (
           <li key={i} className="flex items-start gap-3">
             <div className="mt-1 p-0.5 rounded-full shrink-0 bg-[#5da9ff]/20 text-[#5da9ff]">
@@ -256,7 +261,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10 items-stretch">
         <PlanCard
           tier="free"
           title="Startup at a Glance"
@@ -277,7 +282,6 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           title="Startup Validation"
           price="39"
           subtitle="Validate before you build"
-          popular={true}
           features={[
             "Everything in Startup at a Glance",
             "Unlimited Startup Ideas",
@@ -295,8 +299,10 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           title="Startup Grow"
           price="99"
           subtitle="Investor & growth toolkit"
+          popular={true}
           features={[
             "Everything in Startup Validation",
+            "TeamLab — Recruit & Choose Team Members",
             "Investor Matching & Fit Analysis",
             "Pitch Deck Architect",
             "Investor-Ready Pitch Decks",
