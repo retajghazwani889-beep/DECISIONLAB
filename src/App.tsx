@@ -32,10 +32,6 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import BillingPage from './pages/BillingPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
-import ContactPage from './pages/ContactPage';
-import TeamMembersLandingPage from './pages/TeamMembersLandingPage';
-import { PrivacyPolicyPage, TermsOfServicePage } from './pages/LegalPages';
-import FAQPage from './pages/FAQPage';
 import StartupWorkspacePage from './pages/StartupWorkspacePage';
 
 // Components
@@ -220,11 +216,6 @@ function AppContent() {
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<ComparisonPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/team-members" element={<TeamMembersLandingPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsOfServicePage />} />
 
           {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
