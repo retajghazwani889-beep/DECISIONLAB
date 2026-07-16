@@ -83,10 +83,12 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
     setLoading(true);
     setError('');
     try {
+      // teams + applications are founder-private in the security rules, so the
+      // queries must be founder-scoped or Firestore rejects them outright.
       const [tSnap, pSnap, aSnap] = await Promise.all([
-        getDocs(query(collection(db, 'teams'), where('startupId', '==', startupId))),
+        getDocs(query(collection(db, 'teams'), where('founderId', '==', founderId), where('startupId', '==', startupId))),
         getDocs(query(collection(db, 'positions'), where('startupId', '==', startupId))),
-        getDocs(query(collection(db, 'applications'), where('startupId', '==', startupId))),
+        getDocs(query(collection(db, 'applications'), where('founderId', '==', founderId), where('startupId', '==', startupId))),
       ]);
       setTeam(tSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
       setPositions(pSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));

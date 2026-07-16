@@ -21,12 +21,16 @@ export default function FounderSignUpPage() {
 
   const doSignUp = async () => {
     setErr('');
-    if (!fullName.trim()) return setErr('Enter your full name.');
-    if (!country.trim()) return setErr('Enter your country.');
-    if (!email.includes('@')) return setErr('Enter a valid email.');
-    if (password.length < 6) return setErr('Password must be at least 6 characters.');
-    if (password !== confirm) return setErr('Passwords do not match.');
-    if (!agreed) return setErr('Please agree to the Terms & Privacy Policy.');
+    // Validate everything at once so the user fixes all issues in one pass
+    // (testers hit sequential errors one by one — frustrating).
+    const problems: string[] = [];
+    if (!fullName.trim()) problems.push('enter your full name');
+    if (!country.trim()) problems.push('enter your country');
+    if (!email.includes('@')) problems.push('enter a valid email');
+    if (password.length < 6) problems.push('use a password of at least 6 characters');
+    if (password.length >= 6 && password !== confirm) problems.push('make both passwords match');
+    if (!agreed) problems.push('agree to the Terms & Privacy Policy');
+    if (problems.length > 0) return setErr('Please ' + problems.join(', ') + '.');
     setBusy(true);
     try {
       await signUpWithEmail(email.trim(), password, fullName.trim());

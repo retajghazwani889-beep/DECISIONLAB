@@ -79,6 +79,20 @@ export default function StartupSetupWizard() {
     if (!data.country && (profile as any)?.country) set('country', (profile as any).country);
   }, [profile, user]);
 
+  // Homepage idea handoff: if the founder typed their idea on the homepage
+  // before signing up, pre-fill it as the description — the questionnaire
+  // starts from what they already wrote, and the analysis at the end is
+  // built from their FULL answers instead of just the raw idea.
+  useEffect(() => {
+    if (resumeId) return; // only for brand-new startups
+    const pendingIdea = localStorage.getItem('pending_analysis_idea');
+    if (pendingIdea) {
+      localStorage.removeItem('pending_analysis_idea');
+      setData((prev: any) => (prev.description ? prev : { ...prev, description: pendingIdea.slice(0, 2000) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Resume a draft.
   useEffect(() => {
     if (!resumeId) return;

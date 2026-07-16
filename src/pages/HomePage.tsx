@@ -69,7 +69,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             </h1>
 
             <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-32 leading-[1.7] font-medium opacity-90">
-              The best way to build your startup as we map your goals against what works
+              Startup validation, pitch decks, investor matching, and team building — everything you need from idea to investor-ready
             </p>
           </motion.div>
 

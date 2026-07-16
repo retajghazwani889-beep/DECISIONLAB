@@ -72,16 +72,23 @@ function AppContent() {
     }
   }, [user, profile, loading, location.pathname]);
 
-  // Resume a pending idea analysis after login / onboarding
+  // Resume a pending idea (typed on the homepage before signup/login).
+  //  · Brand-new founders mid-onboarding (pricing → welcome → wizard): DON'T
+  //    hijack them — the setup wizard picks the idea up and pre-fills it, so
+  //    their analysis is built from the full questionnaire.
+  //  · Existing users logging back in: go straight to analysis as promised.
   React.useEffect(() => {
     if (user && profile && profile.onboardingCompleted && !loading) {
+      const p = location.pathname;
+      const inOnboardingFlow = p.startsWith('/pricing') || p.startsWith('/welcome') || p.startsWith('/setup') || p.startsWith('/signup');
+      if (inOnboardingFlow) return; // wizard will consume the idea
       const pendingIdea = localStorage.getItem('pending_analysis_idea');
       if (pendingIdea) {
         localStorage.removeItem('pending_analysis_idea');
         navigate('/analyze', { state: { idea: pendingIdea } });
       }
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, profile, loading, navigate, location.pathname]);
 
   // Hard role separation: investor accounts can never open founder pages
   // (dashboard/portfolio, idea analysis, comparisons, pitch deck). If they try,

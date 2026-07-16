@@ -20,6 +20,8 @@ export default function MyStartupsPage() {
   const [analysesByStartup, setAnalysesByStartup] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [showCreateChoice, setShowCreateChoice] = useState(false);
+  const [quickIdea, setQuickIdea] = useState('');
+  const [showQuickIdea, setShowQuickIdea] = useState(false);
 
   // ── Legacy analyses (pre-workspace, not linked to any startup) ──
   const [legacy, setLegacy] = useState<any[]>([]);
@@ -269,6 +271,33 @@ export default function MyStartupsPage() {
                 <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0"><Building2 size={20} /></div>
                 <div><h4 className="text-sm font-black uppercase tracking-tight">Existing Startup</h4><p className="text-xs text-brand-text-secondary font-medium mt-0.5">A company that already exists.</p></div>
               </button>
+
+              {/* Quick idea check — straight to analysis, no setup */}
+              {!showQuickIdea ? (
+                <button onClick={() => setShowQuickIdea(true)} className="w-full text-left p-5 rounded-[1.75rem] bg-brand-card border border-white/5 hover:border-brand-accent/40 transition-all active:scale-[0.99] flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-[#5da9ff]/10 border border-[#5da9ff]/20 flex items-center justify-center text-[#5da9ff] shrink-0"><ArrowRight size={20} /></div>
+                  <div><h4 className="text-sm font-black uppercase tracking-tight">Quick Idea Check</h4><p className="text-xs text-brand-text-secondary font-medium mt-0.5">Analyze an idea instantly — no setup.</p></div>
+                </button>
+              ) : (
+                <div className="p-5 rounded-[1.75rem] bg-brand-card border border-[#5da9ff]/30">
+                  <h4 className="text-sm font-black uppercase tracking-tight mb-3">Quick Idea Check</h4>
+                  <textarea
+                    value={quickIdea}
+                    onChange={(e) => setQuickIdea(e.target.value)}
+                    rows={3}
+                    autoFocus
+                    placeholder="Describe your idea in a sentence or two…"
+                    className="w-full bg-brand-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:border-brand-accent/40 focus:outline-none transition-colors mb-3"
+                  />
+                  <button
+                    onClick={() => { if (quickIdea.trim()) navigate('/analyze', { state: { idea: quickIdea.trim() } }); }}
+                    disabled={!quickIdea.trim()}
+                    className="w-full py-3 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-40"
+                  >
+                    Analyze Now
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
