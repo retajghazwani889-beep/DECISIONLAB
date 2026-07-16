@@ -20,18 +20,48 @@ try {
   console.error("Failed to read firebase config in server.ts:", err);
 }
 
+// ── Crash guards ─────────────────────────────────────────────────────────────
+// A background promise rejection from the Firestore/gRPC layer was killing the
+// entire server (Render "instance unavailable" alerts on every tester save).
+// Nothing running in this process is allowed to take the whole site down.
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('Guarded unhandled rejection (server stays up):', reason?.message || reason);
+});
+process.on('uncaughtException', (err: any) => {
+  console.warn('Guarded uncaught exception (server stays up):', err?.message || err);
+});
+
 let useAdminSdk = false;
 let adminDb: any = null;
 let clientDb: any = null;
 
 try {
-  // Initialize firebase-admin with Project ID from config
-  const adminApp = admin.initializeApp({
-    projectId: firebaseConfig.projectId,
-  });
-  adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
-  useAdminSdk = true;
-  console.log("Firestore Admin SDK initialized successfully in server.ts.");
+  // The Admin SDK initializes happily with just a project ID but then CRASHES
+  // at write time when no server credentials exist (the exact failure seen on
+  // Render). Only enable it when credentials are actually configured:
+  //  · FIREBASE_SERVICE_ACCOUNT — paste the service-account JSON into a Render
+  //    environment variable of that name, or
+  //  · GOOGLE_APPLICATION_CREDENTIALS — standard Google credentials file path.
+  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (svcJson) {
+    const adminApp = admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(svcJson)),
+      projectId: firebaseConfig.projectId,
+    });
+    adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+    useAdminSdk = true;
+    console.log("Firestore Admin SDK initialized with service-account credentials.");
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const adminApp = admin.initializeApp({
+      projectId: firebaseConfig.projectId,
+    });
+    adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+    useAdminSdk = true;
+    console.log("Firestore Admin SDK initialized with application default credentials.");
+  } else {
+    console.log("No server Firebase credentials configured — skipping Admin SDK (client-side saves + local backup handle persistence).");
+    throw new Error('no-server-credentials');
+  }
 } catch (adminErr) {
   console.warn("Could not initialize Firestore Admin SDK (falling back to Client SDK):", adminErr);
   try {
