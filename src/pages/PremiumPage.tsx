@@ -238,14 +238,14 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       {fromSignup && (
         <div className="mb-16 p-6 rounded-3xl bg-brand-accent/5 border border-brand-accent/20 flex flex-col sm:flex-row sm:items-center gap-5">
           <p className="flex-1 text-sm font-medium text-brand-text-secondary">
-            <span className="font-black text-brand-text-primary uppercase tracking-wide">Almost there.</span>{' '}
-            Pick the plan that fits — or continue with the free plan and upgrade anytime.
+            <span className="font-black text-brand-text-primary uppercase tracking-wide">No payment needed.</span>{' '}
+            You can use DecisionLab completely free — pick a plan later, anytime.
           </p>
           <button
             onClick={() => navigate('/welcome/founder')}
             className="shrink-0 px-6 py-3.5 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
           >
-            Continue setting up your startup <ArrowRight size={14} />
+            Continue Free <ArrowRight size={14} />
           </button>
         </div>
       )}

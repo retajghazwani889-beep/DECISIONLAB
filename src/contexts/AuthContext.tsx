@@ -120,7 +120,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = docSnap.data() as UserProfile;
         setProfile(data);
       } else {
-        // Brand-new user: always start on the free tier.
+        // Brand-new user whose profile document hasn't been written yet
+        // (the signup page writes it moments after account creation).
+        // IMPORTANT: onboardingCompleted must be FALSE here — this temporary
+        // profile previously claimed to be a fully-onboarded founder, which
+        // made role guards eject brand-new team members and investors to the
+        // homepage ("it just logged me out" in beta testing).
         setProfile({
           uid,
           email: auth.currentUser?.email || 'guest@startup.com',
@@ -128,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: null,
           subscriptionStatus: 'free',
           roleType: 'Founder',
-          onboardingCompleted: true,
+          onboardingCompleted: false,
           createdAt: new Date()
         });
       }
@@ -149,11 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      // CRITICAL: clear the previous account's profile BEFORE loading the new
+      // one. Keeping it during the fetch made the app briefly believe
+      // "new user + old account's role", so role guards misrouted people who
+      // signed into a second account (founder → team member/investor) in the
+      // same browser ("stuck on the founder", "logged me out again").
       setUser(currentUser);
+      setProfile(null);
       if (currentUser) {
         await fetchProfile(currentUser.uid);
       } else {
-        setProfile(null);
         setGoogleAccessToken(null);
       }
       setLoading(false);

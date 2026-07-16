@@ -72,7 +72,8 @@ export default function InvestorMatchesPage({ user }: InvestorMatchesPageProps) 
     if (profile === undefined || profile === null) return;
     // Only eject once the REAL profile has loaded — avoids bouncing brand-new
     // investors during the moment a temporary default profile exists.
-    if ((profile as any).onboardingCompleted && !isInvestor) navigate('/');
+    const t = (profile as any).accountType;
+    if ((profile as any).onboardingCompleted && t && t !== 'investor') navigate('/');
   }, [user, profile, isInvestor, navigate]);
 
   // Load every startup visible to investors.

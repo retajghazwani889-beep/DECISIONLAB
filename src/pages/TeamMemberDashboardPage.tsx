@@ -57,7 +57,8 @@ export default function TeamMemberDashboardPage({ user }: TeamMemberDashboardPag
     // Only eject once the REAL profile has loaded (onboardingCompleted true).
     // Right after signup a temporary default profile can exist for a moment —
     // ejecting on it bounced brand-new members to the homepage.
-    if ((profile as any).onboardingCompleted && !isTeamMember) navigate('/');
+    const t = (profile as any).accountType;
+    if ((profile as any).onboardingCompleted && t && t !== 'teamMember') navigate('/');
   }, [user, profile, isTeamMember, navigate]);
 
   // ── Data: open positions + my applications ─────────────────────────────
