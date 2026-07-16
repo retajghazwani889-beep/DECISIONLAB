@@ -109,6 +109,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     testConnection();
   }, []);
 
+  // Guard: only apply a fetched profile if this uid is STILL the signed-in
+  // user when the fetch resolves. Without this, a slow profile fetch from a
+  // previous session can finish AFTER logout and write the old profile back,
+  // leaving the app with user=null but profile=stale role — which made the
+  // navbar show "Dashboard / Browse Startups" AND "Log In / Sign Up" at once.
+  const applyProfile = (uid: string, data: UserProfile) => {
+    if (auth.currentUser?.uid !== uid) return; // user logged out or switched — discard
+    setProfile(data);
+  };
+
   const fetchProfile = async (uid: string) => {
     const path = `profiles/${uid}`;
     // Identity cache: the last real profile we loaded for this uid. Used by
@@ -129,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Use exactly what's stored in the database. The tier (subscriptionStatus)
         // is set only by a verified payment flow — never inferred from email/name.
         const data = docSnap.data() as UserProfile;
-        setProfile(data);
+        applyProfile(uid, data);
         try {
           localStorage.setItem(cacheKey, JSON.stringify({
             displayName: (data as any).displayName || null,
@@ -146,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // made role guards eject brand-new team members and investors to the
         // homepage ("it just logged me out" in beta testing).
         // Use the cached/auth identity — never invent a "Startup Founder" name.
-        setProfile({
+        applyProfile(uid, {
           uid,
           email: auth.currentUser?.email || '',
           displayName: cachedIdentity?.displayName || auth.currentUser?.displayName || 'New User',
@@ -162,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn("Firestore profiles database unreachable. Operating in offline fallback session mode:", error);
       // Offline fallback: keep the user's REAL name and role from the cache
       // (or Firebase Auth) — do not rewrite an investor into a founder.
-      setProfile({
+      applyProfile(uid, {
         uid,
         email: auth.currentUser?.email || '',
         displayName: cachedIdentity?.displayName || auth.currentUser?.displayName || 'User',

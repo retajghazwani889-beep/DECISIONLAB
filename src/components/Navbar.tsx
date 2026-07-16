@@ -23,8 +23,11 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   React.useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   // Investor accounts get their own minimal nav — never the founder pages.
-  const isInvestor = (profile as any)?.accountType === 'investor';
-  const isTeamMember = (profile as any)?.accountType === 'teamMember';
+  // IMPORTANT: role flags require a signed-in user. If `user` is null, any
+  // lingering profile object is stale (e.g. a slow fetch that resolved after
+  // logout) and must never put the navbar into a logged-in mode.
+  const isInvestor = !!user && (profile as any)?.accountType === 'investor';
+  const isTeamMember = !!user && (profile as any)?.accountType === 'teamMember';
   // Investor "portal" area: also true (even when logged out) on investor pages,
   // so the investor sign-in page shows no founder nav and no founder ENTER button.
   const investorArea = isInvestor || location.pathname.startsWith('/investor-');
