@@ -58,7 +58,7 @@ export default function TeamMembersLandingPage() {
             Join the startups <br className="hidden sm:block" /> building what's next
           </h1>
           <p className="text-base sm:text-lg text-brand-text-secondary font-medium max-w-xl mx-auto leading-relaxed mb-10">
-            Founders on DecisionLab are validating real startups — and hiring developers, designers, marketers, and advisors to build them. Find your team.
+            Founders on DecisionLab are validating real startups — and building their teams with developers, designers, marketers, and advisors. Find yours.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
@@ -135,7 +135,7 @@ export default function TeamMembersLandingPage() {
         <div className="max-w-3xl mx-auto text-center bg-brand-section border border-brand-border rounded-[3rem] p-12">
           <Rocket size={32} className="mx-auto text-brand-accent mb-6" />
           <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight font-display mb-4">Ready to join a founder's team?</h2>
-          <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto">Create your free team member account, build your profile, and start applying in minutes.</p>
+          <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto">Create your free team member account, build your profile, and join a team in minutes.</p>
           <button
             onClick={() => navigate('/signup/team')}
             className="px-12 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 inline-flex items-center gap-2"

@@ -173,7 +173,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               <span className="text-[#8cb5e4]">MATCHING</span>
             </h2>
             <p className="text-xl md:text-2xl text-[#dfe8ed] font-medium max-w-3xl mx-auto leading-relaxed opacity-[0.95] tracking-[0.02em]">
-              We've analyzed 8,000+ top-tier partners to identify individual partners ready to back your vision
+              Get your startup investor-ready and understand which type of investor fits your stage and niche
             </p>
           </div>
 
@@ -223,7 +223,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
                   onClick={() => handleAction('targets', tier.title, tier.desc, tier.features)}
                   className="w-full py-8 bg-[#5da9ff]/10 hover:bg-[#5da9ff]/20 border border-[#5da9ff]/20 rounded-[2.5rem] text-sm font-semibold uppercase tracking-[0.3em] hover:shadow-glow transition-all duration-500 active:scale-95 text-white"
                 >
-                  VIEW INVESTORS
+                  LEARN MORE
                 </button>
               </motion.div>
             ))}
@@ -295,9 +295,9 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             <div>
               <ul className="space-y-6 mb-12">
                 {[
-                  'Founders publish open positions for the exact roles they need',
-                  'Team members apply with their profile, skills, and CV in one click',
-                  'Accept an applicant and they join your team instantly — with direct contact both ways',
+                  'Map the roles your startup needs, right inside your workspace',
+                  'Team members share their profile, skills, and CV with you in one click',
+                  'Add people to your team and manage everyone from one place',
                 ].map((t, i) => (
                   <li key={i} className="flex items-start gap-5 text-base md:text-lg font-medium text-white leading-relaxed">
                     <div className="w-2.5 h-2.5 rounded-full border-2 border-[#5da9ff] bg-[#5da9ff]/20 mt-2 shrink-0" />

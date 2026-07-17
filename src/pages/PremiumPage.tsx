@@ -156,34 +156,15 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     );
   };
 
-  // ── Investor Pro ($199/mo) ────────────────────────────────────────────────
-  // A plan for INVESTOR accounts, separate from the founder tiers. Founders
-  // and logged-out visitors are sent to the Investor Network to create an
-  // investor account first; investors get the same simulated checkout.
+  // ── Investor Pro — EARLY ACCESS WAITLIST ─────────────────────────────────
+  // The investor browse experience is still being completed, so we do not
+  // charge for Investor Pro yet. The card presents it as early access and
+  // the button leads to the contact page to join the waitlist. No checkout.
   const isInvestorAccount = (profile as any)?.accountType === 'investor';
-  const [investorLoading, setInvestorLoading] = useState(false);
   const investorProActive = (profile as any)?.subscriptionStatus === 'investor_pro';
 
-  const handleInvestorPro = async () => {
-    if (!user || !isInvestorAccount) {
-      navigate('/investor-network');
-      return;
-    }
-    if (investorProActive) return;
-    setInvestorLoading(true);
-    try {
-      await openPaddleCheckout({
-        priceId: PADDLE_PRICES.investor_pro,
-        uid: user.uid,
-        email: user.email,
-        onCompleted: () => waitForTierThenContinue('investor_pro' as any),
-      });
-    } catch (err) {
-      console.error('Could not open checkout:', err);
-      alert('Could not open the checkout. Please refresh the page and try again.');
-    } finally {
-      setInvestorLoading(false);
-    }
+  const handleInvestorPro = () => {
+    navigate('/contact');
   };
 
   const INVESTOR_FEATURES = [
@@ -199,14 +180,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
 
   const InvestorProCard = () => (
     <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-card border-[#5da9ff]/30 h-full flex flex-col">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5da9ff] text-brand-bg text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest">
-        For Investors
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5da9ff] text-brand-bg text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest whitespace-nowrap">
+        Early Access
       </div>
       <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">Investor Pro</h3>
       <p className="text-[#5da9ff] text-sm font-bold uppercase tracking-wider mb-6">Discover · Evaluate · Invest</p>
       <div className="mb-6 flex items-baseline gap-2">
-        <span className="text-5xl font-black font-display tracking-tighter text-brand-text-primary">$199</span>
-        <span className="text-[#5da9ff] text-sm font-bold">/mo</span>
+        <span className="text-4xl font-black font-display tracking-tighter text-brand-text-primary">Coming Soon</span>
       </div>
       <p className="text-sm text-brand-text-muted font-medium leading-relaxed mb-8">
         Discover validated startups and connect with founders, all in one dashboard
@@ -223,14 +203,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       </ul>
       <button
         onClick={handleInvestorPro}
-        disabled={investorLoading || investorProActive}
-        className={cn(
-          'w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95',
-          'bg-[#5da9ff] text-brand-bg hover:bg-[#5da9ff]/90 shadow-lg shadow-[#5da9ff]/20',
-          (investorLoading || investorProActive) && 'opacity-50 cursor-not-allowed'
-        )}
+        className="w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 bg-[#5da9ff] text-brand-bg hover:bg-[#5da9ff]/90 shadow-lg shadow-[#5da9ff]/20"
       >
-        {investorLoading ? 'Processing…' : investorProActive ? 'Current Plan' : isInvestorAccount ? 'Choose Investor Pro' : 'Become an Investor'}
+        {investorProActive ? 'Current Plan' : 'Join the Waitlist'}
       </button>
     </div>
   );
@@ -316,6 +291,11 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         />
         <InvestorProCard />
       </div>
+
+      <p className="mt-16 text-center text-sm text-brand-text-muted font-medium max-w-2xl mx-auto leading-relaxed">
+        DecisionLab plans are software subscriptions. We charge no listing fees, no commissions, and no
+        recruitment or introduction fees — team features are free for team members.
+      </p>
 
     </div>
   );
