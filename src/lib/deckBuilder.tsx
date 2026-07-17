@@ -330,14 +330,14 @@ export function getDefaultsForSlide(
   if (key === 'team') return [
     { id: 'title',  type: 'title', content: slide.title,   x: 8, y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, textAlign: 'left', zIndex: 10 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8, y: 23, w: 84, h: 10, fontSize: 15, color: text, textAlign: 'left', zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
   ];
 
   if (key === 'problem') return [
     { id: 'title',  type: 'title', content: slide.title,   x: 8,  y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, textAlign: 'left', zIndex: 10 },
     { id: 'accent', type: 'shape', content: 'line',        x: 8,  y: 23, w: 10, h: 0.6, color: accent, zIndex: 5 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8,  y: 26, w: 42, h: 28, fontSize: 15, color: text, textAlign: 'left', zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 56, w: 42, h: 34, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 56, w: 42, h: 34, fontSize: 13, color: text, zIndex: 10 },
     { id: 'image',  type: 'image', content: slide.imageUrl || '', x: 54, y: 18, w: 38, h: 70, zIndex: 6 },
   ];
 
@@ -345,7 +345,7 @@ export function getDefaultsForSlide(
     { id: 'title',  type: 'title', content: slide.title,   x: 8,  y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, textAlign: 'left', zIndex: 10 },
     { id: 'accent', type: 'shape', content: 'line',        x: 8,  y: 23, w: 10, h: 0.6, color: accent, zIndex: 5 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8,  y: 26, w: 42, h: 22, fontSize: 15, color: text, textAlign: 'left', zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 50, w: 42, h: 40, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 50, w: 42, h: 40, fontSize: 13, color: text, zIndex: 10 },
     { id: 'image',  type: 'image', content: slide.imageUrl || '', x: 54, y: 18, w: 38, h: 70, zIndex: 6 },
   ];
 
@@ -353,33 +353,33 @@ export function getDefaultsForSlide(
     { id: 'title',  type: 'title',  content: slide.title,   x: 8, y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, zIndex: 10 },
     { id: 'sub',    type: 'text',   content: slide.content, x: 8, y: 24, w: 40, h: 16, fontSize: 15, color: text, zIndex: 10 },
     { id: 'metric', type: 'metric', content: `${slide.metric?.label || 'MARKET'}: ${slide.metric?.value || 'Global'}`, x: 8, y: 43, w: 30, h: 14, fontSize: 13, color: accent, zIndex: 10 },
-    { id: 'points', type: 'point',  content: slide.points.join('\n'), x: 8, y: 60, w: 40, h: 30, fontSize: 12, color: text, zIndex: 10 },
+    { id: 'points', type: 'point',  content: (slide.points || []).join('\n'), x: 8, y: 60, w: 40, h: 30, fontSize: 12, color: text, zIndex: 10 },
     { id: 'chart',  type: 'chart',  content: `${slide.metric?.value || 'TAM'}|Market Sizing`, x: 52, y: 22, w: 42, h: 64, color: accent, zIndex: 10 },
   ];
 
   if (key === 'invest') return [
     { id: 'title',  type: 'title',  content: slide.title,   x: 8, y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, zIndex: 10 },
     { id: 'metric', type: 'metric', content: `${slide.metric?.label || 'READINESS'}: ${slide.metric?.value || '85%'}`, x: 8, y: 26, w: 38, h: 56, fontSize: 14, color: accent, zIndex: 10 },
-    { id: 'points', type: 'point',  content: slide.points.join('\n'), x: 50, y: 26, w: 42, h: 56, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point',  content: (slide.points || []).join('\n'), x: 50, y: 26, w: 42, h: 56, fontSize: 13, color: text, zIndex: 10 },
   ];
 
   if (key === 'roadmap') return [
     { id: 'title',  type: 'title', content: slide.title,   x: 8, y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, zIndex: 10 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8, y: 24, w: 84, h: 10, fontSize: 15, color: text, zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
   ];
 
   if (key === 'closing') return [
     { id: 'title',  type: 'title', content: slide.title,   x: 8, y: 22, w: 60, h: 18, fontSize: 52, fontWeight: '900', color: accent, zIndex: 10 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8, y: 44, w: 50, h: 16, fontSize: 17, color: text, zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 63, w: 50, h: 24, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 63, w: 50, h: 24, fontSize: 13, color: text, zIndex: 10 },
   ];
 
   // default
   return [
     { id: 'title',  type: 'title', content: slide.title,   x: 8, y: 10, w: 84, h: 12, fontSize: 40, fontWeight: '800', color: text, zIndex: 10 },
     { id: 'sub',    type: 'text',  content: slide.content, x: 8, y: 24, w: 84, h: 10, fontSize: 15, color: text, zIndex: 10 },
-    { id: 'points', type: 'point', content: slide.points.join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
+    { id: 'points', type: 'point', content: (slide.points || []).join('\n'), x: 8, y: 36, w: 84, h: 52, fontSize: 13, color: text, zIndex: 10 },
   ];
 }
 

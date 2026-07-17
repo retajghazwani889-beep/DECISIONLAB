@@ -240,7 +240,7 @@ export function compileGoogleSlidesRequests(
             isBold = true;
           } else if (isPoint) {
             fontSizeMag = 14;
-            isBold = el.content.startsWith('•') || el.content.toUpperCase() === el.content;
+            isBold = (el.content || '').startsWith('•') || (el.content || '').toUpperCase() === el.content;
           } else {
             fontSizeMag = el.fontSize ? el.fontSize * 0.8 : 14;
             isBold = el.fontSize ? el.fontSize > 24 : false;
@@ -345,7 +345,7 @@ export function compileGoogleSlidesRequests(
           });
         } else if (el.type === 'table') {
           // Render elegant tables using basic grid systems in Slides API
-          const rows = el.content.split(/\r?\n|\\\\n/);
+          const rows = (el.content || '').split(/\r?\n|\\\\n/);
           const headerRow = rows.find(r => r.startsWith('Header / Columns:')) || rows[0] || '';
           const cols = headerRow ? headerRow.replace('Header / Columns: ', '').split(' | ') : ['Feature', 'Value'];
           const dataRows = rows.filter(r => !r.startsWith('Header / Columns:') && r.trim() !== '').map(r => r.split(' | '));

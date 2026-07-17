@@ -68,7 +68,7 @@ export const deriveElementsFromLayout = (slide: PitchDeckSlide, template: string
 
   // 4. Points/Bullets (Grid vs List)
   const maxPoints = 5;
-  slide.points.slice(0, maxPoints).forEach((point, i) => {
+  (slide.points || []).slice(0, maxPoints).forEach((point, i) => {
     // Clear custom clean layout matching to separate point boundaries cleanly
     const formattedText = point.startsWith('•') ? point : `• ${point}`;
     elements.push({
