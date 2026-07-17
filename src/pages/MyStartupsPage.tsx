@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2 } from 'lucide-react';
+import { hasAccess } from '../lib/tiers';
+import { UpgradePrompt } from '../components/UpgradeGate';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MyStartupsPage — the founder's homepage. Every startup as a card with its
@@ -13,15 +15,27 @@ import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, File
 
 const WIZARD_STEPS = 7;
 
+// Free plan ("Startup at a Glance") includes exactly 1 startup idea.
+// Founder/Growth tiers get unlimited.
+const FREE_STARTUP_LIMIT = 1;
+
 export default function MyStartupsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [startups, setStartups] = useState<any[]>([]);
   const [analysesByStartup, setAnalysesByStartup] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [showCreateChoice, setShowCreateChoice] = useState(false);
+  const [showLimitPrompt, setShowLimitPrompt] = useState(false);
   const [quickIdea, setQuickIdea] = useState('');
   const [showQuickIdea, setShowQuickIdea] = useState(false);
+
+  // Tier lock: free users can create their first startup, then must upgrade.
+  const atFreeLimit = !hasAccess(profile, 'founder') && startups.length >= FREE_STARTUP_LIMIT;
+  const handleCreateClick = () => {
+    if (atFreeLimit) setShowLimitPrompt(true);
+    else setShowCreateChoice(true);
+  };
 
   // ── Legacy analyses (pre-workspace, not linked to any startup) ──
   const [legacy, setLegacy] = useState<any[]>([]);
@@ -106,7 +120,7 @@ export default function MyStartupsPage() {
             <p className="text-sm text-brand-text-secondary font-medium mt-2">Manage and grow all your startups from one place.</p>
           </div>
           <button
-            onClick={() => setShowCreateChoice(true)}
+            onClick={handleCreateClick}
             className="shrink-0 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 flex items-center gap-2"
           >
             <Plus size={16} /> Create Startup
@@ -120,7 +134,7 @@ export default function MyStartupsPage() {
             <Rocket size={40} strokeWidth={1} className="mx-auto text-brand-accent mb-6" />
             <h3 className="text-xl font-black uppercase tracking-tight font-display mb-3">No startups yet</h3>
             <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-sm mx-auto">Create your first startup and DecisionLab will walk you through the setup.</p>
-            <button onClick={() => setShowCreateChoice(true)} className="inline-flex items-center gap-2 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all">
+            <button onClick={handleCreateClick} className="inline-flex items-center gap-2 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all">
               <Plus size={15} /> Create Startup
             </button>
           </div>
@@ -252,6 +266,20 @@ export default function MyStartupsPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Free plan limit reached → upgrade prompt */}
+      {showLimitPrompt && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowLimitPrompt(false)}>
+          <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowLimitPrompt(false)} className="absolute top-4 right-4 z-10 text-brand-text-muted hover:text-white transition-colors"><X size={18} /></button>
+            <UpgradePrompt
+              requiredTier="founder"
+              featureName="Unlimited Startup Ideas"
+              description="The free plan includes 1 startup idea. Upgrade to Startup Validation ($39/mo) to create unlimited startups — your current startup and all its analyses stay exactly where they are."
+            />
           </div>
         </div>
       )}

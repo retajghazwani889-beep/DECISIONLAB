@@ -37,6 +37,7 @@ import StartupWorkspacePage from './pages/StartupWorkspacePage';
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { RequireTier } from './components/UpgradeGate';
 import VentureOperator from './components/VentureOperator';
 import UserOnboarding from './components/UserOnboarding';
 
@@ -232,7 +233,7 @@ function AppContent() {
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
-          <Route path="/compare" element={<ComparisonPage />} />
+          <Route path="/compare" element={<RequireTier tier="growth" featureName="Startup Comparisons"><ComparisonPage /></RequireTier>} />
 
           {/* ── Investor Network ── */}
           <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
@@ -273,7 +274,7 @@ function AppContent() {
                Requires login — redirects to home if not authenticated. */}
           <Route
             path="/pitch-deck"
-            element={user ? <PitchDeckArchitectEngine /> : <Navigate to="/" replace />}
+            element={<RequireTier tier="growth" featureName="Pitch Deck Architect"><PitchDeckArchitectEngine /></RequireTier>}
           />
         </Routes>
       </main>

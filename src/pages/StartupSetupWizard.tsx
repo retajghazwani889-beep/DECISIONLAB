@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, auth } from '../lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { hasAccess } from '../lib/tiers';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { STARTUP_STAGES, INDUSTRIES } from '../constants';
 import {
@@ -69,6 +70,25 @@ export default function StartupSetupWizard() {
   const industryOptions = toLabels(INDUSTRIES as any[]);
 
   const set = (k: string, v: any) => setData((d: any) => ({ ...d, [k]: v }));
+
+  // Tier lock: the free plan includes exactly 1 startup. If a free user opens
+  // the wizard directly (URL, bookmark) while already owning a startup, send
+  // them to pricing. Resuming an existing draft (?id=...) is always allowed —
+  // that's editing their one startup, not creating a second.
+  useEffect(() => {
+    if (!user?.uid || !profile || resumeId) return;
+    if (hasAccess(profile, 'founder')) return; // founder & growth: unlimited
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'startups'), where('founderId', '==', user.uid)));
+        if (!cancelled && snap.size >= 1) navigate('/pricing', { replace: true });
+      } catch (e) {
+        console.warn('Startup limit check failed:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.uid, profile, resumeId]);
 
   // Prefill founder name from the account.
   useEffect(() => {

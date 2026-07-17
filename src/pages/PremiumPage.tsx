@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
+import { openPaddleCheckout, PADDLE_PRICES } from '../lib/paddle';
 
 interface PremiumPageProps {
   user: User | null;
@@ -15,7 +16,7 @@ interface PremiumPageProps {
 }
 
 export default function PremiumPage({ user, profile }: PremiumPageProps) {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, refreshProfile } = useAuth();
   const [loadingTier, setLoadingTier] = useState<Tier | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,10 +27,32 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
 
-  // NOTE: This still sets the tier directly from the browser after a simulated
-  // payment. That is fine for testing, but before charging real money you must
-  // replace this with a real PayPal flow where PayPal notifies your SERVER and
-  // the server writes the tier. Otherwise a user could unlock tiers for free.
+  // After Paddle reports checkout.completed, the WEBHOOK on our server writes
+  // the new tier to Firestore (usually within a few seconds). This polls the
+  // profile until the change lands, then continues the flow.
+  const waitForTierThenContinue = (expected: string) => {
+    let attempts = 0;
+    const poll = async () => {
+      attempts += 1;
+      try { await refreshProfile(); } catch (_) {}
+      // getTier can't see the fresh profile from inside this closure reliably,
+      // so read straight from the refreshed context on next tick via reload.
+      if (attempts >= 8) {
+        // Give up polling politely — the webhook may just be slow. Reload:
+        // the tier will show as soon as it's written.
+        if (fromSignup) navigate('/welcome/founder', { replace: true });
+        else window.location.reload();
+        return;
+      }
+      setTimeout(poll, 1500);
+    };
+    // Small head start so the webhook has time to arrive.
+    setTimeout(poll, 2500);
+  };
+
+  // REAL checkout via Paddle. The card form is Paddle's — card data never
+  // touches our code. After payment, Paddle webhooks our server, and the
+  // SERVER sets subscriptionStatus. The browser never writes tiers anymore.
   const handleSelectPlan = async (targetTier: Tier) => {
     if (targetTier === 'free') {
       // Logged-out visitors clicking "Start Free" begin signup; for
@@ -51,26 +74,20 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     }
 
     setLoadingTier(targetTier);
-    // Simulate PayPal payment processing (replace with real PayPal + server later)
-    setTimeout(async () => {
-      try {
-        await updateDoc(doc(db, 'profiles', activeUser!.uid), {
-          subscriptionStatus: targetTier,
-          updatedAt: serverTimestamp()
-        });
-        alert(`Success! You are now on the ${targetTier === 'growth' ? 'Startup Grow' : 'Startup Validation'} plan.`);
-        if (fromSignup) {
-          // Continue the founder's onboarding: welcome → startup setup wizard.
-          navigate('/welcome/founder', { replace: true });
-        } else {
-          window.location.reload();
-        }
-      } catch (err) {
-        handleFirestoreError(err, OperationType.UPDATE, `profiles/${activeUser!.uid}`);
-      } finally {
-        setLoadingTier(null);
-      }
-    }, 1500);
+    try {
+      await openPaddleCheckout({
+        priceId: targetTier === 'growth' ? PADDLE_PRICES.growth : PADDLE_PRICES.founder,
+        uid: activeUser.uid,
+        email: activeUser.email,
+        onCompleted: () => waitForTierThenContinue(targetTier),
+      });
+    } catch (err) {
+      console.error('Could not open checkout:', err);
+      alert('Could not open the checkout. Please refresh the page and try again.');
+    } finally {
+      // The overlay is open (or failed); either way stop the button spinner.
+      setLoadingTier(null);
+    }
   };
 
   const PlanCard = ({
@@ -162,20 +179,19 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     }
     if (investorProActive) return;
     setInvestorLoading(true);
-    setTimeout(async () => {
-      try {
-        await updateDoc(doc(db, 'profiles', user.uid), {
-          subscriptionStatus: 'investor_pro',
-          updatedAt: serverTimestamp(),
-        });
-        alert('Success! You are now on the Investor Pro plan.');
-        window.location.reload();
-      } catch (err) {
-        handleFirestoreError(err, OperationType.UPDATE, `profiles/${user.uid}`);
-      } finally {
-        setInvestorLoading(false);
-      }
-    }, 1500);
+    try {
+      await openPaddleCheckout({
+        priceId: PADDLE_PRICES.investor_pro,
+        uid: user.uid,
+        email: user.email,
+        onCompleted: () => waitForTierThenContinue('investor_pro' as any),
+      });
+    } catch (err) {
+      console.error('Could not open checkout:', err);
+      alert('Could not open the checkout. Please refresh the page and try again.');
+    } finally {
+      setInvestorLoading(false);
+    }
   };
 
   const INVESTOR_FEATURES = [

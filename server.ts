@@ -5,8 +5,9 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc as clientDoc, getDoc as clientGetDoc, setDoc as clientSetDoc } from "firebase/firestore";
-import * as admin from "firebase-admin";
+import { initializeApp as initializeAdminApp, cert as adminCert } from "firebase-admin/app";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
+import crypto from "crypto";
 import fs from "fs";
 
 dotenv.config();
@@ -44,15 +45,15 @@ try {
   //  · GOOGLE_APPLICATION_CREDENTIALS — standard Google credentials file path.
   const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (svcJson) {
-    const adminApp = admin.initializeApp({
-      credential: (admin as any).credential.cert(JSON.parse(svcJson)),
+    const adminApp = initializeAdminApp({
+      credential: adminCert(JSON.parse(svcJson)),
       projectId: firebaseConfig.projectId,
     });
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
     useAdminSdk = true;
     console.log("Firestore Admin SDK initialized with service-account credentials.");
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    const adminApp = admin.initializeApp({
+    const adminApp = initializeAdminApp({
       projectId: firebaseConfig.projectId,
     });
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
@@ -76,7 +77,120 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json());
+  app.use(express.json({
+    // Keep the raw bytes of every request body. Paddle signs the RAW body,
+    // so signature verification must run against exactly what was sent —
+    // not the re-serialized JSON.
+    verify: (req: any, _res, buf) => { req.rawBody = buf; },
+  }));
+
+  // ── Paddle billing webhook ────────────────────────────────────────────────
+  // Paddle calls this after payments and subscription changes. We verify the
+  // call is genuinely from Paddle (HMAC signature with our webhook secret),
+  // then set the user's tier in Firestore with the ADMIN SDK. This is the ONLY
+  // path that should ever change subscriptionStatus once payments are live.
+  //
+  // Required Render environment variable: PADDLE_WEBHOOK_SECRET
+  // (from Paddle → Developer tools → Notifications → your destination's secret key)
+  const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || "";
+
+  // Map Paddle price IDs → DecisionLab tiers. SANDBOX IDs for now; when going
+  // live, add the live price IDs here too (keeping both is harmless).
+  const PADDLE_PRICE_TO_TIER: Record<string, string> = {
+    "pri_01kxqajffbej30b0ewj8mmgfz2": "founder",      // Startup Validation $39/mo
+    "pri_01kxqamsgjabxzhsw9e4yx4drn": "growth",       // Startup Grow $99/mo
+    "pri_01kxqapbvfd1fby56azj195esj": "investor_pro", // Investor Pro $199/mo
+  };
+
+  function verifyPaddleSignature(rawBody: Buffer | undefined, signatureHeader: string | undefined, secret: string): boolean {
+    try {
+      if (!rawBody || !signatureHeader || !secret) return false;
+      const parts: Record<string, string> = {};
+      for (const kv of signatureHeader.split(";")) {
+        const idx = kv.indexOf("=");
+        if (idx > 0) parts[kv.slice(0, idx).trim()] = kv.slice(idx + 1).trim();
+      }
+      const ts = parts["ts"];
+      const h1 = parts["h1"];
+      if (!ts || !h1) return false;
+      const computed = crypto
+        .createHmac("sha256", secret)
+        .update(`${ts}:${rawBody.toString("utf8")}`)
+        .digest("hex");
+      const a = Buffer.from(computed);
+      const b = Buffer.from(h1);
+      return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  }
+
+  app.post("/api/paddle/webhook", async (req: any, res) => {
+    // 1) Authenticate the caller. Reject anything not signed by Paddle.
+    if (!PADDLE_WEBHOOK_SECRET) {
+      console.error("Paddle webhook received but PADDLE_WEBHOOK_SECRET is not set on the server.");
+      return res.status(500).json({ error: "webhook not configured" });
+    }
+    if (!verifyPaddleSignature(req.rawBody, req.headers["paddle-signature"], PADDLE_WEBHOOK_SECRET)) {
+      console.warn("Paddle webhook rejected: invalid signature.");
+      return res.status(401).json({ error: "invalid signature" });
+    }
+
+    const eventType: string = req.body?.event_type || "";
+    const data: any = req.body?.data || {};
+
+    // Only subscription lifecycle events change tiers.
+    const relevant = [
+      "subscription.created",
+      "subscription.activated",
+      "subscription.updated",
+      "subscription.canceled",
+    ];
+    if (!relevant.includes(eventType)) {
+      return res.status(200).json({ received: true, ignored: eventType });
+    }
+
+    // 2) Identify the user: we attach the Firebase uid as customData at checkout.
+    const uid: string | undefined = data?.custom_data?.uid;
+    if (!uid) {
+      console.error(`Paddle ${eventType}: no uid in custom_data — cannot map to a profile. Subscription: ${data?.id}`);
+      // 200 so Paddle doesn't retry forever; this needs manual investigation.
+      return res.status(200).json({ received: true, warning: "no uid" });
+    }
+
+    // 3) Work out the new tier.
+    let newTier = "free";
+    const status: string = data?.status || "";
+    if (eventType !== "subscription.canceled" && (status === "active" || status === "trialing" || status === "past_due")) {
+      const priceId: string | undefined = data?.items?.[0]?.price?.id;
+      newTier = (priceId && PADDLE_PRICE_TO_TIER[priceId]) || "free";
+      if (priceId && !PADDLE_PRICE_TO_TIER[priceId]) {
+        console.warn(`Paddle ${eventType}: unknown price ${priceId} — defaulting ${uid} to free.`);
+      }
+    }
+
+    // 4) Write the tier — Admin SDK only. (The client SDK would be subject to
+    //    security rules and is not acceptable for billing writes.)
+    if (!useAdminSdk || !adminDb) {
+      console.error("Paddle webhook: Firestore Admin SDK is not initialized (set FIREBASE_SERVICE_ACCOUNT on Render). Returning 500 so Paddle retries.");
+      return res.status(500).json({ error: "admin sdk unavailable" });
+    }
+    try {
+      await adminDb.collection("profiles").doc(uid).set({
+        subscriptionStatus: newTier,
+        paddleCustomerId: data?.customer_id || null,
+        paddleSubscriptionId: data?.id || null,
+        subscriptionUpdatedAt: new Date().toISOString(),
+      }, { merge: true });
+      console.log(`Paddle ${eventType}: profile ${uid} → tier '${newTier}' (subscription ${data?.id || "?"}).`);
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      console.error("Paddle webhook: failed to write tier:", err);
+      // 500 → Paddle retries with backoff, so a transient DB blip self-heals.
+      return res.status(500).json({ error: "write failed" });
+    }
+  });
+
 
   const LOCAL_BACKUP_DIR = path.join(process.cwd(), "data", "analyses");
   if (!fs.existsSync(LOCAL_BACKUP_DIR)) {

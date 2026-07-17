@@ -8,7 +8,7 @@ import {
   Zap, Download, Target, Shield, MapPin, Briefcase, Activity, 
   ChevronRight, X, Edit3, CheckCircle2, Globe, Rocket, Info, ShieldAlert,
   Wand2, Image as ImageIcon, Loader2, BarChart3, PieChart, TrendingUp,
-  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users} from 'lucide-react';
+  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users, Lock} from 'lucide-react';
 import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
@@ -19,7 +19,8 @@ import { jsPDF } from 'jspdf';
 
 import { INDUSTRIES, STARTUP_STAGES, PRODUCT_TYPES, BUSINESS_TYPES } from '../constants';
 import InvestorPlaybookView from './InvestorPlaybookView';
-import { hasAccess } from '../lib/tiers';
+import { hasAccess, Tier } from '../lib/tiers';
+import { UpgradePrompt } from './UpgradeGate';
 
 const extractIdeaSnippet = (ideaDescription: string): string => {
   if (!ideaDescription) return '';
@@ -1040,8 +1041,36 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
     return 'overview';
   });
 
+  // ── Tier locks per tab (matches the pricing page) ─────────────────────────
+  // free: Overview + readiness score. founder ($39): deep analysis, risks,
+  // growth roadmap. growth ($99): TeamLab, investor matching, executive
+  // reports/PDF, pitch deck architect. Investor view is never tier-locked —
+  // investors see reports through their own Investor Pro plan.
+  const TAB_TIER: Partial<Record<typeof activeTab, Exclude<Tier, 'free'>>> = {
+    analysis: 'founder',
+    risk: 'founder',
+    growth: 'founder',
+    team: 'growth',
+    investors: 'growth',
+    reports: 'growth',
+    architect: 'growth',
+  };
+  const TAB_FEATURE_NAMES: Partial<Record<typeof activeTab, string>> = {
+    analysis: 'Key Insights — Market, Competition & SWOT',
+    risk: 'Risk Analysis',
+    growth: 'Growth Opportunities & Validation Roadmap',
+    team: 'TeamLab — Recruit & Choose Team Members',
+    investors: 'Investor Matching & Fit Analysis',
+    reports: 'Executive Reports + PDF Export',
+    architect: 'Pitch Deck Architect',
+  };
+
   // In investor view, lock the report to the Startup Overview only.
-  const effectiveTab = investorView ? 'overview' : activeTab;
+  const requestedTab = investorView ? 'overview' : activeTab;
+  const requiredTabTier = investorView ? undefined : TAB_TIER[requestedTab];
+  const tabLocked = !!requiredTabTier && !hasAccess(profile, requiredTabTier);
+  // When locked, no tab content renders — the upgrade prompt takes its place.
+  const effectiveTab = tabLocked ? ('locked' as any) : requestedTab;
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -1052,7 +1081,9 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
   useEffect(() => {
     const downloadParam = searchParams.get('download');
-    if (downloadParam === 'true' && activeTab === 'reports') {
+    // Tier lock: ?download=true must not bypass the Growth-plan PDF export.
+    const canExport = investorView || hasAccess(profile, 'growth');
+    if (downloadParam === 'true' && activeTab === 'reports' && canExport) {
       const timer = setTimeout(() => {
         handleExportExecutiveReport();
       }, 1200);
@@ -1604,11 +1635,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
         <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full lg:w-auto">
             <button 
-              onClick={handleExportExecutiveReport}
+              onClick={() => {
+                // Executive Reports + PDF Export is a Growth-plan feature
+                // (investor view is covered by the Investor Pro plan instead).
+                if (!investorView && !hasAccess(profile, 'growth')) { navigate('/pricing'); return; }
+                handleExportExecutiveReport();
+              }}
               disabled={isExporting}
               className="px-10 py-6 bg-brand-accent text-brand-text-primary rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl hover:scale-105 hover:bg-brand-accent/90 transition-all flex items-center gap-3 w-full lg:w-auto justify-center shadow-brand-accent/20 active:scale-95 disabled:opacity-50"
             >
-              {isExporting ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
+              {isExporting ? <Loader2 size={20} className="animate-spin" /> : ((!investorView && !hasAccess(profile, 'growth')) ? <Lock size={20} /> : <Download size={20} />)}
               {isExporting ? 'Generating...' : 'Download Project'}
             </button>
         </div>
@@ -1773,7 +1809,10 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           { id: 'investors', label: '05 / Investors', icon: <Handshake size={15} /> },
           { id: 'reports', label: '06 / Reports', icon: <FileText size={15} /> },
           { id: 'architect', label: '07 / Pitch Deck Architect', icon: <Presentation size={15} /> },
-        ].map((tab) => (
+        ].map((tab) => {
+          const tier = TAB_TIER[tab.id as keyof typeof TAB_TIER];
+          const isLockedTab = !!tier && !hasAccess(profile, tier);
+          return (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
@@ -1781,13 +1820,15 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               "flex items-center gap-3 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300",
               activeTab === tab.id
                 ? "bg-brand-accent text-brand-text-primary shadow-xl shadow-brand-accent/20 border-b-2 border-brand-accent scale-102"
-                : "bg-brand-section text-brand-text-secondary hover:text-white border border-brand-border/15 hover:border-brand-border/60"
+                : "bg-brand-section text-brand-text-secondary hover:text-white border border-brand-border/15 hover:border-brand-border/60",
+              isLockedTab && activeTab !== tab.id && "opacity-60"
             )}
           >
-            {tab.icon}
+            {isLockedTab ? <Lock size={13} /> : tab.icon}
             <span>{tab.label}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       <AnimatePresence mode="wait">
@@ -1799,6 +1840,14 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           transition={{ duration: 0.4 }}
           className="space-y-12 min-h-[500px]"
         >
+          {/* ==================== LOCKED TAB → UPGRADE ==================== */}
+          {tabLocked && requiredTabTier && (
+            <UpgradePrompt
+              requiredTier={requiredTabTier}
+              featureName={TAB_FEATURE_NAMES[requestedTab] || 'This feature'}
+            />
+          )}
+
           {/* ==================== 01 / OVERVIEW TAB ==================== */}
           {effectiveTab === 'overview' && investorView && (
             <div className="space-y-8">
