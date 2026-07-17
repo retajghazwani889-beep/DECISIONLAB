@@ -8,8 +8,9 @@ import Logo from '../components/Logo';
 import { formatAuthError } from '../lib/utils';
 
 export default function FounderSignUpPage() {
-  const { signUpWithEmail, signInWithGoogle, refreshProfile } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, refreshProfile, user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
   const [fullName, setFullName] = useState('');
   const [country, setCountry] = useState('');
   const [email, setEmail] = useState('');
@@ -105,6 +106,52 @@ export default function FounderSignUpPage() {
   };
 
   const field = 'w-full bg-brand-card border border-white/5 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:border-brand-accent/40 focus:outline-none transition-colors';
+
+  // ── Already-logged-in guard ──
+  // Same protection as the Team Member and Investor signup pages: a logged-in
+  // user (any role) opening founder signup would otherwise hit the
+  // "email already in use" trap from beta testing. Never shown mid-signup
+  // (busy) so the account we just created doesn't trigger it for a moment.
+  const accountType = (profile as any)?.accountType || '';
+  const roleLabel =
+    accountType === 'teamMember' ? 'Team Member'
+    : accountType === 'investor' ? 'Investor'
+    : 'Founder';
+  const doLogoutAndContinue = async () => {
+    setLoggingOut(true);
+    try { await logout(); } finally { setLoggingOut(false); }
+  };
+  const goToMyDashboard = () => {
+    if (accountType === 'investor') navigate('/investor-matches');
+    else if (accountType === 'teamMember') navigate('/team');
+    else navigate('/startups');
+  };
+
+  if (!loading && user && !busy) {
+    return (
+      <div className="min-h-screen bg-brand-bg text-brand-text-primary flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md">
+          <div className="flex justify-center mb-8"><Logo /></div>
+          <div className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8 sm:p-10 shadow-huge">
+            <h1 className="text-2xl font-black uppercase tracking-tight font-display mb-2">You're Already Logged In</h1>
+            <p className="text-sm text-brand-text-secondary font-medium mb-8">
+              You're currently logged in as a <span className="text-brand-text-primary font-bold">{roleLabel}</span>
+              {user.email ? <> (<span className="text-brand-text-primary font-bold">{user.email}</span>)</> : null}.
+              To create a separate Founder account, log out first.
+            </p>
+            <div className="space-y-3">
+              <button onClick={doLogoutAndContinue} disabled={loggingOut} className="w-full py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                {loggingOut ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} Log Out & Continue
+              </button>
+              <button onClick={goToMyDashboard} disabled={loggingOut} className="w-full py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all">
+                Back To My Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text-primary flex items-center justify-center px-6 py-16">

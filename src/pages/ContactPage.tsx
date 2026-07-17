@@ -121,8 +121,7 @@ export default function ContactPage() {
             </div>
             <div className="bg-brand-section border border-brand-border rounded-[2rem] p-7">
               <h3 className={sideTitle + ' flex items-center gap-2'}><LifeBuoy size={14} className="text-brand-accent" /> Support</h3>
-              <p className={sideText + ' mb-1'}>Bugs, account issues, and beta help.</p>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-xs font-bold text-brand-accent hover:underline break-all">{SUPPORT_EMAIL}</a>
+                            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-xs font-bold text-brand-accent hover:underline break-all">{SUPPORT_EMAIL}</a>
             </div>
             <div className="bg-brand-section border border-brand-border rounded-[2rem] p-7">
               <h3 className={sideTitle + ' flex items-center gap-2'}><Handshake size={14} className="text-brand-accent" /> Partnerships & Investors</h3>

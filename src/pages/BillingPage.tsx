@@ -72,15 +72,37 @@ export default function BillingPage() {
   }, [user?.uid]);
 
   // ── Cancel subscription ──
+  // Goes through the SERVER, which cancels the real Paddle subscription so
+  // billing genuinely stops. The plan stays active until the end of the paid
+  // period; the Paddle webhook then drops the tier to free automatically.
+  // (Browsers can no longer write subscriptionStatus — security rules.)
   const [cancelling, setCancelling] = useState(false);
+  const [cancelNote, setCancelNote] = useState('');
   const cancelPlan = async () => {
     if (!isPaid || !user?.uid) return;
-    if (!window.confirm('Cancel your subscription? You will move to the free Startup at a Glance plan.')) return;
+    if (!window.confirm('Cancel your subscription? Your plan stays active until the end of the period you already paid for, then moves to the free plan.')) return;
     setCancelling(true);
+    setCancelNote('');
     try {
-      await updateDoc(doc(db, 'profiles', user.uid), { subscriptionStatus: 'free', updatedAt: serverTimestamp() });
+      const idToken = await (user as any).getIdToken();
+      const res = await fetch('/api/billing/cancel', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${idToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCancelNote(data?.error || 'Could not cancel. Please try again or contact support@decisionlabhub.com.');
+        return;
+      }
+      const ends = data?.endsAt ? new Date(data.endsAt).toLocaleDateString() : null;
+      setCancelNote(ends
+        ? `Cancellation confirmed. Your plan stays active until ${ends}, then switches to the free plan automatically.`
+        : 'Cancellation confirmed. Your plan stays active until the end of the current billing period.');
       await refreshProfile();
-    } catch (e) { console.warn('Cancel failed:', e); }
+    } catch (e) {
+      console.warn('Cancel failed:', e);
+      setCancelNote('Could not cancel. Please check your connection and try again.');
+    }
     finally { setCancelling(false); }
   };
 
@@ -124,6 +146,9 @@ export default function BillingPage() {
                 </button>
               )}
             </div>
+            {cancelNote && (
+              <p className="mt-4 text-xs font-medium text-brand-text-secondary leading-relaxed">{cancelNote}</p>
+            )}
           </div>
         </div>
 

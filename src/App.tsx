@@ -43,6 +43,7 @@ import UserOnboarding from './components/UserOnboarding';
 
 // Pitch Deck Architect — live analysis-driven engine (replaces old PitchDeckArchitectPage)
 import PitchDeckArchitectEngine from './pages/PitchDeckArchitectPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function AppContent() {
   const { user, profile, loading, googleWorkspaceError, setGoogleWorkspaceError } = useAuth();
@@ -276,6 +277,8 @@ function AppContent() {
             path="/pitch-deck"
             element={<RequireTier tier="growth" featureName="Pitch Deck Architect"><PitchDeckArchitectEngine /></RequireTier>}
           />
+          {/* Catch-all: any unknown URL gets a proper 404 instead of a blank page */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 

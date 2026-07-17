@@ -142,7 +142,21 @@ export default function StartupWorkspacePage() {
 
   const openReport = (tab?: string) => {
     if (!analysis) return;
-    navigate(`/dashboard/startup/${analysis.id}/overview`);
+    // Map workspace labels → report tab ids so deep links land on the right
+    // tab. (Beta finding: TeamLab buttons opened the report on Overview and
+    // testers never found the TeamLab tab — 0/4 task success.)
+    const TAB_IDS: Record<string, string> = {
+      'Overview': 'overview',
+      'Key Insights': 'analysis',
+      'Risks': 'risk',
+      'Growth': 'growth',
+      'Reports': 'reports',
+      'Pitch Deck': 'architect',
+      'TeamLab': 'team',
+      'Investors': 'investors',
+    };
+    const tabId = tab ? TAB_IDS[tab] || '' : '';
+    navigate(`/dashboard/startup/${analysis.id}/overview${tabId ? `?tab=${tabId}` : ''}`);
   };
 
   const summaryItems = [
@@ -157,8 +171,8 @@ export default function StartupWorkspacePage() {
   const quickActions = [
     { icon: BarChart3, title: analysis ? 'Re-run Analysis' : 'Analyze Startup', onClick: goAnalyze },
     { icon: Presentation, title: 'Build Pitch Deck', onClick: () => navigate(analysis ? `/pitch-deck?projectId=${analysis.id}` : '/pitch-deck') },
-    { icon: Handshake, title: 'Find Investors', onClick: () => (analysis ? openReport() : goAnalyze()) },
-    { icon: Users, title: 'TeamLab', onClick: () => (analysis ? openReport() : goAnalyze()) },
+    { icon: Handshake, title: 'Find Investors', onClick: () => (analysis ? openReport('Investors') : goAnalyze()) },
+    { icon: Users, title: 'TeamLab', onClick: () => (analysis ? openReport('TeamLab') : goAnalyze()) },
   ];
 
   const workspaceNav = ['Overview', 'Key Insights', 'Risks', 'Growth', 'Reports', 'Pitch Deck', 'TeamLab'];

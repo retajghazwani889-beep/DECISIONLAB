@@ -69,7 +69,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             </h1>
 
             <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-32 leading-[1.7] font-medium opacity-90">
-              Startup validation, pitch decks, investor matching, and team building — everything you need from idea to investor-ready
+              Startup validation, team building, pitch decks, and investor matching — turning your ideas into plans investors trust
             </p>
           </motion.div>
 
@@ -88,17 +88,6 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
         </div>
       </section>
 
-      {/* Trust Bar (Premium Logo Wall feel) */}
-      <section className="py-20 border-y border-white/5 relative bg-brand-section">
-        <div className="max-w-7xl mx-auto px-4 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
-           <div className="flex flex-wrap justify-center md:justify-between items-center gap-12 md:gap-16 text-[#fcfdfe]">
-              {['SEQUOIA MODEL', 'VC APPROVED', 'INSTITUTIONAL GRADE', 'VENTURE READY'].map((t, idx) => (
-                <span key={idx} className={cn("text-xs font-black tracking-[0.6em] uppercase hover:text-brand-accent cursor-default transition-colors", idx === 0 ? "text-[#fcebeb]" : "text-[#ebf7fd]")}>{t}</span>
-              ))}
-           </div>
-        </div>
-      </section>
-
       {/* How it Works / Cinematic Demo */}
       <section className="py-48 px-4 relative overflow-hidden bg-brand-bg">
         <div className="max-w-7xl mx-auto">
@@ -106,7 +95,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-section border border-white/5 text-brand-accent text-xs font-black uppercase tracking-[0.4em] mb-12 shadow-2xl"
+              className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-section border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 shadow-2xl drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]"
             >
               <Layers size={14} /> How it works
             </motion.div>
@@ -123,7 +112,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               whileInView={{ opacity: 1, y: 0 }}
               className="text-xl md:text-2xl text-brand-text-muted max-w-3xl mx-auto font-medium leading-relaxed opacity-80"
             >
-              Watch how it works as we turn your data into simple plans in seconds
+              Your idea goes in. A clear plan comes out.
             </motion.p>
           </div>
 
@@ -146,10 +135,10 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap lg:flex-nowrap items-stretch justify-between gap-12 lg:gap-20">
             {[
-              { label: 'Analyses Run', value: '14,802', desc: 'Real-time throughput', color: 'text-[#dbe4ea]', size: '50px' },
-              { label: 'Signal Accuracy', value: '98.4%', desc: 'Verified by exit data', color: 'text-[#e3e7e9]', size: '50px' },
-              { label: 'Pitch Success', value: '3.2x', desc: 'Higher funding rate', color: 'text-[#cfdde6]', size: '50px' },
-              { label: 'Risk Coverage', value: 'Global', desc: 'Multi-market mapping', color: 'text-[#deeaf1]', size: '50px' },
+              { label: 'Instant Analysis', value: '✓', desc: 'Reports in minutes', color: 'text-[#dbe4ea]', size: '50px' },
+              { label: 'Clear Insights', value: '✓', desc: 'Easy to understand', color: 'text-[#e3e7e9]', size: '50px' },
+              { label: 'Better Pitches', value: '✓', desc: 'Investor-ready decks', color: 'text-[#cfdde6]', size: '50px' },
+              { label: 'Risk Checks', value: '✓', desc: 'Know your weak spots', color: 'text-[#deeaf1]', size: '50px' },
             ].map((stat, idx) => (
               <motion.div 
                 key={idx}
@@ -157,20 +146,14 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
                 whileInView={{ opacity: 1, scale: 1 }}
                 className="flex-1 flex flex-col text-center md:text-left h-auto font-display min-w-[200px]"
               >
-                <div className="min-h-[140px] flex flex-col justify-start">
-                   <p className="text-xl md:text-2xl font-medium text-brand-accent uppercase tracking-[0.05em] mb-4 leading-relaxed overflow-visible whitespace-nowrap">
+                <div className="flex flex-col justify-start gap-3">
+                   <p className="text-xl md:text-2xl font-medium text-brand-accent uppercase tracking-[0.12em] leading-relaxed overflow-visible whitespace-nowrap">
                      {stat.label}
                    </p>
-                   <p className={cn("text-base md:text-lg font-normal opacity-60 mb-8 leading-relaxed px-1", stat.color)}>
+                   <p className={cn("text-base md:text-lg font-normal opacity-60 leading-relaxed tracking-[0.06em] px-1", stat.color)}>
                      {stat.desc}
                    </p>
                 </div>
-                <p 
-                  style={{ fontSize: stat.size }}
-                  className="font-medium text-brand-text-primary tracking-tighter leading-none overflow-visible pt-2 px-1 whitespace-nowrap mt-auto"
-                >
-                  {stat.value}
-                </p>
               </motion.div>
             ))}
           </div>
@@ -182,7 +165,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-brand-accent/[0.03] blur-[180px] rounded-full -z-10" />
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-32">
-            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-white/5 text-brand-accent text-xs font-black uppercase tracking-[0.4em] mb-12">
+            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">
               Venture Network
             </div>
             <h2 className="text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
@@ -199,20 +182,20 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               {
                 type: 'ANGELS',
                 title: 'ANGEL PARTNERS',
-                desc: 'Former founders and experts targeting asymmetrical early-stage risk',
-                features: ['OPERATIONAL SYNERGY', 'ZERO-LOSS VELOCITY', 'HIGH-TRUST INGRESS']
+                desc: 'Experienced founders and experts who back startups at the earliest stage',
+                features: ['HANDS-ON SUPPORT', 'FAST DECISIONS', 'TRUSTED INTROS']
               },
               {
                 type: 'VCS',
                 title: 'VC FIRMS',
-                desc: 'Top-tier venture firms focusing on defensible moats and scalability',
-                features: ['SERIES-A PIPELINE', 'CROSS-BORDER SCALE', 'TALENT MAGNETISM']
+                desc: 'Venture firms looking for startups that can grow big',
+                features: ['SERIES-A FUNDING', 'GLOBAL REACH', 'TOP TALENT']
               },
               {
                 type: 'SYNDICATES',
                 title: 'STRATEGIC SYNDICATES',
-                desc: 'Domain-specific networks providing horizontal market acceleration',
-                features: ['RAPID DILIGENCE', 'MASSIVE SIGNAL BOOST', 'ECOSYSTEM INTEGRITY']
+                desc: 'Industry networks that help startups grow faster',
+                features: ['QUICK REVIEWS', 'WIDER EXPOSURE', 'STRONG NETWORKS']
               }
             ].map((tier, idx) => (
               <motion.div
@@ -240,7 +223,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
                   onClick={() => handleAction('targets', tier.title, tier.desc, tier.features)}
                   className="w-full py-8 bg-[#5da9ff]/10 hover:bg-[#5da9ff]/20 border border-[#5da9ff]/20 rounded-[2.5rem] text-sm font-semibold uppercase tracking-[0.3em] hover:shadow-glow transition-all duration-500 active:scale-95 text-white"
                 >
-                  VIEW MATRIX TARGETS
+                  VIEW INVESTORS
                 </button>
               </motion.div>
             ))}
@@ -253,7 +236,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-brand-accent/[0.03] blur-[160px] rounded-full -z-0 pointer-events-none" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24">
-            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-white/5 text-brand-accent text-xs font-black uppercase tracking-[0.4em] mb-12">
+            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">
               Team Network
             </div>
             <h2 className="text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
@@ -261,7 +244,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               <span className="text-[#8cb5e4]">MATCHING</span>
             </h2>
             <p className="text-xl md:text-2xl text-[#dfe8ed] font-medium max-w-3xl mx-auto leading-relaxed opacity-[0.95] tracking-[0.02em]">
-              Founders publish the roles they need — developers, designers, marketers, and advisors apply and join the team
+              Founders publish the roles they need — developers, designers, marketers, and advisors apply and join
             </p>
           </div>
 
@@ -300,7 +283,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               ].map((m) => (
                 <div key={m.role} style={{ top: m.top, left: m.left }}
                   className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
-                  <div className="w-14 h-14 rounded-2xl bg-brand-card border border-[#5da9ff]/25 flex items-center justify-center text-[#8cb5e4] font-black text-sm shadow-lg hover:border-[#5da9ff]/60 hover:scale-110 transition-all">
+                  <div className="w-14 h-14 rounded-2xl bg-brand-card border border-[#5da9ff]/50 flex items-center justify-center text-[#5da9ff] font-black text-sm shadow-[0_0_16px_rgba(93,169,255,0.35)] hover:border-[#5da9ff] hover:shadow-[0_0_24px_rgba(93,169,255,0.55)] hover:scale-110 transition-all">
                     {m.initials}
                   </div>
                   <span className="text-[8px] font-black uppercase tracking-widest text-brand-text-muted whitespace-nowrap">{m.role}</span>

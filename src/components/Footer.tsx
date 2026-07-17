@@ -22,7 +22,7 @@ export default function Footer() {
               <Logo />
             </Link>
             <p className="text-base font-medium text-slate-300 tracking-[0.02em] opacity-95 max-w-sm">
-              Simple startup validation and pitch tools for student founders and early-stage creators
+              Turning your ideas into plans investors trust
             </p>
           </div>
           

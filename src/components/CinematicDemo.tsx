@@ -93,7 +93,7 @@ export default function CinematicDemo() {
           <div className="h-4 w-px bg-white/10 mx-2" />
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-            <span className="text-[10px] font-medium text-brand-text-primary uppercase tracking-[0.4em] leading-[1.5] pt-2">
+            <span className="text-[10px] font-medium text-[#5da9ff] uppercase tracking-[0.4em] leading-[1.5] pt-2">
               How it works
             </span>
           </div>
@@ -878,7 +878,7 @@ export default function CinematicDemo() {
                     REPORT DETAILS
                   </h4>
                   <p className="text-base md:text-[18px] text-slate-300 font-medium tracking-[0.02em] opacity-95 max-w-md leading-[1.6] px-1">
-                    A complete, beautiful summary of your vital startup metrics
+                    A clear summary of your startup’s key numbers
                   </p>
                 </div>
 
@@ -886,13 +886,13 @@ export default function CinematicDemo() {
                   <div className="grid grid-cols-5 gap-6 md:gap-8 w-full max-w-3xl relative z-10">
                     {[
                       {
-                        label: "MOAT",
+                        label: "VISION",
                         icon: <Shield size={26} />,
                         score: 85,
                         color: "#10b981",
                       },
                       {
-                        label: "CAPITAL",
+                        label: "FUNDING",
                         icon: <Target size={26} />,
                         score: 79,
                         color: "#3b82f6",
@@ -910,7 +910,7 @@ export default function CinematicDemo() {
                         color: "#f59e0b",
                       },
                       {
-                        label: "PRODUCT",
+                        label: "BUILD",
                         icon: <Database size={26} />,
                         score: 92,
                         color: "#10b981",
@@ -962,7 +962,7 @@ export default function CinematicDemo() {
                               </div>
                             </div>
                           </div>
-                          <span className="font-semibold text-[16px] md:text-[19px] text-white uppercase tracking-[0.02em] text-center w-full block truncate select-none leading-none mt-2 whitespace-nowrap">
+                          <span className="font-semibold text-[13px] md:text-[15px] text-white uppercase tracking-[0.02em] text-center w-full block select-none leading-none mt-2 whitespace-nowrap overflow-visible">
                             {p.label}
                           </span>
                         </motion.div>
@@ -978,25 +978,25 @@ export default function CinematicDemo() {
                 <div className="grid grid-cols-2 gap-6">
                   {[
                     {
-                      label: "Signal Clarity",
+                      label: "Idea Clarity",
                       val: "99.2%",
                       labelClass: "text-[15px] text-center",
                       valClass: "text-center",
                     },
                     {
-                      label: "Risk Factor",
+                      label: "Risk Level",
                       val: "Low",
                       labelClass: "text-[15px] text-center",
                       valClass: "text-[21px] text-center",
                     },
                     {
-                      label: "Alpha Cohort",
+                      label: "Ranking",
                       val: "Top 1%",
                       labelClass: "text-[15px] text-center",
                       valClass: "text-center",
                     },
                     {
-                      label: "Defensibility",
+                      label: "Competitive Edge",
                       val: "High",
                       labelClass: "text-[15px] text-center",
                       valClass: "text-center",
@@ -1029,7 +1029,7 @@ export default function CinematicDemo() {
                 <div className="p-10 rounded-[3rem] bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-medium text-brand-accent uppercase tracking-[0.1em] mb-2 leading-[1.5] pt-2">
-                      Venture Score
+                      Startup Score
                     </p>
                     <p className="text-5xl md:text-6xl font-medium italic tracking-tighter text-brand-text-primary leading-[1.5]">
                       88
@@ -1056,22 +1056,22 @@ export default function CinematicDemo() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col p-16 gap-12"
+              className="absolute inset-0 flex flex-col p-10 gap-6"
             >
-              <div className="flex items-end justify-between border-b border-white/5 pb-8 relative h-auto">
+              <div className="flex items-end justify-between border-b border-white/5 pb-4 relative h-auto">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-brand-emerald animate-pulse" />
                     <p className="text-sm font-semibold text-brand-emerald uppercase tracking-[0.02em] leading-[1.5] pt-2 px-1">
-                      Strategic Architecture
+                      Your Roadmap
                     </p>
                   </div>
                   <h4 className="text-2xl md:text-3xl font-medium text-brand-text-primary uppercase font-display leading-[1.5] pt-2 px-1 tracking-[0.05em] overflow-visible">
-                    Execution Blueprint
+                    Step-by-Step Plan
                   </h4>
                 </div>
                 <div className="flex items-center gap-4 text-sm font-semibold text-slate-300 uppercase tracking-[0.02em] opacity-95 leading-[1.5] pt-2">
-                  <Globe size={14} /> Global Expansion Layer v.0.1
+                  <Globe size={14} /> From idea to launch
                 </div>
               </div>
 
@@ -1099,24 +1099,26 @@ export default function CinematicDemo() {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                       </div>
 
-                      {/* Visual Asset Node */}
-                      <div className="relative w-16 h-16 rounded-2xl bg-brand-card/80 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] mb-5 mx-auto group-hover:scale-110 transition-transform duration-300">
-                        <Lightbulb className="w-8 h-8 text-emerald-400 animate-pulse" />
-                        <div className="absolute -inset-1 bg-emerald-500/20 rounded-2xl filter blur opacity-30 animate-pulse" />
+                      {/* Visual Asset Node — same h-16 + mb-5 footprint as the
+                          preview widgets on phases 2–4, so all four titles align */}
+                      <div className="relative w-full h-16 mb-5 flex items-center justify-center">
+                        <div className="relative w-12 h-12 rounded-2xl bg-brand-card/80 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover:scale-110 transition-transform duration-300">
+                          <Lightbulb className="w-8 h-8 text-emerald-400 animate-pulse" />
+                          <div className="absolute -inset-1 bg-emerald-500/20 rounded-2xl filter blur opacity-30 animate-pulse" />
+                        </div>
                       </div>
 
                       {/* Title & Description */}
                       <h5 className="text-sm font-extrabold text-white uppercase tracking-wider text-center mb-2">
                         START IDEA
                       </h5>
-                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.6] mb-4 opacity-95 min-h-[48px]">
-                        Start with your business idea and identify the problem
-                        you want to solve
+                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.5] mb-2 opacity-95">
+                        Share your idea and the problem it solves
                       </p>
                     </div>
 
                     {/* Bullet points */}
-                    <div className="border-t border-white/5 pt-4 space-y-2 mt-2">
+                    <div className="border-t border-white/5 pt-3 space-y-1.5 mt-1">
                       <div className="flex items-start gap-2">
                         <CheckCircle2
                           size={14}
@@ -1181,14 +1183,13 @@ export default function CinematicDemo() {
                       <h5 className="text-sm font-extrabold text-white uppercase tracking-wider text-center mb-2">
                         BUSINESS ANALYSIS
                       </h5>
-                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.6] mb-4 opacity-95 min-h-[48px]">
-                        Analyze your startup and discover opportunities for
-                        growth
+                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.5] mb-2 opacity-95">
+                        Analyze your startup and find ways to grow
                       </p>
                     </div>
 
                     {/* Bullet points */}
-                    <div className="border-t border-white/5 pt-4 space-y-2 mt-2">
+                    <div className="border-t border-white/5 pt-3 space-y-1.5 mt-1">
                       <div className="flex items-start gap-2">
                         <CheckCircle2
                           size={14}
@@ -1204,7 +1205,7 @@ export default function CinematicDemo() {
                           className="text-teal-400 mt-0.5 shrink-0"
                         />
                         <p className="text-xs text-brand-text-primary leading-snug font-medium">
-                          Identify strengths and weaknesses
+                          Strengths & weaknesses
                         </p>
                       </div>
                     </div>
@@ -1272,14 +1273,13 @@ export default function CinematicDemo() {
                       <h5 className="text-sm font-extrabold text-white uppercase tracking-wider text-center mb-2">
                         MARKET POTENTIAL
                       </h5>
-                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.6] mb-4 opacity-95 min-h-[48px]">
-                        Understand demand and measure your startup's growth
-                        potential
+                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.5] mb-2 opacity-95">
+                        Measure demand and your growth potential
                       </p>
                     </div>
 
                     {/* Bullet points */}
-                    <div className="border-t border-white/5 pt-4 space-y-2 mt-2">
+                    <div className="border-t border-white/5 pt-3 space-y-1.5 mt-1">
                       <div className="flex items-start gap-2">
                         <CheckCircle2
                           size={14}
@@ -1352,13 +1352,13 @@ export default function CinematicDemo() {
                       <h5 className="text-sm font-extrabold text-white uppercase tracking-wider text-center mb-2">
                         PITCH & EXPORT
                       </h5>
-                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.6] mb-4 opacity-95 min-h-[48px]">
-                        Generate investor-ready reports and pitch materials
+                      <p className="text-[13px] text-slate-300 font-medium tracking-[0.02em] text-center leading-[1.5] mb-2 opacity-95">
+                        Create investor-ready reports and pitch decks
                       </p>
                     </div>
 
                     {/* Bullet points */}
-                    <div className="border-t border-white/5 pt-4 space-y-2 mt-2">
+                    <div className="border-t border-white/5 pt-3 space-y-1.5 mt-1">
                       <div className="flex items-start gap-2">
                         <CheckCircle2
                           size={14}
@@ -1393,13 +1393,13 @@ export default function CinematicDemo() {
             >
               <div className="w-1/3 space-y-8 h-auto">
                 <h4 className="text-xl md:text-2xl font-medium text-brand-text-primary uppercase font-display leading-[1.5] mb-12 pt-2 px-1 tracking-[0.05em] overflow-visible">
-                  Refinement
+                  Fine-Tune
                 </h4>
                 <div className="space-y-6">
                   {[
-                    { label: "Risk Sensitivity", val: 45 },
-                    { label: "Market Concentration", val: 72 },
-                    { label: "Alpha Generation", val: 88 },
+                    { label: "Risk Level", val: 45 },
+                    { label: "Market Focus", val: 72 },
+                    { label: "Growth Potential", val: 88 },
                   ].map((ctl, i) => (
                     <div key={i} className="space-y-3">
                       <div className="flex justify-between text-[12px] font-medium text-slate-300 uppercase tracking-[0.02em] leading-[1.5] pt-2">
@@ -1430,12 +1430,11 @@ export default function CinematicDemo() {
                     <div className="flex items-center gap-3">
                       <ShieldAlert size={16} className="text-brand-accent" />
                       <p className="text-[10px] font-medium text-brand-accent uppercase tracking-[0.1em] leading-[1.5] pt-2">
-                        Optimizing Mitigation
+                        Reducing Risk
                       </p>
                     </div>
                     <p className="text-sm text-slate-300 font-medium italic tracking-[0.02em] leading-[1.6]">
-                      "Latency signals neutralized via strategic pivot
-                      simulation"
+                      We spot weak points and show you how to fix them
                     </p>
                   </div>
                 </div>
@@ -1445,7 +1444,7 @@ export default function CinematicDemo() {
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,var(--color-brand-accent)_0%,transparent_60%)]" />
                 <div className="relative h-full flex flex-col justify-center">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-[0.1em] mb-4 leading-[1.5] pt-2">
-                    Live Confidence Delta
+                    Confidence Score
                   </p>
                   <div className="flex items-baseline gap-4 mb-12">
                     <motion.h4

@@ -7,6 +7,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc as clientDoc, getDoc as clientGetDoc, setDoc as clientSetDoc } from "firebase/firestore";
 import { initializeApp as initializeAdminApp, cert as adminCert } from "firebase-admin/app";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import crypto from "crypto";
 import fs from "fs";
 
@@ -36,15 +37,9 @@ let useAdminSdk = false;
 let adminDb: any = null;
 let clientDb: any = null;
 
-try {
-  // The Admin SDK initializes happily with just a project ID but then CRASHES
-  // at write time when no server credentials exist (the exact failure seen on
-  // Render). Only enable it when credentials are actually configured:
-  //  · FIREBASE_SERVICE_ACCOUNT — paste the service-account JSON into a Render
-  //    environment variable of that name, or
-  //  · GOOGLE_APPLICATION_CREDENTIALS — standard Google credentials file path.
-  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (svcJson) {
+const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+if (svcJson) {
+  try {
     const adminApp = initializeAdminApp({
       credential: adminCert(JSON.parse(svcJson)),
       projectId: firebaseConfig.projectId,
@@ -52,24 +47,30 @@ try {
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
     useAdminSdk = true;
     console.log("Firestore Admin SDK initialized with service-account credentials.");
-  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  } catch (adminErr: any) {
+    console.log("Admin SDK initialization skipped:", adminErr?.message || adminErr);
+  }
+} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  try {
     const adminApp = initializeAdminApp({
       projectId: firebaseConfig.projectId,
     });
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
     useAdminSdk = true;
     console.log("Firestore Admin SDK initialized with application default credentials.");
-  } else {
-    console.log("No server Firebase credentials configured — skipping Admin SDK (client-side saves + local backup handle persistence).");
-    throw new Error('no-server-credentials');
+  } catch (adminErr: any) {
+    console.log("Admin SDK default credential initialization skipped:", adminErr?.message || adminErr);
   }
-} catch (adminErr) {
-  console.warn("Could not initialize Firestore Admin SDK (falling back to Client SDK):", adminErr);
+} else {
+  console.log("Firestore credentials are not set on server. Using Client SDK fallback.");
+}
+
+if (!useAdminSdk) {
   try {
     const firebaseApp = initializeApp(firebaseConfig);
     clientDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
-  } catch (clientErr) {
-    console.error("Failed to initialize Firestore Client SDK on server:", clientErr);
+  } catch (clientErr: any) {
+    console.log("Failed to initialize Firestore Client SDK on server:", clientErr?.message || clientErr);
   }
 }
 
@@ -124,6 +125,80 @@ async function startServer() {
       return false;
     }
   }
+
+  // ── Cancel subscription (authenticated) ──────────────────────────────────
+  // Called by the Billing page. Verifies the user's Firebase ID token, looks
+  // up their Paddle subscription, and cancels it VIA PADDLE'S API — so the
+  // customer actually stops being charged. The tier itself is then dropped to
+  // 'free' by the subscription.canceled webhook at the end of the paid period.
+  //
+  // Required Render environment variables:
+  //   PADDLE_API_KEY — Paddle → Developer tools → Authentication → API key
+  //   PADDLE_ENV     — "sandbox" (default) or "production"
+  const PADDLE_API_BASE = (process.env.PADDLE_ENV || "sandbox").trim() === "production"
+    ? "https://api.paddle.com"
+    : "https://sandbox-api.paddle.com";
+  const PADDLE_API_KEY = (process.env.PADDLE_API_KEY || "").trim();
+
+  app.post("/api/billing/cancel", async (req: any, res) => {
+    try {
+      if (!useAdminSdk || !adminDb) {
+        return res.status(500).json({ error: "Server is not configured for billing (admin SDK unavailable)." });
+      }
+      if (!PADDLE_API_KEY) {
+        console.error("Cancel request received but PADDLE_API_KEY is not set on the server.");
+        return res.status(500).json({ error: "Billing is not fully configured. Please contact support." });
+      }
+
+      // 1) Who is asking? Verify the Firebase ID token from the browser.
+      const authHeader = String(req.headers["authorization"] || "");
+      const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!idToken) return res.status(401).json({ error: "Not signed in." });
+      let uid = "";
+      try {
+        const decoded = await getAdminAuth().verifyIdToken(idToken);
+        uid = decoded.uid;
+      } catch {
+        return res.status(401).json({ error: "Invalid or expired session. Please sign in again." });
+      }
+
+      // 2) Find their subscription.
+      const profSnap = await adminDb.collection("profiles").doc(uid).get();
+      const prof: any = profSnap.exists ? profSnap.data() : null;
+      const subId: string = prof?.paddleSubscriptionId || "";
+      if (!subId) {
+        return res.status(400).json({ error: "No active subscription found on this account." });
+      }
+
+      // 3) Cancel with Paddle at the end of the current billing period —
+      //    the customer keeps what they've already paid for.
+      const pRes = await fetch(`${PADDLE_API_BASE}/subscriptions/${subId}/cancel`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${PADDLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ effective_from: "next_billing_period" }),
+      });
+      const pJson: any = await pRes.json().catch(() => ({}));
+      if (!pRes.ok) {
+        const code = pJson?.error?.code || "";
+        // Already-canceled subscriptions shouldn't error out the user.
+        if (String(code).includes("subscription_update_when_canceled") || pRes.status === 409) {
+          return res.status(200).json({ ok: true, alreadyCanceled: true });
+        }
+        console.error("Paddle cancel failed:", pRes.status, JSON.stringify(pJson).slice(0, 400));
+        return res.status(502).json({ error: "Could not cancel with the payment provider. Please try again or contact support." });
+      }
+
+      const endsAt: string | null = pJson?.data?.scheduled_change?.effective_at || pJson?.data?.current_billing_period?.ends_at || null;
+      console.log(`Billing: subscription ${subId} for ${uid} scheduled to cancel${endsAt ? ` at ${endsAt}` : ""}.`);
+      return res.status(200).json({ ok: true, endsAt });
+    } catch (err) {
+      console.error("Cancel endpoint error:", err);
+      return res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
 
   app.post("/api/paddle/webhook", async (req: any, res) => {
     // 1) Authenticate the caller. Reject anything not signed by Paddle.

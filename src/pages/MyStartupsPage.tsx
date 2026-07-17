@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2 } from 'lucide-react';
+import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2, ArrowLeftRight } from 'lucide-react';
 import { hasAccess } from '../lib/tiers';
 import { UpgradePrompt } from '../components/UpgradeGate';
 
@@ -119,12 +119,20 @@ export default function MyStartupsPage() {
             <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display">My Startups</h1>
             <p className="text-sm text-brand-text-secondary font-medium mt-2">Manage and grow all your startups from one place.</p>
           </div>
-          <button
-            onClick={handleCreateClick}
-            className="shrink-0 px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 flex items-center gap-2"
-          >
-            <Plus size={16} /> Create Startup
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => navigate('/compare')}
+              className="px-6 py-4 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <ArrowLeftRight size={15} /> Compare
+            </button>
+            <button
+              onClick={handleCreateClick}
+              className="px-8 py-4 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-huge shadow-brand-accent/20 flex items-center gap-2"
+            >
+              <Plus size={16} /> Create Startup
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -191,6 +199,14 @@ export default function MyStartupsPage() {
                   >
                     {isDraft ? <><Pencil size={13} /> Continue Setup</> : <>Open Workspace <ArrowRight size={13} /></>}
                   </button>
+                  {!isDraft && analysesByStartup[s.id] && (
+                    <button
+                      onClick={() => navigate(`/dashboard/startup/${analysesByStartup[s.id].id}/overview?tab=team`)}
+                      className="mt-2 w-full py-3 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      TeamLab — Build Your Team
+                    </button>
+                  )}
                 </div>
               );
             })}

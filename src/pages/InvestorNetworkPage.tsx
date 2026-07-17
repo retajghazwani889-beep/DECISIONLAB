@@ -354,13 +354,13 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
       <section className="relative overflow-hidden border-b border-brand-border">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-accent/5 blur-[160px] rounded-full pointer-events-none" />
         <div className="relative max-w-5xl mx-auto px-6 sm:px-10 py-20 sm:py-28 text-center">
-          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-[#5da9ff]/10 border border-[#5da9ff]/40 flex items-center justify-center text-[#5da9ff] shadow-[0_0_18px_rgba(93,169,255,0.35)]">
             <Handshake size={30} />
           </div>
-          <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-5">
+          <span className="text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.4em] block mb-10 drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">
             Investor Network
           </span>
-          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight font-display leading-[0.95] mb-6">
+          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight font-display leading-[0.95] mb-10">
             Discover Founders<br />Ready to Raise
           </h1>
           <p className="text-base sm:text-lg text-brand-text-secondary font-medium max-w-2xl mx-auto leading-relaxed">
@@ -375,10 +375,10 @@ export default function InvestorNetworkPage({ user, onOpenAccess }: InvestorNetw
           {[
             { icon: ShieldCheck, title: 'Register your profile', body: 'Join as a verified organization or an individual investor — each gets its own badge.' },
             { icon: Target, title: 'Set your focus', body: 'Choose the stages and niches you invest in, so you only see relevant founders.' },
-            { icon: Search, title: 'See matched startups', body: 'Browse reports from founders who opted in and scored 80% or higher.' },
+            { icon: Search, title: 'Browse DecisionLab reports', body: 'Browse reports from founders who opted in and scored 80% or higher.' },
           ].map((step, i) => (
-            <div key={i} className="bg-brand-section border border-brand-border rounded-[2rem] p-7">
-              <div className="w-11 h-11 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent mb-5">
+            <div key={i} className="bg-brand-section border border-[#5da9ff]/30 rounded-[2rem] p-7 shadow-[0_0_18px_rgba(93,169,255,0.12)] hover:border-[#5da9ff]/60 hover:shadow-[0_0_26px_rgba(93,169,255,0.25)] transition-all">
+              <div className="w-11 h-11 rounded-xl bg-[#5da9ff]/10 border border-[#5da9ff]/40 flex items-center justify-center text-[#5da9ff] mb-5">
                 <step.icon size={20} />
               </div>
               <h3 className="text-sm font-black text-brand-text-primary uppercase tracking-tight mb-2">{step.title}</h3>

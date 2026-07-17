@@ -38,7 +38,7 @@ const AboutPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <span className="inline-block text-[10px] md:text-[12px] font-black tracking-[0.8em] text-brand-accent uppercase mb-8 opacity-80">
+            <span className="inline-block text-[10px] md:text-[12px] font-black tracking-[0.8em] text-[#5da9ff] uppercase mb-8 drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">
               About Us
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
@@ -75,7 +75,7 @@ const AboutPage: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <span className="text-[10px] font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
+              <span className="text-[10px] font-black tracking-[0.8em] text-[#5da9ff] uppercase mb-6 block drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">
                 About Us
               </span>
               <h2 className="text-4xl md:text-5xl font-black text-brand-text-primary mb-8 tracking-tight font-display leading-[1.15]">
@@ -86,7 +86,7 @@ const AboutPage: React.FC = () => {
                   Founders shouldn't have to switch between countless tools to build one company.
                 </p>
                 <p>
-                  DecisionLab unifies startup validation, market research, strategy, fundraising, and pitch creation in one intelligent workspace.
+                  DecisionLab unifies startup validation, market research, strategy, fundraising, and pitch creation in one workspace.
                 </p>
               </div>
             </motion.div>
@@ -121,7 +121,7 @@ const AboutPage: React.FC = () => {
       <section className="py-24 px-6 bg-[#102434]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <span className="text-[10px] font-black tracking-[0.8em] text-brand-accent uppercase mb-6 block opacity-70">
+            <span className="text-[10px] font-black tracking-[0.8em] text-[#5da9ff] uppercase mb-6 block drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">
               Capabilities
             </span>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight font-display text-center uppercase">
@@ -212,6 +212,23 @@ const AboutPage: React.FC = () => {
           </svg>
         </div>
 
+        {/* Founding vision quote + workflow label — same block as the journey wave */}
+        <div className="max-w-5xl mx-auto text-center relative z-10 pt-12 mb-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="space-y-10"
+          >
+            <h2 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
+              "Ideas are everywhere — great decisions are rare"
+            </h2>
+            <p className="text-base md:text-xl font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_12px_rgba(93,169,255,0.45)]">
+              DecisionLab's Workflow
+            </p>
+          </motion.div>
+        </div>
+
         <div className="max-w-7xl mx-auto relative min-h-[520px]">
           {/* Futuristic Data Stream connecting steps on desktop */}
           <div className="absolute inset-0 pointer-events-none z-0 hidden lg:block">
@@ -287,8 +304,8 @@ const AboutPage: React.FC = () => {
               { label: "SUBMIT", desc: "Share your startup" },
               { label: "ANALYZE", desc: "Evaluate your potential" },
               { label: "VALIDATE", desc: "Confirm market fit" },
-              { label: "BUSINESS READINESS", desc: "Prepare for investment" },
               { label: "RISK MITIGATION", desc: "Reduce business risks" },
+              { label: "BUSINESS READINESS", desc: "Prepare for investment" },
               { label: "SCALE", desc: "Scale with confidence" }
             ].map((step, i) => {
               const isStepActive = i === activeStep;
@@ -345,30 +362,20 @@ const AboutPage: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Caption under the journey wave */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative z-10 mt-28 text-center max-w-2xl mx-auto text-2xl md:text-3xl text-slate-200 font-medium italic opacity-95 leading-relaxed tracking-[0.02em]"
+          >
+            DecisionLab empowers founders to build with clarity, confidence, and purpose
+          </motion.p>
         </div>
       </section>
 
-      {/* 5. FOUNDING VISION (Manifesto) */}
-      <section className="py-32 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="space-y-12"
-          >
-            <div className="w-16 h-1 w-2.5 bg-brand-accent mx-auto rounded-full opacity-50" />
-            <h2 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
-              "Ideas are everywhere — great decisions are rare"
-            </h2>
-            <div className="max-w-2xl mx-auto space-y-8 text-2xl md:text-3xl text-slate-200 font-medium italic opacity-95 leading-relaxed tracking-[0.02em]">
-              <p>
-                DecisionLab empowers founders to build with clarity, confidence, and purpose
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* (Founding vision quote moved above the workflow wave) */}
 
       {/* 6. CLOSING CTA */}
       <section className="py-24 px-6 border-t border-brand-border/40">

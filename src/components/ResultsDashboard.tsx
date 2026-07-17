@@ -1027,7 +1027,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any;
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'risk' | 'growth' | 'team' | 'investors' | 'reports' | 'architect'>(() => {
-    if (initialTab && ['overview', 'analysis', 'risk', 'growth', 'investors', 'reports', 'architect'].includes(initialTab)) {
+    if (initialTab && ['overview', 'analysis', 'risk', 'growth', 'team', 'investors', 'reports', 'architect'].includes(initialTab)) {
       return initialTab;
     }
     const path = window.location.pathname;
@@ -1068,13 +1068,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   // In investor view, lock the report to the Startup Overview only.
   const requestedTab = investorView ? 'overview' : activeTab;
   const requiredTabTier = investorView ? undefined : TAB_TIER[requestedTab];
-  const tabLocked = !!requiredTabTier && !hasAccess(profile, requiredTabTier);
+  // profile === null means it's still loading — don't flash the upgrade card
+  // at a paying user for a split second. The server and rules still protect
+  // everything; this is purely a UI-politeness guard.
+  const tabLocked = !!requiredTabTier && profile !== null && !hasAccess(profile, requiredTabTier);
   // When locked, no tab content renders — the upgrade prompt takes its place.
   const effectiveTab = tabLocked ? ('locked' as any) : requestedTab;
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'analysis', 'risk', 'growth', 'investors', 'reports', 'architect'].includes(tabParam)) {
+    if (tabParam && ['overview', 'analysis', 'risk', 'growth', 'team', 'investors', 'reports', 'architect'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -1811,7 +1814,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           { id: 'architect', label: '07 / Pitch Deck Architect', icon: <Presentation size={15} /> },
         ].map((tab) => {
           const tier = TAB_TIER[tab.id as keyof typeof TAB_TIER];
-          const isLockedTab = !!tier && !hasAccess(profile, tier);
+          const isLockedTab = !!tier && profile !== null && !hasAccess(profile, tier);
           return (
           <button
             key={tab.id}

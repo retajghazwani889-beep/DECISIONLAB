@@ -152,14 +152,6 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           {isLoading ? 'Processing…' : isCurrent ? 'Current Plan' : cta}
         </button>
 
-        {popular && (
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <div className="flex items-center gap-3 grayscale opacity-50">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-5" />
-            </div>
-            <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">Secure Checkout</p>
-          </div>
-        )}
       </div>
     );
   };
@@ -195,19 +187,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   };
 
   const INVESTOR_FEATURES = [
-    'Browse Unlimited Startups',
-    'Discover New Investment Opportunities',
-    'View Complete Startup Reports',
-    'See Startup Scores & Risk Ratings',
-    'Review Market & Competitor Analysis',
-    'View Founder Profiles & Contact Information',
-    'View Startup Team & Leadership',
-    'Save Favorite Startups',
-    'Compare Multiple Startups',
-    "Track Startups You're Interested In",
-    'Connect Directly with Founders',
-    'Download Startup Reports (PDF)',
-    'Personalized Investor Dashboard',
+    'Browse Startups',
+    'Startup Reports',
+    'Pitch Decks',
+    'Founder Contacts',
+    'Track Startups',
+    'PDF Reports',
+    'Investor Dashboard',
     'Priority Support',
   ];
 
@@ -223,7 +209,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         <span className="text-[#5da9ff] text-sm font-bold">/mo</span>
       </div>
       <p className="text-sm text-brand-text-muted font-medium leading-relaxed mb-8">
-        Access validated startups, connect with founders, and manage your investment opportunities — all from one dashboard.
+        Discover validated startups and connect with founders, all in one dashboard
       </p>
       <ul className="space-y-3 mb-12 flex-1">
         {INVESTOR_FEATURES.map((f, i) => (
@@ -270,11 +256,12 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           Scale your startup
         </div>
         <h1 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter font-display leading-[1.1] uppercase">
-          Pricing.
+          Pricing
         </h1>
         <p className="text-lg md:text-xl text-brand-text-muted max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
           Validate your idea, then unlock the tools investors expect. Choose the plan that fits your stage.
         </p>
+        <p className="mt-6 text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">Trusted by founders worldwide</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10 items-stretch">
@@ -284,11 +271,11 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           price="0"
           subtitle="Free forever · Validate your idea"
           features={[
-            "1 Startup Idea",
+            "1 Startup",
             "Startup Profile",
             "Startup Overview",
             "Initial Analysis",
-            "Startup Readiness Score",
+            "Readiness Score",
             "Save Project",
           ]}
           cta="Start Free"
@@ -299,14 +286,14 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           price="39"
           subtitle="Validate before you build"
           features={[
-            "Everything in Startup at a Glance",
-            "Unlimited Startup Ideas",
-            "Market Opportunity Analysis",
-            "Competition Analysis",
-            "Revenue Potential & SWOT",
+            "Free Features",
+            "Unlimited Ideas",
+            "Market Analysis",
+            "Competitor Analysis",
+            "Revenue & SWOT",
             "Risk Analysis",
-            "Improvement Recommendations",
-            "Validation Roadmap & Growth",
+            "Improvement Tips",
+            "Growth Roadmap",
           ]}
           cta="Choose Validation"
         />
@@ -317,30 +304,19 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           subtitle="Investor & growth toolkit"
           popular={true}
           features={[
-            "Everything in Startup Validation",
-            "TeamLab — Recruit & Choose Team Members",
-            "Investor Matching & Fit Analysis",
-            "Pitch Deck Architect",
-            "Investor-Ready Pitch Decks",
-            "Executive Reports + PDF Export",
-            "Startup Comparisons",
-            "Side-by-Side Analysis",
-            "Fundraising Preparation Tools",
+            "Validation Features",
+            "Team Building",
+            "Investor Matching",
+            "Pitch Decks",
+            "Executive Reports",
+            "Compare Startups",
+            "Growth Opportunities",
           ]}
           cta="Choose Grow"
         />
         <InvestorProCard />
       </div>
 
-      <div className="mt-32 pt-20 border-t border-white/5 text-center">
-        <h2 className="text-2xl font-bold mb-12 text-brand-text-primary">Trusted by founders worldwide</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-40 grayscale group hover:grayscale-0 transition-all duration-700 text-brand-accent">
-          <div className="flex items-center justify-center p-4"><Rocket size={32} /></div>
-          <div className="flex items-center justify-center p-4"><Shield size={32} /></div>
-          <div className="flex items-center justify-center p-4"><Crown size={32} /></div>
-          <div className="flex items-center justify-center p-4"><Zap size={32} /></div>
-        </div>
-      </div>
     </div>
   );
 }

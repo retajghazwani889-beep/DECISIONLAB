@@ -182,6 +182,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                             items.push(item('/team', Database, 'Dashboard'));
                           } else {
                             items.push(item('/startups', Rocket, 'My Startups'));
+                            items.push(item('/compare', Zap, 'Compare Startups'));
                             items.push(item('/billing', CreditCard, 'Billing & Subscription'));
                           }
                           items.push(item('/notifications', Bell, 'Notifications'));

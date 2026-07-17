@@ -32,7 +32,7 @@ const STEPS = [
 ];
 
 const PERKS = [
-  'Join startups at the ground floor',
+  'Join startups from day one',
   'Your CV and profile sent automatically with every application',
   'Track every application and its status in one dashboard',
   'Save positions to come back to',
@@ -50,10 +50,10 @@ export default function TeamMembersLandingPage() {
       <section className="px-6 pt-24 pb-20 text-center relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-brand-accent/[0.04] blur-[140px] rounded-full pointer-events-none" />
         <div className="relative max-w-3xl mx-auto">
-          <div className="w-16 h-16 mx-auto mb-8 rounded-3xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+          <div className="w-16 h-16 mx-auto mb-8 rounded-3xl bg-[#5da9ff]/10 border border-[#5da9ff]/40 flex items-center justify-center text-[#5da9ff] shadow-[0_0_18px_rgba(93,169,255,0.35)]">
             <Users size={28} />
           </div>
-          <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-6">For Team Members</span>
+          <span className="text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.4em] block mb-6 drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">For Team Members</span>
           <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight font-display leading-[0.95] mb-6">
             Join the startups <br className="hidden sm:block" /> building what's next
           </h1>
@@ -121,8 +121,8 @@ export default function TeamMembersLandingPage() {
           <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight font-display text-center mb-10">Why join through DecisionLab</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             {PERKS.map((p) => (
-              <div key={p} className="flex items-start gap-3 bg-brand-section border border-brand-border rounded-2xl px-5 py-4">
-                <Check size={15} className="text-brand-accent shrink-0 mt-0.5" />
+              <div key={p} className="flex items-start gap-3 bg-brand-section border border-[#5da9ff]/30 rounded-2xl px-5 py-4 shadow-[0_0_14px_rgba(93,169,255,0.10)] hover:border-[#5da9ff]/60 hover:shadow-[0_0_22px_rgba(93,169,255,0.22)] transition-all">
+                <Check size={15} className="text-[#5da9ff] shrink-0 mt-0.5" />
                 <span className="text-sm font-medium text-brand-text-secondary leading-relaxed">{p}</span>
               </div>
             ))}
@@ -134,7 +134,7 @@ export default function TeamMembersLandingPage() {
       <section className="px-6 pb-24">
         <div className="max-w-3xl mx-auto text-center bg-brand-section border border-brand-border rounded-[3rem] p-12">
           <Rocket size={32} className="mx-auto text-brand-accent mb-6" />
-          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight font-display mb-4">Ready to find your startup?</h2>
+          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight font-display mb-4">Ready to join a founder's team?</h2>
           <p className="text-sm text-brand-text-secondary font-medium mb-8 max-w-md mx-auto">Create your free team member account, build your profile, and start applying in minutes.</p>
           <button
             onClick={() => navigate('/signup/team')}
