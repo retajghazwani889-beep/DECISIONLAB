@@ -92,7 +92,7 @@ async function startServer() {
   //
   // Required Render environment variable: PADDLE_WEBHOOK_SECRET
   // (from Paddle → Developer tools → Notifications → your destination's secret key)
-  const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || "";
+  const PADDLE_WEBHOOK_SECRET = (process.env.PADDLE_WEBHOOK_SECRET || "").trim();
 
   // Map Paddle price IDs → DecisionLab tiers. SANDBOX IDs for now; when going
   // live, add the live price IDs here too (keeping both is harmless).
@@ -132,7 +132,18 @@ async function startServer() {
       return res.status(500).json({ error: "webhook not configured" });
     }
     if (!verifyPaddleSignature(req.rawBody, req.headers["paddle-signature"], PADDLE_WEBHOOK_SECRET)) {
-      console.warn("Paddle webhook rejected: invalid signature.");
+      // Diagnostics reveal WHICH ingredient is wrong without leaking secrets:
+      // only the secret's prefix and length are printed. A correct Paddle
+      // secret starts with "pdl_ntfset_" — if the prefix below shows anything
+      // else (e.g. "ntfset_" without "pdl_"), the wrong value was pasted.
+      const sig = req.headers["paddle-signature"];
+      console.warn(
+        "Paddle webhook rejected: invalid signature. Diagnostics:",
+        `rawBody=${req.rawBody ? req.rawBody.length + " bytes" : "MISSING"};`,
+        `signatureHeader=${sig ? "present" : "MISSING"};`,
+        `secretPrefix=${PADDLE_WEBHOOK_SECRET ? PADDLE_WEBHOOK_SECRET.slice(0, 11) : "EMPTY"};`,
+        `secretLength=${PADDLE_WEBHOOK_SECRET.length}`
+      );
       return res.status(401).json({ error: "invalid signature" });
     }
 
