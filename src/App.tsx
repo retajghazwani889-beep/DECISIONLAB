@@ -12,7 +12,7 @@ import ComparisonPage from './pages/ComparisonPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import TeamMembersLandingPage from './pages/TeamMembersLandingPage';
-import { PrivacyPolicyPage, TermsOfServicePage } from './pages/LegalPages';
+import { PrivacyPolicyPage, TermsOfServicePage, RefundPolicyPage } from './pages/LegalPages';
 import FAQPage from './pages/FAQPage';
 import InvestorNetworkPage from './pages/InvestorNetworkPage';
 import InvestorMatchesPage from './pages/InvestorMatchesPage';
@@ -232,6 +232,7 @@ function AppContent() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/refund-policy" element={<RefundPolicyPage />} />
           <Route path="/pricing" element={<PremiumPage user={user} profile={profile} />} />
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<RequireTier tier="growth" featureName="Startup Comparisons"><ComparisonPage /></RequireTier>} />

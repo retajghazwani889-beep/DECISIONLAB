@@ -123,4 +123,28 @@ export function TermsOfServicePage() {
   );
 }
 
+export function RefundPolicyPage() {
+  return (
+    <LegalShell icon={FileText} title="Refund Policy">
+      <div><H>Subscriptions & billing</H>
+        <P>DecisionLab plans are monthly software subscriptions billed through Paddle.com, our merchant of record. Your plan renews automatically each billing period until cancelled.</P></div>
+
+      <div><H>Cancelling</H>
+        <P>You can cancel anytime from your Billing page. Cancellation takes effect at the end of the billing period you have already paid for — you keep your plan's features until that date, and no further charges are made afterwards. Cancelling does not delete your account or content; you simply move to the free plan.</P></div>
+
+      <div><H>When we refund</H>
+        <P>If something went wrong with a charge, we will make it right. Contact <a href={`mailto:${SUPPORT}`} className="text-brand-accent font-bold hover:underline">{SUPPORT}</a> within 14 days of the charge for: billing errors, duplicate payments, being charged after a confirmed cancellation, or a technical problem on our side that prevented you from using the plan you paid for.</P></div>
+
+      <div><H>How refunds are processed</H>
+        <P>Approved refunds are issued through Paddle to the original payment method, usually within 5–10 business days depending on your bank. We review every request fairly and reply by email.</P></div>
+
+      <div><H>What isn't refundable</H>
+        <P>Partial billing periods after a normal cancellation (your plan simply stays active until the period ends), and charges older than 14 days except where the law of your country provides otherwise. Nothing in this policy limits any rights you have under applicable consumer law.</P></div>
+
+      <div><H>Questions</H>
+        <P>Unsure whether your situation qualifies? Just ask — email <a href={`mailto:${SUPPORT}`} className="text-brand-accent font-bold hover:underline">{SUPPORT}</a> and we will help.</P></div>
+    </LegalShell>
+  );
+}
+
 export default PrivacyPolicyPage;

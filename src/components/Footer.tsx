@@ -44,6 +44,7 @@ export default function Footer() {
               <li><Link to="/faq" className="text-brand-text-secondary hover:text-brand-accent">FAQs</Link></li>
               <li><Link to="/privacy" className="text-brand-text-secondary hover:text-brand-accent">Privacy Policy</Link></li>
               <li><Link to="/terms" className="text-brand-text-secondary hover:text-brand-accent">Terms of Service</Link></li>
+              <li><Link to="/refund-policy" className="text-brand-text-secondary hover:text-brand-accent">Refund Policy</Link></li>
             </ul>
           </div>
         </div>
