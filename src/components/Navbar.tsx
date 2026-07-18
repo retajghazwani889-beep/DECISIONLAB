@@ -178,6 +178,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                           if (isInvestor) {
                             items.push(item('/investor-matches', Database, 'My Matches'));
                             items.push(item('/investor-submissions', Database, 'Submissions'));
+                            items.push(item('/billing', CreditCard, 'Billing & Subscription'));
                           } else if (isTeamMember) {
                             items.push(item('/team', Database, 'Dashboard'));
                           } else {

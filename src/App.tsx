@@ -45,6 +45,17 @@ import UserOnboarding from './components/UserOnboarding';
 import PitchDeckArchitectEngine from './pages/PitchDeckArchitectPage';
 import NotFoundPage from './pages/NotFoundPage';
 
+// Scrolls the window back to the top on every route change. Without this,
+// React Router keeps the old scroll position — clicking a link from the
+// middle of one page landed you in the middle of the next.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function AppContent() {
   const { user, profile, loading, googleWorkspaceError, setGoogleWorkspaceError } = useAuth();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -176,6 +187,7 @@ function AppContent() {
       {/* Navbar — hidden inside the deck editor */}
       {!isArchitect && (
         <div className="no-print">
+          <ScrollToTop />
           <Navbar onOpenAccess={() => setIsOnboardingOpen(true)} />
         </div>
       )}
