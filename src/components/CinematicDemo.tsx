@@ -57,7 +57,7 @@ export default function CinematicDemo() {
   }, [isPlaying]);
 
   return (
-    <div className="w-[92%] max-w-[1200px] mx-auto h-[720px] bg-brand-bg border border-white/5 rounded-[4rem] overflow-hidden shadow-huge relative flex flex-col group/demo">
+    <div className="w-[95%] md:w-[92%] max-w-[1200px] mx-auto h-[640px] md:h-[720px] bg-brand-bg border border-white/5 rounded-[2rem] md:rounded-[4rem] overflow-hidden shadow-huge relative flex flex-col group/demo">
       {/* Neural Background Layer */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]">
         <div
@@ -83,7 +83,7 @@ export default function CinematicDemo() {
       </div>
 
       {/* Demo Header */}
-      <div className="h-14 border-b border-white/5 bg-brand-section/50 backdrop-blur-md px-10 flex items-center justify-between shrink-0">
+      <div className="h-14 border-b border-white/5 bg-brand-section/50 backdrop-blur-md px-4 md:px-10 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex gap-2">
             <div className="w-3 h-3 rounded-full bg-brand-coral/40" />
@@ -99,7 +99,7 @@ export default function CinematicDemo() {
           </div>
         </div>
         <div className="flex items-center gap-8">
-          <div className="text-[10px] font-medium text-brand-text-muted uppercase tracking-[0.2em] opacity-40">
+          <div className="hidden sm:block text-[10px] font-medium text-brand-text-muted uppercase tracking-[0.2em] opacity-40">
             Session: Active
           </div>
           <div className="text-[10px] font-medium text-brand-emerald bg-brand-emerald/10 px-4 py-1.5 rounded-full border border-brand-emerald/20 uppercase tracking-[0.3em]">
@@ -109,7 +109,7 @@ export default function CinematicDemo() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative overflow-hidden p-12 pt-15">
+      <div className="flex-1 relative overflow-hidden p-4 md:p-12 md:pt-15">
         <AnimatePresence mode="wait">
           {/* STEP 1: UPLOAD */}
           {DEMO_STEPS[currentStep].id === "ingestion" && (
@@ -161,7 +161,7 @@ export default function CinematicDemo() {
                 </motion.div>
 
                 {/* Side Metadata Traces */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 space-y-4">
+                <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 space-y-4">
                   {[1, 2, 3].map((i) => (
                     <motion.div
                       key={i}
@@ -172,7 +172,7 @@ export default function CinematicDemo() {
                     />
                   ))}
                 </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 space-y-4 text-right">
+                <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 space-y-4 text-right">
                   <p className="text-[12px] font-medium text-[#5da9ff] uppercase tracking-[0.02em] opacity-95 italic leading-[1.5] pt-2">
                     Reading your file
                   </p>
@@ -191,7 +191,7 @@ export default function CinematicDemo() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center p-12"
+              className="absolute inset-0 flex items-center justify-center p-4 md:p-12"
             >
               <div className="w-full h-full flex flex-col relative overflow-hidden">
                 <div className="flex items-start justify-between mb-8 w-full gap-8">
@@ -870,7 +870,7 @@ export default function CinematicDemo() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="absolute inset-0 flex p-16 gap-16"
+              className="absolute inset-0 flex flex-col lg:flex-row p-4 md:p-10 lg:p-16 gap-8 lg:gap-16 overflow-y-auto"
             >
               <div className="flex-1 flex flex-col justify-center h-auto">
                 <div className="space-y-6 pt-12 mb-16 overflow-visible">
@@ -883,7 +883,7 @@ export default function CinematicDemo() {
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center relative">
-                  <div className="grid grid-cols-5 gap-6 md:gap-8 w-full max-w-3xl relative z-10">
+                  <div className="grid grid-cols-5 gap-2 sm:gap-6 md:gap-8 w-full max-w-3xl relative z-10">
                     {[
                       {
                         label: "VISION",
@@ -929,7 +929,7 @@ export default function CinematicDemo() {
                           transition={{ delay: i * 0.1 }}
                           className="flex flex-col items-center gap-4 w-full"
                         >
-                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#152d3f]/90 border border-white/5 flex items-center justify-center shadow-huge relative group hover:scale-105 transition-all duration-300">
+                          <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-[#152d3f]/90 border border-white/5 flex items-center justify-center shadow-huge relative group hover:scale-105 transition-all duration-300">
                             {/* Circular progress ring */}
                             <svg
                               className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
@@ -962,7 +962,7 @@ export default function CinematicDemo() {
                               </div>
                             </div>
                           </div>
-                          <span className="font-semibold text-[13px] md:text-[15px] text-white uppercase tracking-[0.02em] text-center w-full block select-none leading-none mt-2 whitespace-nowrap overflow-visible">
+                          <span className="font-semibold text-[9px] sm:text-[13px] md:text-[15px] text-white uppercase tracking-[0.02em] text-center w-full block select-none leading-none mt-2 whitespace-nowrap overflow-visible">
                             {p.label}
                           </span>
                         </motion.div>
@@ -974,7 +974,7 @@ export default function CinematicDemo() {
                 </div>
               </div>
 
-              <div className="w-[450px] space-y-8 flex flex-col justify-center">
+              <div className="w-full lg:w-[450px] space-y-6 md:space-y-8 flex flex-col justify-center shrink-0">
                 <div className="grid grid-cols-2 gap-6">
                   {[
                     {
@@ -1026,7 +1026,7 @@ export default function CinematicDemo() {
                   ))}
                 </div>
 
-                <div className="p-10 rounded-[3rem] bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-between">
+                <div className="p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-brand-accent/5 border border-brand-accent/20 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-medium text-brand-accent uppercase tracking-[0.1em] mb-2 leading-[1.5] pt-2">
                       Startup Score
@@ -1056,7 +1056,7 @@ export default function CinematicDemo() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col p-10 gap-6"
+              className="absolute inset-0 flex flex-col p-4 sm:p-6 md:p-10 gap-4 md:gap-6 overflow-y-auto"
             >
               <div className="flex items-end justify-between border-b border-white/5 pb-4 relative h-auto">
                 <div className="space-y-4">
@@ -1082,7 +1082,7 @@ export default function CinematicDemo() {
                 {/* Animated pulse on the glowing line */}
                 <div className="absolute top-[38%] left-[8%] right-[8%] h-[2px] bg-gradient-to-r from-transparent via-teal-300 to-transparent z-0 opacity-100 animate-[pulse_2s_infinite]" />
 
-                <div className="grid grid-cols-4 gap-6 w-full relative z-10 items-stretch">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full relative z-10 items-stretch">
                   {/* PHASE 01 */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -1389,9 +1389,9 @@ export default function CinematicDemo() {
               key="refinement"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
-              className="absolute inset-0 flex p-16 gap-12"
+              className="absolute inset-0 flex flex-col md:flex-row p-4 md:p-10 lg:p-16 gap-8 md:gap-12 overflow-y-auto"
             >
-              <div className="w-1/3 space-y-8 h-auto">
+              <div className="w-full md:w-1/3 space-y-6 md:space-y-8 h-auto shrink-0">
                 <h4 className="text-xl md:text-2xl font-medium text-brand-text-primary uppercase font-display leading-[1.5] mb-12 pt-2 px-1 tracking-[0.05em] overflow-visible">
                   Fine-Tune
                 </h4>
@@ -1440,7 +1440,7 @@ export default function CinematicDemo() {
                 </div>
               </div>
 
-              <div className="flex-1 bg-brand-section/40 rounded-[4rem] border border-white/5 p-12 overflow-hidden relative">
+              <div className="flex-1 bg-brand-section/40 rounded-[2rem] md:rounded-[4rem] border border-white/5 p-6 md:p-12 overflow-hidden relative min-h-[320px]">
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,var(--color-brand-accent)_0%,transparent_60%)]" />
                 <div className="relative h-full flex flex-col justify-center">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-[0.1em] mb-4 leading-[1.5] pt-2">
@@ -1450,7 +1450,7 @@ export default function CinematicDemo() {
                     <motion.h4
                       animate={{ opacity: [0.6, 1, 0.6] }}
                       transition={{ duration: 2, repeat: Infinity }}
-                      className="text-7xl md:text-8xl font-medium italic tracking-tighter text-brand-text-primary leading-[1.5] pt-2 overflow-visible"
+                      className="text-5xl sm:text-7xl md:text-8xl font-medium italic tracking-tighter text-brand-text-primary leading-[1.5] pt-2 overflow-visible"
                     >
                       98.4
                     </motion.h4>

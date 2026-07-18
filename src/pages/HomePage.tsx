@@ -57,18 +57,18 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
       </div>
 
       {/* Hero Section */}
-      <section id="hero" className="relative pt-64 pb-32 px-10 overflow-hidden bg-brand-bg">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+      <section id="hero" className="relative pt-36 md:pt-64 pb-16 md:pb-32 px-6 md:px-10 overflow-hidden bg-brand-bg">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-24 items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-left relative z-10"
           >
-            <h1 className="text-center text-[85px] md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-28 leading-[0.95] font-display uppercase max-w-4xl">
+            <h1 className="text-center text-5xl sm:text-7xl md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-12 md:mb-28 leading-[0.95] font-display uppercase max-w-4xl">
               Turn <span className="text-brand-accent text-glow">Vision</span> <br className="hidden md:block" /> Into Reality
             </h1>
 
-            <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-32 leading-[1.7] font-medium opacity-90">
+            <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-16 md:mb-32 leading-[1.7] font-medium opacity-90">
               Startup validation, team building, pitch decks, and investor matching — turning your ideas into plans investors trust
             </p>
           </motion.div>
@@ -168,7 +168,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">
               Venture Network
             </div>
-            <h2 className="text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
+            <h2 className="text-5xl sm:text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
               FOUNDER <br />
               <span className="text-[#8cb5e4]">MATCHING</span>
             </h2>
@@ -239,7 +239,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">
               Team Network
             </div>
-            <h2 className="text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
+            <h2 className="text-5xl sm:text-6xl md:text-[8rem] font-black text-brand-text-primary mb-12 font-display tracking-[-0.04em] leading-[0.85]">
               TEAM <br />
               <span className="text-[#8cb5e4]">MATCHING</span>
             </h2>

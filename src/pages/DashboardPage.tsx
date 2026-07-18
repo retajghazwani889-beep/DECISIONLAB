@@ -1790,7 +1790,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                 <X size={16} strokeWidth={3} />
                               </button>
                               
-                              <div className="grid grid-cols-2 gap-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                   <label className="text-xs font-black uppercase text-brand-text-muted tracking-[0.2em] px-1">Full Legal Name</label>
                                   <input
@@ -1821,7 +1821,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                   <label className="text-xs font-black uppercase text-brand-text-muted tracking-[0.2em] px-1">Industry Tenure (Yrs)</label>
                                   <input
@@ -2227,7 +2227,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                              </h2>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-16">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
                              <div className="space-y-10">
                                 <p className="text-2xl text-neutral-600 font-medium leading-relaxed border-l-4 border-neutral-100 pl-6 italic">
                                    {slide.content}
