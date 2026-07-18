@@ -37,9 +37,15 @@ let useAdminSdk = false;
 let adminDb: any = null;
 let clientDb: any = null;
 
-const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (svcJson) {
-  try {
+try {
+  // The Admin SDK initializes happily with just a project ID but then CRASHES
+  // at write time when no server credentials exist (the exact failure seen on
+  // Render). Only enable it when credentials are actually configured:
+  //  · FIREBASE_SERVICE_ACCOUNT — paste the service-account JSON into a Render
+  //    environment variable of that name, or
+  //  · GOOGLE_APPLICATION_CREDENTIALS — standard Google credentials file path.
+  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (svcJson) {
     const adminApp = initializeAdminApp({
       credential: adminCert(JSON.parse(svcJson)),
       projectId: firebaseConfig.projectId,
@@ -47,30 +53,24 @@ if (svcJson) {
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
     useAdminSdk = true;
     console.log("Firestore Admin SDK initialized with service-account credentials.");
-  } catch (adminErr: any) {
-    console.log("Admin SDK initialization skipped:", adminErr?.message || adminErr);
-  }
-} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  try {
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     const adminApp = initializeAdminApp({
       projectId: firebaseConfig.projectId,
     });
     adminDb = getAdminFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
     useAdminSdk = true;
     console.log("Firestore Admin SDK initialized with application default credentials.");
-  } catch (adminErr: any) {
-    console.log("Admin SDK default credential initialization skipped:", adminErr?.message || adminErr);
+  } else {
+    console.log("No server Firebase credentials configured — skipping Admin SDK (client-side saves + local backup handle persistence).");
+    throw new Error('no-server-credentials');
   }
-} else {
-  console.log("Firestore credentials are not set on server. Using Client SDK fallback.");
-}
-
-if (!useAdminSdk) {
+} catch (adminErr) {
+  console.warn("Could not initialize Firestore Admin SDK (falling back to Client SDK):", adminErr);
   try {
     const firebaseApp = initializeApp(firebaseConfig);
     clientDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
-  } catch (clientErr: any) {
-    console.log("Failed to initialize Firestore Client SDK on server:", clientErr?.message || clientErr);
+  } catch (clientErr) {
+    console.error("Failed to initialize Firestore Client SDK on server:", clientErr);
   }
 }
 
@@ -182,9 +182,14 @@ async function startServer() {
       });
       const pJson: any = await pRes.json().catch(() => ({}));
       if (!pRes.ok) {
-        const code = pJson?.error?.code || "";
-        // Already-canceled subscriptions shouldn't error out the user.
-        if (String(code).includes("subscription_update_when_canceled") || pRes.status === 409) {
+        const code = String(pJson?.error?.code || "");
+        const detail = String(pJson?.error?.detail || "");
+        // A repeat click on an already-cancelling subscription is a success,
+        // not an error — Paddle just refuses to cancel twice. Seen in the
+        // wild as code "subscription_locked_pending_changes".
+        if (code.includes("canceled") || code.includes("cancel") || code.includes("locked")
+            || detail.toLowerCase().includes("cancel") || detail.toLowerCase().includes("pending scheduled")
+            || pRes.status === 409) {
           return res.status(200).json({ ok: true, alreadyCanceled: true });
         }
         console.error("Paddle cancel failed:", pRes.status, JSON.stringify(pJson).slice(0, 400));
@@ -192,6 +197,11 @@ async function startServer() {
       }
 
       const endsAt: string | null = pJson?.data?.scheduled_change?.effective_at || pJson?.data?.current_billing_period?.ends_at || null;
+      // Remember the scheduled cancellation on the profile so the Billing page
+      // can show "cancels on <date>" and hide the Cancel button.
+      try {
+        await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: endsAt || "scheduled" }, { merge: true });
+      } catch (e) { console.warn("Could not store subscriptionCancelAt:", e); }
       console.log(`Billing: subscription ${subId} for ${uid} scheduled to cancel${endsAt ? ` at ${endsAt}` : ""}.`);
       return res.status(200).json({ ok: true, endsAt });
     } catch (err) {
@@ -267,6 +277,9 @@ async function startServer() {
         paddleCustomerId: data?.customer_id || null,
         paddleSubscriptionId: data?.id || null,
         subscriptionUpdatedAt: new Date().toISOString(),
+        // When the subscription actually ends (tier drops to free) the
+        // scheduled-cancel marker has served its purpose.
+        ...(newTier === "free" ? { subscriptionCancelAt: null } : {}),
       }, { merge: true });
       console.log(`Paddle ${eventType}: profile ${uid} → tier '${newTier}' (subscription ${data?.id || "?"}).`);
       return res.status(200).json({ received: true });

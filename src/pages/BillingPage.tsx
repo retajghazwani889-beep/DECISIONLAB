@@ -32,6 +32,12 @@ export default function BillingPage() {
   // values in subscriptionStatus (from the old simulated checkout); anything
   // unrecognized behaves as the free plan — no Cancel button, free limits.
   const isPaid = ['founder', 'growth', 'investor_pro'].includes(tierKey);
+  // Set by the server when a cancellation is scheduled with Paddle; cleared
+  // by the webhook when the subscription actually ends.
+  const cancelScheduledAt: string | null = p.subscriptionCancelAt || null;
+  const cancelScheduledLabel = cancelScheduledAt && cancelScheduledAt !== 'scheduled'
+    ? new Date(cancelScheduledAt).toLocaleDateString()
+    : null;
 
   // Renewal display: simulated payments renew monthly from the last change.
   const renewDate = (() => {
@@ -143,13 +149,18 @@ export default function BillingPage() {
               <button onClick={() => navigate('/pricing')} className="px-6 py-3.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
                 <Zap size={13} /> {isPaid ? 'Change Plan' : 'Upgrade'}
               </button>
-              {isPaid && (
+              {isPaid && !cancelScheduledAt && (
                 <button onClick={cancelPlan} disabled={cancelling} className="px-6 py-3.5 bg-brand-coral/10 border border-brand-coral/20 text-brand-coral text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-brand-coral/20 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50">
                   {cancelling ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />} Cancel
                 </button>
               )}
             </div>
-            {cancelNote && (
+            {isPaid && cancelScheduledAt && (
+              <p className="mt-4 text-xs font-bold text-brand-amber leading-relaxed">
+                Cancellation scheduled{cancelScheduledLabel ? ` — your plan stays active until ${cancelScheduledLabel}` : ''}, then switches to the free plan automatically.
+              </p>
+            )}
+            {cancelNote && !cancelScheduledAt && (
               <p className="mt-4 text-xs font-medium text-brand-text-secondary leading-relaxed">{cancelNote}</p>
             )}
           </div>
