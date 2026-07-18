@@ -28,7 +28,10 @@ export default function BillingPage() {
 
   const tierKey = (p.subscriptionStatus || 'free').toString().toLowerCase();
   const plan = PLAN_INFO[tierKey] || PLAN_INFO.free;
-  const isPaid = tierKey !== 'free';
+  // Only REAL paid tiers count as paid. Early test accounts can carry legacy
+  // values in subscriptionStatus (from the old simulated checkout); anything
+  // unrecognized behaves as the free plan — no Cancel button, free limits.
+  const isPaid = ['founder', 'growth', 'investor_pro'].includes(tierKey);
 
   // Renewal display: simulated payments renew monthly from the last change.
   const renewDate = (() => {
@@ -110,7 +113,7 @@ export default function BillingPage() {
   const sectionTitle = 'text-[11px] font-black text-brand-text-muted uppercase tracking-widest mb-5';
 
   const usageItems = usage ? [
-    { icon: Rocket, label: 'Startups', value: `${usage.startups} / ${tierKey === 'free' ? '1' : 'Unlimited'}` },
+    { icon: Rocket, label: 'Startups', value: `${usage.startups} / ${isPaid ? 'Unlimited' : '1'}` },
     { icon: BarChart3, label: 'Analyses', value: usage.analyses },
     { icon: Presentation, label: 'Pitch Decks', value: usage.decks },
     { icon: FileText, label: 'Reports', value: usage.reports },
