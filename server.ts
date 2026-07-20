@@ -190,6 +190,9 @@ async function startServer() {
         if (code.includes("canceled") || code.includes("cancel") || code.includes("locked")
             || detail.toLowerCase().includes("cancel") || detail.toLowerCase().includes("pending scheduled")
             || pRes.status === 409) {
+          // Record the scheduled state so the Billing page hides the Cancel
+          // button — covers cancellations made before this marker existed.
+          try { await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: "scheduled" }, { merge: true }); } catch {}
           return res.status(200).json({ ok: true, alreadyCanceled: true });
         }
         console.error("Paddle cancel failed:", pRes.status, JSON.stringify(pJson).slice(0, 400));

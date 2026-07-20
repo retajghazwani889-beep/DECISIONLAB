@@ -65,7 +65,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             className="text-left relative z-10"
           >
             <h1 className="text-center text-5xl sm:text-7xl md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-12 md:mb-28 leading-[0.95] font-display uppercase max-w-4xl">
-              Turn <span className="text-brand-accent text-glow">Vision</span> <br className="hidden md:block" /> Into Reality
+              Turn <span className="text-[#60A5FA] drop-shadow-[0_0_18px_rgba(96,165,250,0.55)]">Vision</span> <br className="hidden md:block" /> Into Reality
             </h1>
 
             <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-16 md:mb-32 leading-[1.7] font-medium opacity-90">

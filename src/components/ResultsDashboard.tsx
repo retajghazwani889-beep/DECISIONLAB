@@ -1672,7 +1672,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               <div className="p-8 border-b border-brand-border/10 flex justify-between items-center bg-brand-card/50">
                 <div>
                   <h3 className="text-xl font-black text-brand-text-primary uppercase tracking-tight">Your Profile</h3>
-                  <p className="text-[10px] text-brand-text-secondary uppercase tracking-widest mt-1">Refine your data for more precise results</p>
+                  <p className="text-[10px] text-brand-text-secondary uppercase tracking-widest mt-1">Update your info to improve your results</p>
                 </div>
                 <button 
                   onClick={() => setIsEditingProfile(false)}
@@ -1685,8 +1685,8 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               <div className="flex-1 overflow-y-auto p-10 space-y-8">
                 <div className="flex items-center justify-between p-6 bg-brand-bg/40 rounded-2xl border border-white/5">
                   <div className="space-y-1">
-                    <label className="text-xs font-black text-brand-text-primary uppercase tracking-widest block">Core Synchronization Mode</label>
-                    <p className="text-[10px] text-brand-text-secondary/50 uppercase tracking-widest">Toggle real-time recalculation of all scores and investments</p>
+                    <label className="text-xs font-black text-brand-text-primary uppercase tracking-widest block">Auto-Update Scores</label>
+                    <p className="text-[10px] text-brand-text-secondary/50 uppercase tracking-widest">Recalculate your scores automatically when you save</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <button
@@ -1762,7 +1762,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                     <CheckCircle2 size={16} />
                   </div>
-                  <p className="text-[12px] text-slate-300 font-medium tracking-[0.02em] opacity-95 max-w-[220px]">Changes are synced to our modeling engine in real-time</p>
+                  <p className="text-[12px] text-slate-300 font-medium tracking-[0.02em] opacity-95 max-w-[220px]">Your changes update your scores and analysis</p>
                 </div>
                 <div className="flex gap-4 w-full sm:w-auto">
                   <button 
@@ -1776,7 +1776,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     disabled={isSyncing}
                     className="flex-1 sm:flex-none px-6 py-4 bg-brand-card hover:bg-brand-hover text-white border border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
-                    Quick Save & Sync
+                    Save
                   </button>
                   <button 
                     onClick={handleSyncAndReanalyze}
@@ -1786,7 +1786,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     {isSyncing ? (
                       <div className="w-4 h-4 border-2 border-slate-900 border-t-brand-accent rounded-full animate-spin" />
                     ) : <Wand2 size={14} />}
-                    Deep AI Refine
+                    Save & Re-Analyze
                   </button>
                 </div>
               </div>
@@ -2509,7 +2509,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                         <Handshake size={40} className="text-brand-accent/40 mx-auto mb-4" />
                         <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight mb-2">No investor matches yet</h4>
                         <p className="text-xs text-brand-text-secondary font-medium max-w-md mx-auto leading-relaxed">
-                          Investor matches are generated from your analysis. Edit your profile and run "Deep AI Refine" to generate investors aligned to your idea and stage.
+                          Investor matches are generated from your analysis. Edit your profile and run "Save & Re-Analyze" to generate investors aligned to your idea and stage.
                         </p>
                       </div>
                     )}
@@ -2627,7 +2627,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
                   {!investorView && <FounderTimeline analysis={currentAnalysis} scoreOverride={getCalculatedVentureScore(currentAnalysis.scores)} canEdit={true} />}
                   <div className="p-8 bg-brand-card/40 border border-brand-border/20 rounded-[2.5rem] space-y-6">
-                    <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Real-time Data Synchronization Metrics</h4>
+                    <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Startup Data Overview</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs">
                       <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
                         <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Hypothesis Sync</span>
