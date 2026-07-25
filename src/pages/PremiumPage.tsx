@@ -8,7 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
-import { openPaddleCheckout, PADDLE_PRICES } from '../lib/paddle';
+// ─── CHANGED: swap Paddle import for FastSpring ──────────────────────────────
+import { openFastSpringCheckout, FASTSPRING_PRODUCTS } from '../lib/fastspring';
 
 interface PremiumPageProps {
   user: User | null;
@@ -27,9 +28,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
 
-  // After Paddle reports checkout.completed, the WEBHOOK on our server writes
-  // the new tier to Firestore (usually within a few seconds). This polls the
-  // profile until the change lands, then continues the flow.
+  // After FastSpring reports a successful purchase, the WEBHOOK on our server
+  // writes the new tier to Firestore (usually within a few seconds). This polls
+  // the profile until the change lands, then continues the flow.
   const waitForTierThenContinue = (expected: string) => {
     let attempts = 0;
     const poll = async () => {
@@ -50,9 +51,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     setTimeout(poll, 2500);
   };
 
-  // REAL checkout via Paddle. The card form is Paddle's — card data never
-  // touches our code. After payment, Paddle webhooks our server, and the
-  // SERVER sets subscriptionStatus. The browser never writes tiers anymore.
+  // REAL checkout via FastSpring. The card form is FastSpring's — card data
+  // never touches our code. After payment, FastSpring webhooks our server, and
+  // the SERVER sets subscriptionStatus. The browser never writes tiers.
   const handleSelectPlan = async (targetTier: Tier) => {
     if (targetTier === 'free') {
       // Logged-out visitors clicking "Start Free" begin signup; for
@@ -75,8 +76,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
 
     setLoadingTier(targetTier);
     try {
-      await openPaddleCheckout({
-        priceId: targetTier === 'growth' ? PADDLE_PRICES.growth : PADDLE_PRICES.founder,
+      // ─── CHANGED: open FastSpring checkout with the product PATH ──────────
+      await openFastSpringCheckout({
+        productPath: targetTier === 'growth' ? FASTSPRING_PRODUCTS.growth : FASTSPRING_PRODUCTS.founder,
         uid: activeUser.uid,
         email: activeUser.email,
         onCompleted: () => waitForTierThenContinue(targetTier),

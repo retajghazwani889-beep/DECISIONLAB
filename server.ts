@@ -79,74 +79,31 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({
-    // Keep the raw bytes of every request body. Paddle signs the RAW body,
+    // Keep the raw bytes of every request body. FastSpring signs the RAW body,
     // so signature verification must run against exactly what was sent —
     // not the re-serialized JSON.
     verify: (req: any, _res, buf) => { req.rawBody = buf; },
   }));
 
-  // ── Paddle billing webhook ────────────────────────────────────────────────
-  // Paddle calls this after payments and subscription changes. We verify the
-  // call is genuinely from Paddle (HMAC signature with our webhook secret),
-  // then set the user's tier in Firestore with the ADMIN SDK. This is the ONLY
-  // path that should ever change subscriptionStatus once payments are live.
-  //
-  // Required Render environment variable: PADDLE_WEBHOOK_SECRET
-  // (from Paddle → Developer tools → Notifications → your destination's secret key)
-  const PADDLE_WEBHOOK_SECRET = (process.env.PADDLE_WEBHOOK_SECRET || "").trim();
-
-  // Map Paddle price IDs → DecisionLab tiers. SANDBOX IDs for now; when going
-  // live, add the live price IDs here too (keeping both is harmless).
-  const PADDLE_PRICE_TO_TIER: Record<string, string> = {
-    "pri_01kxqajffbej30b0ewj8mmgfz2": "founder",      // Startup Validation $39/mo
-    "pri_01kxqamsgjabxzhsw9e4yx4drn": "growth",       // Startup Grow $99/mo
-    "pri_01kxqapbvfd1fby56azj195esj": "investor_pro", // Investor Pro $199/mo
-  };
-
-  function verifyPaddleSignature(rawBody: Buffer | undefined, signatureHeader: string | undefined, secret: string): boolean {
-    try {
-      if (!rawBody || !signatureHeader || !secret) return false;
-      const parts: Record<string, string> = {};
-      for (const kv of signatureHeader.split(";")) {
-        const idx = kv.indexOf("=");
-        if (idx > 0) parts[kv.slice(0, idx).trim()] = kv.slice(idx + 1).trim();
-      }
-      const ts = parts["ts"];
-      const h1 = parts["h1"];
-      if (!ts || !h1) return false;
-      const computed = crypto
-        .createHmac("sha256", secret)
-        .update(`${ts}:${rawBody.toString("utf8")}`)
-        .digest("hex");
-      const a = Buffer.from(computed);
-      const b = Buffer.from(h1);
-      return a.length === b.length && crypto.timingSafeEqual(a, b);
-    } catch {
-      return false;
-    }
-  }
-
   // ── Cancel subscription (authenticated) ──────────────────────────────────
   // Called by the Billing page. Verifies the user's Firebase ID token, looks
-  // up their Paddle subscription, and cancels it VIA PADDLE'S API — so the
-  // customer actually stops being charged. The tier itself is then dropped to
-  // 'free' by the subscription.canceled webhook at the end of the paid period.
+  // up their FastSpring subscription, and cancels it VIA FASTSPRING'S API — so
+  // the customer actually stops being charged. The tier itself is then dropped
+  // to 'free' by the subscription.deactivated webhook at the paid period's end.
   //
   // Required Render environment variables:
-  //   PADDLE_API_KEY — Paddle → Developer tools → Authentication → API key
-  //   PADDLE_ENV     — "sandbox" (default) or "production"
-  const PADDLE_API_BASE = (process.env.PADDLE_ENV || "sandbox").trim() === "production"
-    ? "https://api.paddle.com"
-    : "https://sandbox-api.paddle.com";
-  const PADDLE_API_KEY = (process.env.PADDLE_API_KEY || "").trim();
+  //   FASTSPRING_API_USERNAME, FASTSPRING_API_PASSWORD
+  //   (FastSpring → Developer Tools → APIs)
+  const FASTSPRING_API_USERNAME = (process.env.FASTSPRING_API_USERNAME || "").trim();
+  const FASTSPRING_API_PASSWORD = (process.env.FASTSPRING_API_PASSWORD || "").trim();
 
   app.post("/api/billing/cancel", async (req: any, res) => {
     try {
       if (!useAdminSdk || !adminDb) {
         return res.status(500).json({ error: "Server is not configured for billing (admin SDK unavailable)." });
       }
-      if (!PADDLE_API_KEY) {
-        console.error("Cancel request received but PADDLE_API_KEY is not set on the server.");
+      if (!FASTSPRING_API_USERNAME || !FASTSPRING_API_PASSWORD) {
+        console.error("Cancel request received but FastSpring API credentials are not set on the server.");
         return res.status(500).json({ error: "Billing is not fully configured. Please contact support." });
       }
 
@@ -162,50 +119,41 @@ async function startServer() {
         return res.status(401).json({ error: "Invalid or expired session. Please sign in again." });
       }
 
-      // 2) Find their subscription.
+      // 2) Find their FastSpring subscription id (stored by the webhook).
       const profSnap = await adminDb.collection("profiles").doc(uid).get();
       const prof: any = profSnap.exists ? profSnap.data() : null;
-      const subId: string = prof?.paddleSubscriptionId || "";
+      const subId: string = prof?.fastspringSubscriptionId || "";
       if (!subId) {
         return res.status(400).json({ error: "No active subscription found on this account." });
       }
 
-      // 3) Cancel with Paddle at the end of the current billing period —
+      // 3) Cancel with FastSpring. DELETE cancels at end of billing period —
       //    the customer keeps what they've already paid for.
-      const pRes = await fetch(`${PADDLE_API_BASE}/subscriptions/${subId}/cancel`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${PADDLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ effective_from: "next_billing_period" }),
+      const basic = Buffer.from(`${FASTSPRING_API_USERNAME}:${FASTSPRING_API_PASSWORD}`).toString("base64");
+      const fsRes = await fetch(`https://api.fastspring.com/subscriptions/${subId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Basic ${basic}` },
       });
-      const pJson: any = await pRes.json().catch(() => ({}));
-      if (!pRes.ok) {
-        const code = String(pJson?.error?.code || "");
-        const detail = String(pJson?.error?.detail || "");
-        // A repeat click on an already-cancelling subscription is a success,
-        // not an error — Paddle just refuses to cancel twice. Seen in the
-        // wild as code "subscription_locked_pending_changes".
-        if (code.includes("canceled") || code.includes("cancel") || code.includes("locked")
-            || detail.toLowerCase().includes("cancel") || detail.toLowerCase().includes("pending scheduled")
-            || pRes.status === 409) {
-          // Record the scheduled state so the Billing page hides the Cancel
-          // button — covers cancellations made before this marker existed.
+      const fsJson: any = await fsRes.json().catch(() => ({}));
+
+      if (!fsRes.ok) {
+        // A repeat click on an already-cancelling sub is a success, not an error.
+        const errText = JSON.stringify(fsJson).toLowerCase();
+        if (fsRes.status === 400 && (errText.includes("cancel") || errText.includes("deactivat"))) {
           try { await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: "scheduled" }, { merge: true }); } catch {}
           return res.status(200).json({ ok: true, alreadyCanceled: true });
         }
-        console.error("Paddle cancel failed:", pRes.status, JSON.stringify(pJson).slice(0, 400));
+        console.error("FastSpring cancel failed:", fsRes.status, JSON.stringify(fsJson).slice(0, 400));
         return res.status(502).json({ error: "Could not cancel with the payment provider. Please try again or contact support." });
       }
 
-      const endsAt: string | null = pJson?.data?.scheduled_change?.effective_at || pJson?.data?.current_billing_period?.ends_at || null;
-      // Remember the scheduled cancellation on the profile so the Billing page
-      // can show "cancels on <date>" and hide the Cancel button.
+      const endsAt: string | null =
+        fsJson?.subscriptions?.[0]?.deactivationDate || fsJson?.deactivationDate || null;
       try {
         await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: endsAt || "scheduled" }, { merge: true });
       } catch (e) { console.warn("Could not store subscriptionCancelAt:", e); }
-      console.log(`Billing: subscription ${subId} for ${uid} scheduled to cancel${endsAt ? ` at ${endsAt}` : ""}.`);
+
+      console.log(`Billing: FastSpring subscription ${subId} for ${uid} scheduled to cancel${endsAt ? ` at ${endsAt}` : ""}.`);
       return res.status(200).json({ ok: true, endsAt });
     } catch (err) {
       console.error("Cancel endpoint error:", err);
@@ -213,82 +161,130 @@ async function startServer() {
     }
   });
 
-  app.post("/api/paddle/webhook", async (req: any, res) => {
-    // 1) Authenticate the caller. Reject anything not signed by Paddle.
-    if (!PADDLE_WEBHOOK_SECRET) {
-      console.error("Paddle webhook received but PADDLE_WEBHOOK_SECRET is not set on the server.");
+  // ── FastSpring billing webhook ────────────────────────────────────────────
+  // FastSpring calls this after orders and subscription changes. We verify the
+  // HMAC-SHA256 signature (base64) against our secret, then set the tier in
+  // Firestore with the ADMIN SDK (server-side, bypasses client security rules).
+  // Reuses req.rawBody, already captured by the express.json verify hook above.
+  //
+  // Required Render environment variable: FASTSPRING_WEBHOOK_SECRET
+  const FASTSPRING_WEBHOOK_SECRET = (process.env.FASTSPRING_WEBHOOK_SECRET || "").trim();
+
+  // FastSpring product PATHS → DecisionLab tiers (match the catalog + fastspring.ts).
+  const FASTSPRING_PRODUCT_TO_TIER: Record<string, string> = {
+    "startup-validation": "founder", // Startup Validation $39/mo
+    "startup-grow":       "growth",  // Startup Grow $99/mo
+  };
+
+  function verifyFastSpringSignature(rawBody: Buffer | undefined, signatureHeader: string | undefined, secret: string): boolean {
+    try {
+      if (!rawBody || !signatureHeader || !secret) return false;
+      const computed = crypto.createHmac("sha256", secret).update(rawBody).digest("base64");
+      const a = Buffer.from(computed);
+      const b = Buffer.from(signatureHeader.trim());
+      return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  }
+
+  app.post("/api/fastspring/webhook", async (req: any, res) => {
+    // 1) Authenticate the caller. Reject anything not signed by FastSpring.
+    if (!FASTSPRING_WEBHOOK_SECRET) {
+      console.error("FastSpring webhook received but FASTSPRING_WEBHOOK_SECRET is not set on the server.");
       return res.status(500).json({ error: "webhook not configured" });
     }
-    if (!verifyPaddleSignature(req.rawBody, req.headers["paddle-signature"], PADDLE_WEBHOOK_SECRET)) {
-      // Diagnostics reveal WHICH ingredient is wrong without leaking secrets:
-      // only the secret's prefix and length are printed. A correct Paddle
-      // secret starts with "pdl_ntfset_" — if the prefix below shows anything
-      // else (e.g. "ntfset_" without "pdl_"), the wrong value was pasted.
-      const sig = req.headers["paddle-signature"];
+    if (!verifyFastSpringSignature(req.rawBody, req.headers["x-fs-signature"], FASTSPRING_WEBHOOK_SECRET)) {
+      const sig = req.headers["x-fs-signature"];
       console.warn(
-        "Paddle webhook rejected: invalid signature. Diagnostics:",
+        "FastSpring webhook rejected: invalid signature. Diagnostics:",
         `rawBody=${req.rawBody ? req.rawBody.length + " bytes" : "MISSING"};`,
         `signatureHeader=${sig ? "present" : "MISSING"};`,
-        `secretPrefix=${PADDLE_WEBHOOK_SECRET ? PADDLE_WEBHOOK_SECRET.slice(0, 11) : "EMPTY"};`,
-        `secretLength=${PADDLE_WEBHOOK_SECRET.length}`
+        `secretLength=${FASTSPRING_WEBHOOK_SECRET.length}`
       );
       return res.status(401).json({ error: "invalid signature" });
     }
 
-    const eventType: string = req.body?.event_type || "";
-    const data: any = req.body?.data || {};
-
-    // Only subscription lifecycle events change tiers.
-    const relevant = [
-      "subscription.created",
-      "subscription.activated",
-      "subscription.updated",
-      "subscription.canceled",
-    ];
-    if (!relevant.includes(eventType)) {
-      return res.status(200).json({ received: true, ignored: eventType });
+    // 2) FastSpring batches events under { events: [...] }.
+    const events: any[] = Array.isArray(req.body?.events) ? req.body.events : [];
+    if (events.length === 0) {
+      return res.status(200).json({ received: true, ignored: "no events" });
     }
 
-    // 2) Identify the user: we attach the Firebase uid as customData at checkout.
-    const uid: string | undefined = data?.custom_data?.uid;
-    if (!uid) {
-      console.error(`Paddle ${eventType}: no uid in custom_data — cannot map to a profile. Subscription: ${data?.id}`);
-      // 200 so Paddle doesn't retry forever; this needs manual investigation.
-      return res.status(200).json({ received: true, warning: "no uid" });
-    }
-
-    // 3) Work out the new tier.
-    let newTier = "free";
-    const status: string = data?.status || "";
-    if (eventType !== "subscription.canceled" && (status === "active" || status === "trialing" || status === "past_due")) {
-      const priceId: string | undefined = data?.items?.[0]?.price?.id;
-      newTier = (priceId && PADDLE_PRICE_TO_TIER[priceId]) || "free";
-      if (priceId && !PADDLE_PRICE_TO_TIER[priceId]) {
-        console.warn(`Paddle ${eventType}: unknown price ${priceId} — defaulting ${uid} to free.`);
-      }
-    }
-
-    // 4) Write the tier — Admin SDK only. (The client SDK would be subject to
-    //    security rules and is not acceptable for billing writes.)
     if (!useAdminSdk || !adminDb) {
-      console.error("Paddle webhook: Firestore Admin SDK is not initialized (set FIREBASE_SERVICE_ACCOUNT on Render). Returning 500 so Paddle retries.");
+      console.error("FastSpring webhook: Firestore Admin SDK not initialized (set FIREBASE_SERVICE_ACCOUNT on Render). Returning 500 so FastSpring retries.");
       return res.status(500).json({ error: "admin sdk unavailable" });
     }
+
+    // uid attached at checkout via fs.tag({ uid }); rides on the order/subscription.
+    const readUid = (data: any): string | undefined =>
+      data?.tags?.uid || data?.order?.tags?.uid || data?.subscription?.tags?.uid;
+
     try {
-      await adminDb.collection("profiles").doc(uid).set({
-        subscriptionStatus: newTier,
-        paddleCustomerId: data?.customer_id || null,
-        paddleSubscriptionId: data?.id || null,
-        subscriptionUpdatedAt: new Date().toISOString(),
-        // When the subscription actually ends (tier drops to free) the
-        // scheduled-cancel marker has served its purpose.
-        ...(newTier === "free" ? { subscriptionCancelAt: null } : {}),
-      }, { merge: true });
-      console.log(`Paddle ${eventType}: profile ${uid} → tier '${newTier}' (subscription ${data?.id || "?"}).`);
+      for (const ev of events) {
+        const type: string = ev?.type || "";
+        const data: any = ev?.data || {};
+        const uid = readUid(data);
+
+        if (!uid) {
+          console.error(`FastSpring ${type}: no uid tag — cannot map to a profile.`);
+          continue;
+        }
+
+        if (type === "order.completed" || type === "subscription.activated") {
+          const paths: string[] = [];
+          const items = data?.items || data?.order?.items;
+          if (Array.isArray(items)) {
+            for (const it of items) {
+              const p = it?.product || it?.path || it?.product?.path;
+              if (typeof p === "string") paths.push(p);
+            }
+          }
+          const single = data?.product || data?.subscription?.product;
+          if (typeof single === "string") paths.push(single);
+
+          let newTier = "free";
+          for (const p of paths) {
+            const t = FASTSPRING_PRODUCT_TO_TIER[p];
+            if (t === "growth") newTier = "growth";
+            else if (t === "founder" && newTier !== "growth") newTier = "founder";
+          }
+          if (newTier === "free") {
+            console.warn(`FastSpring ${type}: no known product in [${paths.join(", ")}] for ${uid}.`);
+            continue;
+          }
+
+          const subId = data?.subscription?.id || data?.subscription || data?.id || null;
+
+          await adminDb.collection("profiles").doc(uid).set({
+            subscriptionStatus: newTier,
+            fastspringSubscriptionId: subId,
+            subscriptionUpdatedAt: new Date().toISOString(),
+          }, { merge: true });
+          console.log(`FastSpring ${type}: profile ${uid} → '${newTier}' (sub ${subId || "?"}).`);
+        }
+
+        else if (type === "subscription.deactivated") {
+          await adminDb.collection("profiles").doc(uid).set({
+            subscriptionStatus: "free",
+            subscriptionUpdatedAt: new Date().toISOString(),
+            subscriptionCancelAt: null,
+          }, { merge: true });
+          console.log(`FastSpring subscription.deactivated: profile ${uid} → 'free'.`);
+        }
+
+        else if (type === "subscription.canceled") {
+          const endsAt = data?.subscription?.deactivationDate || data?.deactivationDate || "scheduled";
+          await adminDb.collection("profiles").doc(uid).set(
+            { subscriptionCancelAt: endsAt }, { merge: true }
+          );
+          console.log(`FastSpring subscription.canceled: profile ${uid} ends ${endsAt}.`);
+        }
+      }
+
       return res.status(200).json({ received: true });
     } catch (err) {
-      console.error("Paddle webhook: failed to write tier:", err);
-      // 500 → Paddle retries with backoff, so a transient DB blip self-heals.
+      console.error("FastSpring webhook: processing failed:", err);
       return res.status(500).json({ error: "write failed" });
     }
   });
