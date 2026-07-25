@@ -32,7 +32,7 @@ export default function BillingPage() {
   // values in subscriptionStatus (from the old simulated checkout); anything
   // unrecognized behaves as the free plan — no Cancel button, free limits.
   const isPaid = ['founder', 'growth', 'investor_pro'].includes(tierKey);
-  // Set by the server when a cancellation is scheduled with Paddle; cleared
+  // Set by the server when a cancellation is scheduled with FastSpring; cleared
   // by the webhook when the subscription actually ends.
   const cancelScheduledAt: string | null = p.subscriptionCancelAt || null;
   const cancelScheduledLabel = cancelScheduledAt && cancelScheduledAt !== 'scheduled'
@@ -81,9 +81,9 @@ export default function BillingPage() {
   }, [user?.uid]);
 
   // ── Cancel subscription ──
-  // Goes through the SERVER, which cancels the real Paddle subscription so
+  // Goes through the SERVER, which cancels the real FastSpring subscription so
   // billing genuinely stops. The plan stays active until the end of the paid
-  // period; the Paddle webhook then drops the tier to free automatically.
+  // period; the FastSpring webhook then drops the tier to free automatically.
   // (Browsers can no longer write subscriptionStatus — security rules.)
   const [cancelling, setCancelling] = useState(false);
   const [cancelNote, setCancelNote] = useState('');
