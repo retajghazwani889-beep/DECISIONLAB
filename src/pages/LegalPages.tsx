@@ -4,7 +4,7 @@ import { Shield, FileText, Mail } from 'lucide-react';
 // ─────────────────────────────────────────────────────────────────────────────
 // LegalPages — Privacy Policy and Terms of Service.
 // Written in plain language. Covers accounts, roles, content, payments
-// (FastSpring as merchant of record), cancellations, refunds, and liability.
+// (Paddle as merchant of record), cancellations, refunds, and liability.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CONTACT = 'info@decisionlabhub.com';
@@ -58,7 +58,7 @@ export function PrivacyPolicyPage() {
         <P>You control your profile's visibility with the privacy setting (Public, Investors Only, Connections Only, Private). Startups you explicitly share or submit to the investor network become visible to investor accounts. When you apply to a position, your profile and CV are shared with that founder. When a founder accepts an applicant, the founder's contact details are shared with the applicant. We never make your private content visible outside these product features.</P></div>
 
       <div><H>Payments</H>
-        <P>Paid subscriptions are processed by FastSpring.com, which acts as the merchant of record. Your card or payment details are entered directly with FastSpring and never touch our servers or database. FastSpring shares with us only what we need to activate your plan: the plan purchased, the subscription status, and a customer reference. FastSpring's own privacy policy applies to the payment itself.</P></div>
+        <P>Paid subscriptions are processed by Paddle.com, which acts as the merchant of record. Your card or payment details are entered directly with Paddle and never touch our servers or database. Paddle shares with us only what we need to activate your plan: the plan purchased, the subscription status, and a customer reference. Paddle's own privacy policy applies to the payment itself.</P></div>
 
       <div><H>Where your data lives</H>
         <P>Your data is stored with Google Firebase (Google Cloud). Our email and contact-form providers process messages you send us. We use these established providers rather than running our own servers for your data.</P></div>
@@ -94,13 +94,13 @@ export function TermsOfServicePage() {
         <P>You own what you upload — your startup information, documents, pitch decks, CV, and profile. You give us permission to store and display that content as needed to run the product's features, including showing it to the specific people you choose to share it with (for example, submitting a startup to the investor network, or applying to a founder's position). You are responsible for having the rights to anything you upload.</P></div>
 
       <div><H>Subscriptions & billing</H>
-        <P>Paid plans, prices, and included features are shown on the pricing page. Subscriptions are billed monthly through FastSpring.com, our merchant of record — FastSpring handles the payment, applicable taxes, and billing security. Your subscription renews automatically each billing period until cancelled.</P></div>
+        <P>Paid plans, prices, and included features are shown on the pricing page. Subscriptions are billed monthly through Paddle.com, our merchant of record — Paddle handles the payment, applicable taxes, and billing security. Your subscription renews automatically each billing period until cancelled.</P></div>
 
       <div><H>Cancellation</H>
         <P>You can cancel anytime from your Billing page. Cancellation takes effect at the end of the billing period you have already paid for: you keep your plan's features until that date, and no further charges are made afterwards. Your account and content remain — you simply move to the free plan.</P></div>
 
       <div><H>Refunds</H>
-        <P>If something went wrong with a charge — for example a billing error or a duplicate payment — contact <a href={`mailto:${SUPPORT}`} className="text-brand-accent font-bold hover:underline">{SUPPORT}</a> within 14 days of the charge and we will review it fairly. Refunds, where approved, are issued through FastSpring to the original payment method.</P></div>
+        <P>If something went wrong with a charge — for example a billing error or a duplicate payment — contact <a href={`mailto:${SUPPORT}`} className="text-brand-accent font-bold hover:underline">{SUPPORT}</a> within 14 days of the charge and we will review it fairly. Refunds, where approved, are issued through Paddle to the original payment method.</P></div>
 
       <div><H>Not professional advice</H>
         <P>Analyses, scores, reports, and recommendations produced by DecisionLab are informational guidance only — not financial, legal, tax, or investment advice. Investment and hiring decisions are entirely between the parties involved. DecisionLab is not a broker, agent, employer, or party to any deal, investment, or employment relationship formed through the platform, and does not guarantee funding, matches, or business outcomes.</P></div>
@@ -127,7 +127,7 @@ export function RefundPolicyPage() {
   return (
     <LegalShell icon={FileText} title="Refund Policy">
       <div><H>Subscriptions & billing</H>
-        <P>DecisionLab plans are monthly software subscriptions billed through FastSpring.com, our merchant of record. Your plan renews automatically each billing period until cancelled.</P></div>
+        <P>DecisionLab plans are monthly software subscriptions billed through Paddle.com, our merchant of record. Your plan renews automatically each billing period until cancelled.</P></div>
 
       <div><H>Cancelling</H>
         <P>You can cancel anytime from your Billing page. Cancellation takes effect at the end of the billing period you have already paid for — you keep your plan's features until that date, and no further charges are made afterwards. Cancelling does not delete your account or content; you simply move to the free plan.</P></div>
@@ -136,7 +136,7 @@ export function RefundPolicyPage() {
         <P>If something went wrong with a charge, we will make it right. Contact <a href={`mailto:${SUPPORT}`} className="text-brand-accent font-bold hover:underline">{SUPPORT}</a> within 14 days of the charge for: billing errors, duplicate payments, being charged after a confirmed cancellation, or a technical problem on our side that prevented you from using the plan you paid for.</P></div>
 
       <div><H>How refunds are processed</H>
-        <P>Approved refunds are issued through FastSpring to the original payment method, usually within 5–10 business days depending on your bank. We review every request fairly and reply by email.</P></div>
+        <P>Approved refunds are issued through Paddle to the original payment method, usually within 5–10 business days depending on your bank. We review every request fairly and reply by email.</P></div>
 
       <div><H>What isn't refundable</H>
         <P>Partial billing periods after a normal cancellation (your plan simply stays active until the period ends), and charges older than 14 days except where the law of your country provides otherwise. Nothing in this policy limits any rights you have under applicable consumer law.</P></div>

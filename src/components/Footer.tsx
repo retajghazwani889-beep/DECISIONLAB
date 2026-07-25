@@ -56,7 +56,7 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <a href="https://www.instagram.com/decisionlabplatform/" target="_blank" rel="noreferrer" aria-label="Instagram" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Instagram size={20} /></a>
             <a href="https://x.com/Decisionlab0" target="_blank" rel="noreferrer" aria-label="X (Twitter)" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Twitter size={20} /></a>
-            <a href="https://www.linkedin.com/in/decision-lab-hub-5681aa422/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Linkedin size={20} /></a>
+            <a href="https://www.linkedin.com/company/decisionlab-hub/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Linkedin size={20} /></a>
             <a href="https://www.tiktok.com/@decisionlab0" target="_blank" rel="noreferrer" aria-label="TikTok" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><TikTokIcon size={20} /></a>
             <a href="https://www.youtube.com/@DECISIONLAB0" target="_blank" rel="noreferrer" aria-label="YouTube" className="text-brand-text-secondary hover:text-brand-accent transition-colors"><Youtube size={20} /></a>
           </div>
