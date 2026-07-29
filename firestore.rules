@@ -11,9 +11,25 @@ service cloud.firestore {
         get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.accountType == 'investor';
     }
 
+    // Billing fields are server-only — the Admin SDK (webhook) writes them and
+    // bypasses these rules. Clients may never touch them, even their own profile.
+    function touchesBillingFields() {
+      let billing = [
+        'subscriptionStatus', 'subscriptionUpdatedAt', 'subscriptionStartedAt',
+        'subscriptionCancelAt', 'gumroadSubscriptionId', 'gumroadSaleId'
+      ];
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(billing);
+    }
+
     match /profiles/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create, update: if isOwner(userId) || isAdmin();
+      // Clients may create their own profile only if subscriptionStatus is absent
+      // or explicitly 'free'. They may never write billing fields on update.
+      allow create: if (isOwner(userId) || isAdmin())
+                    && (!('subscriptionStatus' in request.resource.data)
+                        || request.resource.data.subscriptionStatus == 'free');
+      allow update: if isAdmin()
+                    || (isOwner(userId) && !touchesBillingFields());
       allow delete: if isAdmin();
     }
 
