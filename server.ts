@@ -177,6 +177,7 @@ async function startServer() {
           gumroadSubscriptionId: subscriptionId,
           gumroadSaleId: saleId,
           subscriptionUpdatedAt: new Date().toISOString(),
+          subscriptionStartedAt: new Date(),
         }, { merge: true });
         console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
       } else {
@@ -310,6 +311,17 @@ async function startServer() {
   app.post("/api/analyses/:id", async (req, res) => {
     const { id } = req.params;
     const body = req.body;
+    // Verify caller owns this analysis — require a valid Firebase ID token.
+    const authHeader = req.headers.authorization || '';
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (idToken && useAdminSdk) {
+      try {
+        const decoded = await getAdminAuth().verifyIdToken(idToken);
+        if (body.userId && body.userId !== decoded.uid) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+      } catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
     const localFilePath = path.join(LOCAL_BACKUP_DIR, `${id}.json`);
 
     // First, immediately save to local backup file to guarantee data persistence regardless of Firestore permission issues!
@@ -671,7 +683,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash",
         contents: promptStr,
         config: {
           systemInstruction,
@@ -1142,7 +1154,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: {
           systemInstruction,
@@ -1588,7 +1600,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash",
         contents: dynamicPrompt,
         config: {
           systemInstruction,
@@ -1643,7 +1655,7 @@ async function startServer() {
       `;
 
       const response = await client.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: {
           systemInstruction: "You are an elite venture analyst. Output must be structured as: Direct Answer, Strategic Insight, and Recommendation. Total brevity mandatory."

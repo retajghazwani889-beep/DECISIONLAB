@@ -39,12 +39,15 @@ export default function BillingPage() {
     ? new Date(cancelScheduledAt).toLocaleDateString()
     : null;
 
-  // Renewal display: simulated payments renew monthly from the last change.
+  // Renewal date: use subscriptionStartedAt if available (set when tier was granted),
+  // otherwise fall back to the tier-changed date stored separately.
   const renewDate = (() => {
     if (!isPaid) return null;
-    const base = p.updatedAt?.toDate?.() || new Date();
+    const base = (p as any).subscriptionStartedAt?.toDate?.() || (p as any).tierGrantedAt?.toDate?.() || null;
+    if (!base) return null;
     const d = new Date(base);
     d.setMonth(d.getMonth() + 1);
+    while (d < new Date()) d.setMonth(d.getMonth() + 1);
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   })();
 
@@ -193,7 +196,7 @@ export default function BillingPage() {
           <div className="flex items-center gap-4 p-5 bg-brand-card rounded-2xl border border-dashed border-white/10">
             <CreditCard size={20} className="text-brand-text-muted shrink-0" />
             <p className="text-sm font-medium text-brand-text-secondary flex-1">
-              No payment method on file. Online payments (PayPal / card) are coming soon — plans are currently activated instantly without charge.
+              Payments are processed securely via Gumroad. To update your payment method, visit your Gumroad receipt email or contact support.
             </p>
           </div>
         </div>

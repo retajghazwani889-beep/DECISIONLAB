@@ -6,6 +6,7 @@ import { UserProfile, AnalysisReport, AnalysisStatus } from '../types';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { analyzeStartupIdea } from '../services/geminiService';
+import { hasAccess } from '../lib/tiers';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Loader2, CheckCircle2, AlertCircle, Rocket, BarChart3, ShieldAlert, Zap, Users, RefreshCw } from 'lucide-react';
@@ -455,12 +456,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       });
       console.log("Placeholder committed to permanent database storage:", analysisId);
 
-      const isPremiumUser = 
-        profile?.subscriptionStatus === 'premium' || 
-        user?.email === 'retajghazwani889@gmail.com' ||
-        user?.email?.toLowerCase().includes('retaj') ||
-        user?.displayName?.toLowerCase().includes('retaj') ||
-        user?.displayName?.toLowerCase().includes('assad');
+      const isPremiumUser = hasAccess(profile, 'founder');
 
       const results = await analyzeStartupIdea(idea, isPremiumUser);
       console.log("ANALYSIS_COMPLETED");

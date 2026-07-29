@@ -170,7 +170,7 @@ function AppContent() {
       {!isArchitect && (
         <div className="no-print">
           <ScrollToTop />
-          <Navbar onOpenAccess={() => setIsOnboardingOpen(true)} />
+          <Navbar onOpenAccess={() => navigate('/signup')} />
         </div>
       )}
 
@@ -219,7 +219,7 @@ function AppContent() {
       <main className={`bg-brand-bg ${isArchitect ? '' : 'pt-16'}`}>
         <Routes>
           {/* ── Public pages ── */}
-          <Route path="/"        element={<HomePage user={user} profile={profile} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
+          <Route path="/"        element={<HomePage user={user} profile={profile} onOpenAccess={() => navigate('/signup')} />} />
           <Route path="/about"   element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/team-members" element={<TeamMembersLandingPage />} />

@@ -540,7 +540,7 @@ export const getCalculatedVentureScore = (scores: any) => {
     if (typeof val === 'number') return val;
     if (typeof val === 'object' && typeof val.score === 'number') return val.score;
     if (typeof val === 'string') {
-      const parsed = parseInt(val, 15);
+      const parsed = parseInt(val, 10);
       if (!isNaN(parsed)) return parsed;
     }
     return null;
