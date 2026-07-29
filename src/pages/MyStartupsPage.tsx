@@ -236,7 +236,7 @@ export default function MyStartupsPage() {
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-black uppercase tracking-tight truncate">
-                        {a.projectName || a.ideaDescription?.slice(0, 60) || 'Analysis'}
+                        {a.startupProfile?.companyName || a.projectName || a.ideaDescription?.slice(0, 60) || 'Analysis'}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         {!isNaN(score) && score > 0 && (
