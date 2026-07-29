@@ -107,9 +107,16 @@ async function startServer() {
 
   async function findUidByEmail(email: string): Promise<string | null> {
     if (!useAdminSdk || !adminDb) return null;
+    // 1. Check Firestore profiles by email field
     try {
       const snap = await adminDb.collection("profiles").where("email", "==", email).limit(1).get();
       if (!snap.empty) return snap.docs[0].id;
+    } catch {}
+    // 2. Fall back to Firebase Auth user lookup by email
+    try {
+      const adminAuthInstance = getAdminAuth();
+      const userRecord = await adminAuthInstance.getUserByEmail(email);
+      if (userRecord?.uid) return userRecord.uid;
     } catch {}
     return null;
   }
@@ -122,22 +129,23 @@ async function startServer() {
       return res.status(500).json({ error: "admin sdk unavailable" });
     }
 
-    const email: string         = (body.email || "").toLowerCase().trim();
-    const permalink: string     = body.product_permalink || "";
-    const licenseKey: string    = body.license_key || "";
-    const saleId: string        = body.sale_id || "";
+    const email: string          = (body.email || "").toLowerCase().trim();
+    // short_product_id is the bare permalink (e.g. "rdnzb"); product_permalink
+    // is the full URL — use the short form for our tier map.
+    const shortPermalink: string = body.short_product_id || body.permalink || "";
+    const licenseKey: string     = body.license_key || "";
+    const saleId: string         = body.sale_id || "";
     const subscriptionId: string = body.subscription_id || "";
-    const urlParams: any        = body.url_params || {};
-    const uidParam: string      = urlParams.uid || body["url_params[uid]"] || "";
 
     const isCancelled = body.cancelled === "true" || body.cancelled === true;
     const isRefunded  = body.refunded  === "true" || body.refunded  === true;
     const subEnded    = !!body.subscription_ended_at || !!body.subscription_failed_at;
-    const tier        = GUMROAD_PERMALINK_TO_TIER[permalink];
+    const tier        = GUMROAD_PERMALINK_TO_TIER[shortPermalink];
 
     if (licenseKey && !isCancelled && !isRefunded && !subEnded) {
       try {
-        const verified = await verifyGumroadLicense(permalink, licenseKey);
+        // Use short_product_id as product_id for verification
+        const verified = await verifyGumroadLicense(shortPermalink, licenseKey);
         if (!verified?.success) {
           console.warn("Gumroad license verification failed:", JSON.stringify(verified).slice(0, 300));
           return res.status(400).json({ error: "license verification failed" });
@@ -148,10 +156,10 @@ async function startServer() {
       }
     }
 
-    let uid = uidParam;
-    if (!uid && email) uid = (await findUidByEmail(email)) || "";
+    // Gumroad Pings do not include url_params — resolve uid from email
+    let uid = (await findUidByEmail(email)) || "";
     if (!uid) {
-      console.error(`Gumroad Ping: no uid for email=${email}, permalink=${permalink}`);
+      console.error(`Gumroad Ping: no uid for email=${email}, permalink=${shortPermalink}`);
       return res.status(200).json({ ok: true, warning: "no uid resolved" });
     }
 
@@ -172,7 +180,7 @@ async function startServer() {
         }, { merge: true });
         console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
       } else {
-        console.warn(`Gumroad Ping: unknown permalink '${permalink}'.`);
+        console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
       }
     } catch (err) {
       console.error("Gumroad webhook: Firestore write failed:", err);
