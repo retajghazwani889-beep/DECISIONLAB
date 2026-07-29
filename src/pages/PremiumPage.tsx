@@ -123,10 +123,10 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         <ul className="space-y-4 mb-12 flex-1">
           {features.map((f, i) => (
             <li key={i} className="flex items-start gap-4">
-              <div className={cn("mt-1.5 p-0.5 rounded-full shrink-0", popular ? "bg-brand-accent text-brand-text-primary shadow-[0_0_10px_rgba(77,163,255,0.3)]" : "bg-brand-accent/20 text-brand-accent")}>
+              <div className="mt-1.5 p-0.5 rounded-full shrink-0 bg-brand-accent text-brand-text-primary shadow-[0_0_10px_rgba(77,163,255,0.3)]">
                 <Check size={14} strokeWidth={4} />
               </div>
-              <span className={cn("text-base font-medium", popular ? "text-neutral-300" : "text-brand-accent")}>
+              <span className="text-base font-medium text-neutral-300">
                 {f}
               </span>
             </li>
