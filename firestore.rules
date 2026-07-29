@@ -1,7 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function isAdmin() { return isSignedIn() && request.auth.token.email == 'retajghazwani889@gmail.com'; }
@@ -11,8 +10,8 @@ service cloud.firestore {
         get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.accountType == 'investor';
     }
 
-    // Billing fields are server-only — the Admin SDK (webhook) writes them and
-    // bypasses these rules. Clients may never touch them, even their own profile.
+    // Billing fields are server-only — the Admin SDK (Gumroad webhook) writes
+    // them and bypasses these rules. Clients may never touch them.
     function touchesBillingFields() {
       let billing = [
         'subscriptionStatus', 'subscriptionUpdatedAt', 'subscriptionStartedAt',
@@ -22,23 +21,26 @@ service cloud.firestore {
     }
 
     match /profiles/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      // Clients may create their own profile only if subscriptionStatus is absent
-      // or explicitly 'free'. They may never write billing fields on update.
+      allow read: if isOwner(userId) || isAdmin()
+                  || (isSignedIn() && resource.data.get('profilePrivacy', 'investors') != 'private');
       allow create: if (isOwner(userId) || isAdmin())
                     && (!('subscriptionStatus' in request.resource.data)
                         || request.resource.data.subscriptionStatus == 'free');
       allow update: if isAdmin()
                     || (isOwner(userId) && !touchesBillingFields());
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     match /analyses/{analysisId} {
       allow read: if (isSignedIn() && resource.data.userId == request.auth.uid)
                     || isAdmin()
-                    || (isInvestor() && resource.data.sharedWithInvestors == true);
+                    || (isInvestor() && (resource.data.sharedWithInvestors == true
+                                         || resource.data.submittedToInvestors == true));
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow update: if isInvestor()
+                    && resource.data.submittedToInvestors == true
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['investorReviewStatus', 'investorReviewAt']);
     }
 
     match /investorApplications/{appId} {
@@ -63,6 +65,39 @@ service cloud.firestore {
       allow read: if (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid)) || isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    match /startups/{startupId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.founderId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.founderId == request.auth.uid || isAdmin());
+    }
+
+    match /teams/{teamMemberId} {
+      allow read: if isSignedIn() && (resource.data.founderId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.founderId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.founderId == request.auth.uid || isAdmin());
+    }
+
+    match /positions/{positionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.founderId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.founderId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applicantCount']);
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isSignedIn() && (
+        resource.data.applicantId == request.auth.uid ||
+        resource.data.founderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && request.resource.data.applicantId == request.auth.uid;
+      allow delete: if isSignedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn()
+        && resource.data.founderId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedAt']);
     }
 
     match /users/{userId}/projects/{projectId} {
