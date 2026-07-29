@@ -78,36 +78,119 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json({
-    // Keep the raw bytes of every request body. FastSpring signs the RAW body,
-    // so signature verification must run against exactly what was sent —
-    // not the re-serialized JSON.
-    verify: (req: any, _res, buf) => { req.rawBody = buf; },
-  }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-  // ── Cancel subscription (authenticated) ──────────────────────────────────
-  // Called by the Billing page. Verifies the user's Firebase ID token, looks
-  // up their FastSpring subscription, and cancels it VIA FASTSPRING'S API — so
-  // the customer actually stops being charged. The tier itself is then dropped
-  // to 'free' by the subscription.deactivated webhook at the paid period's end.
-  //
-  // Required Render environment variables:
-  //   FASTSPRING_API_USERNAME, FASTSPRING_API_PASSWORD
-  //   (FastSpring → Developer Tools → APIs)
-  const FASTSPRING_API_USERNAME = (process.env.FASTSPRING_API_USERNAME || "").trim();
-  const FASTSPRING_API_PASSWORD = (process.env.FASTSPRING_API_PASSWORD || "").trim();
+  // ── Gumroad billing ───────────────────────────────────────────────────────
+  const GUMROAD_ACCESS_TOKEN = (process.env.GUMROAD_ACCESS_TOKEN || "").trim();
+  const GUMROAD_PERMALINK_TO_TIER: Record<string, string> = {
+    "rdnzb":  "founder", // Startup Validation — $39/mo
+    "tqownt": "growth",  // Startup Grow — $99/mo
+  };
 
-  app.post("/api/billing/cancel", async (req: any, res) => {
+  async function verifyGumroadLicense(permalink: string, licenseKey: string): Promise<any> {
+    const params = new URLSearchParams({
+      product_id: permalink,
+      license_key: licenseKey,
+      increment_uses_count: "false",
+    });
+    const r = await fetch("https://api.gumroad.com/v2/licenses/verify", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GUMROAD_ACCESS_TOKEN}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+    return r.json();
+  }
+
+  async function findUidByEmail(email: string): Promise<string | null> {
+    if (!useAdminSdk || !adminDb) return null;
+    try {
+      const snap = await adminDb.collection("profiles").where("email", "==", email).limit(1).get();
+      if (!snap.empty) return snap.docs[0].id;
+    } catch {}
+    return null;
+  }
+
+  app.post("/api/gumroad/webhook", async (req: any, res: any) => {
+    const body = req.body || {};
+    console.log("GUMROAD PING:", JSON.stringify(body));
+
+    if (!useAdminSdk || !adminDb) {
+      return res.status(500).json({ error: "admin sdk unavailable" });
+    }
+
+    const email: string         = (body.email || "").toLowerCase().trim();
+    const permalink: string     = body.product_permalink || "";
+    const licenseKey: string    = body.license_key || "";
+    const saleId: string        = body.sale_id || "";
+    const subscriptionId: string = body.subscription_id || "";
+    const urlParams: any        = body.url_params || {};
+    const uidParam: string      = urlParams.uid || body["url_params[uid]"] || "";
+
+    const isCancelled = body.cancelled === "true" || body.cancelled === true;
+    const isRefunded  = body.refunded  === "true" || body.refunded  === true;
+    const subEnded    = !!body.subscription_ended_at || !!body.subscription_failed_at;
+    const tier        = GUMROAD_PERMALINK_TO_TIER[permalink];
+
+    if (licenseKey && !isCancelled && !isRefunded && !subEnded) {
+      try {
+        const verified = await verifyGumroadLicense(permalink, licenseKey);
+        if (!verified?.success) {
+          console.warn("Gumroad license verification failed:", JSON.stringify(verified).slice(0, 300));
+          return res.status(400).json({ error: "license verification failed" });
+        }
+      } catch (err) {
+        console.error("Gumroad license verify request failed:", err);
+        return res.status(500).json({ error: "could not verify license" });
+      }
+    }
+
+    let uid = uidParam;
+    if (!uid && email) uid = (await findUidByEmail(email)) || "";
+    if (!uid) {
+      console.error(`Gumroad Ping: no uid for email=${email}, permalink=${permalink}`);
+      return res.status(200).json({ ok: true, warning: "no uid resolved" });
+    }
+
+    try {
+      if (isCancelled || isRefunded || subEnded) {
+        await adminDb.collection("profiles").doc(uid).set({
+          subscriptionStatus: "free",
+          subscriptionUpdatedAt: new Date().toISOString(),
+          subscriptionCancelAt: null,
+        }, { merge: true });
+        console.log(`Gumroad: profile ${uid} → 'free'.`);
+      } else if (tier) {
+        await adminDb.collection("profiles").doc(uid).set({
+          subscriptionStatus: tier,
+          gumroadSubscriptionId: subscriptionId,
+          gumroadSaleId: saleId,
+          subscriptionUpdatedAt: new Date().toISOString(),
+        }, { merge: true });
+        console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
+      } else {
+        console.warn(`Gumroad Ping: unknown permalink '${permalink}'.`);
+      }
+    } catch (err) {
+      console.error("Gumroad webhook: Firestore write failed:", err);
+      return res.status(500).json({ error: "write failed" });
+    }
+
+    return res.status(200).json({ received: true });
+  });
+
+  app.post("/api/billing/cancel", async (req: any, res: any) => {
     try {
       if (!useAdminSdk || !adminDb) {
         return res.status(500).json({ error: "Server is not configured for billing (admin SDK unavailable)." });
       }
-      if (!FASTSPRING_API_USERNAME || !FASTSPRING_API_PASSWORD) {
-        console.error("Cancel request received but FastSpring API credentials are not set on the server.");
+      if (!GUMROAD_ACCESS_TOKEN) {
         return res.status(500).json({ error: "Billing is not fully configured. Please contact support." });
       }
 
-      // 1) Who is asking? Verify the Firebase ID token from the browser.
       const authHeader = String(req.headers["authorization"] || "");
       const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
       if (!idToken) return res.status(401).json({ error: "Not signed in." });
@@ -119,173 +202,33 @@ async function startServer() {
         return res.status(401).json({ error: "Invalid or expired session. Please sign in again." });
       }
 
-      // 2) Find their FastSpring subscription id (stored by the webhook).
       const profSnap = await adminDb.collection("profiles").doc(uid).get();
       const prof: any = profSnap.exists ? profSnap.data() : null;
-      const subId: string = prof?.fastspringSubscriptionId || "";
+      const subId: string = prof?.gumroadSubscriptionId || "";
       if (!subId) {
         return res.status(400).json({ error: "No active subscription found on this account." });
       }
 
-      // 3) Cancel with FastSpring. DELETE cancels at end of billing period —
-      //    the customer keeps what they've already paid for.
-      const basic = Buffer.from(`${FASTSPRING_API_USERNAME}:${FASTSPRING_API_PASSWORD}`).toString("base64");
-      const fsRes = await fetch(`https://api.fastspring.com/subscriptions/${subId}`, {
+      const gmRes = await fetch(`https://api.gumroad.com/v2/subscribers/${subId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Basic ${basic}` },
+        headers: { "Authorization": `Bearer ${GUMROAD_ACCESS_TOKEN}` },
       });
-      const fsJson: any = await fsRes.json().catch(() => ({}));
+      const gmJson: any = await gmRes.json().catch(() => ({}));
 
-      if (!fsRes.ok) {
-        // A repeat click on an already-cancelling sub is a success, not an error.
-        const errText = JSON.stringify(fsJson).toLowerCase();
-        if (fsRes.status === 400 && (errText.includes("cancel") || errText.includes("deactivat"))) {
-          try { await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: "scheduled" }, { merge: true }); } catch {}
-          return res.status(200).json({ ok: true, alreadyCanceled: true });
-        }
-        console.error("FastSpring cancel failed:", fsRes.status, JSON.stringify(fsJson).slice(0, 400));
+      if (!gmRes.ok) {
+        console.error("Gumroad cancel failed:", gmRes.status, JSON.stringify(gmJson).slice(0, 400));
         return res.status(502).json({ error: "Could not cancel with the payment provider. Please try again or contact support." });
       }
 
-      const endsAt: string | null =
-        fsJson?.subscriptions?.[0]?.deactivationDate || fsJson?.deactivationDate || null;
       try {
-        await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: endsAt || "scheduled" }, { merge: true });
+        await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: "scheduled" }, { merge: true });
       } catch (e) { console.warn("Could not store subscriptionCancelAt:", e); }
 
-      console.log(`Billing: FastSpring subscription ${subId} for ${uid} scheduled to cancel${endsAt ? ` at ${endsAt}` : ""}.`);
-      return res.status(200).json({ ok: true, endsAt });
+      console.log(`Billing: Gumroad sub ${subId} for ${uid} cancelled.`);
+      return res.status(200).json({ ok: true });
     } catch (err) {
       console.error("Cancel endpoint error:", err);
       return res.status(500).json({ error: "Something went wrong. Please try again." });
-    }
-  });
-
-  // ── FastSpring billing webhook ────────────────────────────────────────────
-  // FastSpring calls this after orders and subscription changes. We verify the
-  // HMAC-SHA256 signature (base64) against our secret, then set the tier in
-  // Firestore with the ADMIN SDK (server-side, bypasses client security rules).
-  // Reuses req.rawBody, already captured by the express.json verify hook above.
-  //
-  // Required Render environment variable: FASTSPRING_WEBHOOK_SECRET
-  const FASTSPRING_WEBHOOK_SECRET = (process.env.FASTSPRING_WEBHOOK_SECRET || "").trim();
-
-  // FastSpring product PATHS → DecisionLab tiers (match the catalog + fastspring.ts).
-  const FASTSPRING_PRODUCT_TO_TIER: Record<string, string> = {
-    "startup-validation": "founder", // Startup Validation $39/mo
-    "startup-grow":       "growth",  // Startup Grow $99/mo
-  };
-
-  function verifyFastSpringSignature(rawBody: Buffer | undefined, signatureHeader: string | undefined, secret: string): boolean {
-    try {
-      if (!rawBody || !signatureHeader || !secret) return false;
-      const computed = crypto.createHmac("sha256", secret).update(rawBody).digest("base64");
-      const a = Buffer.from(computed);
-      const b = Buffer.from(signatureHeader.trim());
-      return a.length === b.length && crypto.timingSafeEqual(a, b);
-    } catch {
-      return false;
-    }
-  }
-
-  app.post("/api/fastspring/webhook", async (req: any, res) => {
-    // 1) Authenticate the caller. Reject anything not signed by FastSpring.
-    if (!FASTSPRING_WEBHOOK_SECRET) {
-      console.error("FastSpring webhook received but FASTSPRING_WEBHOOK_SECRET is not set on the server.");
-      return res.status(500).json({ error: "webhook not configured" });
-    }
-    if (!verifyFastSpringSignature(req.rawBody, req.headers["x-fs-signature"], FASTSPRING_WEBHOOK_SECRET)) {
-      const sig = req.headers["x-fs-signature"];
-      console.warn(
-        "FastSpring webhook rejected: invalid signature. Diagnostics:",
-        `rawBody=${req.rawBody ? req.rawBody.length + " bytes" : "MISSING"};`,
-        `signatureHeader=${sig ? "present" : "MISSING"};`,
-        `secretLength=${FASTSPRING_WEBHOOK_SECRET.length}`
-      );
-      return res.status(401).json({ error: "invalid signature" });
-    }
-
-    // 2) FastSpring batches events under { events: [...] }.
-    const events: any[] = Array.isArray(req.body?.events) ? req.body.events : [];
-    if (events.length === 0) {
-      return res.status(200).json({ received: true, ignored: "no events" });
-    }
-
-    if (!useAdminSdk || !adminDb) {
-      console.error("FastSpring webhook: Firestore Admin SDK not initialized (set FIREBASE_SERVICE_ACCOUNT on Render). Returning 500 so FastSpring retries.");
-      return res.status(500).json({ error: "admin sdk unavailable" });
-    }
-
-    // uid attached at checkout via fs.tag({ uid }); rides on the order/subscription.
-    const readUid = (data: any): string | undefined =>
-      data?.tags?.uid || data?.order?.tags?.uid || data?.subscription?.tags?.uid;
-
-    try {
-      for (const ev of events) {
-        const type: string = ev?.type || "";
-        const data: any = ev?.data || {};
-        const uid = readUid(data);
-
-        if (!uid) {
-          console.error(`FastSpring ${type}: no uid tag — cannot map to a profile.`);
-          continue;
-        }
-
-        if (type === "order.completed" || type === "subscription.activated") {
-          const paths: string[] = [];
-          const items = data?.items || data?.order?.items;
-          if (Array.isArray(items)) {
-            for (const it of items) {
-              const p = it?.product || it?.path || it?.product?.path;
-              if (typeof p === "string") paths.push(p);
-            }
-          }
-          const single = data?.product || data?.subscription?.product;
-          if (typeof single === "string") paths.push(single);
-
-          let newTier = "free";
-          for (const p of paths) {
-            const t = FASTSPRING_PRODUCT_TO_TIER[p];
-            if (t === "growth") newTier = "growth";
-            else if (t === "founder" && newTier !== "growth") newTier = "founder";
-          }
-          if (newTier === "free") {
-            console.warn(`FastSpring ${type}: no known product in [${paths.join(", ")}] for ${uid}.`);
-            continue;
-          }
-
-          const subId = data?.subscription?.id || data?.subscription || data?.id || null;
-
-          await adminDb.collection("profiles").doc(uid).set({
-            subscriptionStatus: newTier,
-            fastspringSubscriptionId: subId,
-            subscriptionUpdatedAt: new Date().toISOString(),
-          }, { merge: true });
-          console.log(`FastSpring ${type}: profile ${uid} → '${newTier}' (sub ${subId || "?"}).`);
-        }
-
-        else if (type === "subscription.deactivated") {
-          await adminDb.collection("profiles").doc(uid).set({
-            subscriptionStatus: "free",
-            subscriptionUpdatedAt: new Date().toISOString(),
-            subscriptionCancelAt: null,
-          }, { merge: true });
-          console.log(`FastSpring subscription.deactivated: profile ${uid} → 'free'.`);
-        }
-
-        else if (type === "subscription.canceled") {
-          const endsAt = data?.subscription?.deactivationDate || data?.deactivationDate || "scheduled";
-          await adminDb.collection("profiles").doc(uid).set(
-            { subscriptionCancelAt: endsAt }, { merge: true }
-          );
-          console.log(`FastSpring subscription.canceled: profile ${uid} ends ${endsAt}.`);
-        }
-      }
-
-      return res.status(200).json({ received: true });
-    } catch (err) {
-      console.error("FastSpring webhook: processing failed:", err);
-      return res.status(500).json({ error: "write failed" });
     }
   });
 

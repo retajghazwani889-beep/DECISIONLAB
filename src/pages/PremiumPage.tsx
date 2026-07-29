@@ -8,8 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
-// ─── CHANGED: swap Paddle import for FastSpring ──────────────────────────────
-import { openFastSpringCheckout, FASTSPRING_PRODUCTS } from '../lib/fastspring';
+import { openGumroadCheckout, GUMROAD_PRODUCTS } from '../lib/gumroad';
 
 interface PremiumPageProps {
   user: User | null;
@@ -28,7 +27,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
 
-  // After FastSpring reports a successful purchase, the WEBHOOK on our server
+  // After Gumroad reports a successful purchase, the WEBHOOK on our server
   // writes the new tier to Firestore (usually within a few seconds). This polls
   // the profile until the change lands, then continues the flow.
   const waitForTierThenContinue = (expected: string) => {
@@ -51,8 +50,8 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     setTimeout(poll, 2500);
   };
 
-  // REAL checkout via FastSpring. The card form is FastSpring's — card data
-  // never touches our code. After payment, FastSpring webhooks our server, and
+  // REAL checkout via Gumroad. The card form is Gumroad's — card data
+  // never touches our code. After payment, Gumroad Pings our server, and
   // the SERVER sets subscriptionStatus. The browser never writes tiers.
   const handleSelectPlan = async (targetTier: Tier) => {
     if (targetTier === 'free') {
@@ -75,21 +74,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     }
 
     setLoadingTier(targetTier);
-    try {
-      // ─── CHANGED: open FastSpring checkout with the product PATH ──────────
-      await openFastSpringCheckout({
-        productPath: targetTier === 'growth' ? FASTSPRING_PRODUCTS.growth : FASTSPRING_PRODUCTS.founder,
-        uid: activeUser.uid,
-        email: activeUser.email,
-        onCompleted: () => waitForTierThenContinue(targetTier),
-      });
-    } catch (err) {
-      console.error('Could not open checkout:', err);
-      alert('Could not open the checkout. Please refresh the page and try again.');
-    } finally {
-      // The overlay is open (or failed); either way stop the button spinner.
-      setLoadingTier(null);
-    }
+    openGumroadCheckout({
+      productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
+      uid: activeUser.uid,
+      email: activeUser.email,
+    });
+    waitForTierThenContinue(targetTier);
+    setLoadingTier(null);
   };
 
   const PlanCard = ({
