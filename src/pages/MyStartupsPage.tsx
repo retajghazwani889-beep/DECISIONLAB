@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2, ArrowLeftRight } from 'lucide-react';
 import { hasAccess } from '../lib/tiers';
 import { UpgradePrompt } from '../components/UpgradeGate';
+import { getCalculatedVentureScore } from '../components/ResultsDashboard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MyStartupsPage — the founder's homepage. Every startup as a card with its
@@ -89,7 +90,7 @@ export default function MyStartupsPage() {
   const scoreOf = (s: any): number | null => {
     const a = analysesByStartup[s.id];
     if (!a) return null;
-    const v = Number(a.overallScore ?? a.shareScore ?? a.scores?.overall ?? a.readinessScore ?? NaN);
+    const v = a.scores ? getCalculatedVentureScore(a.scores) : Number(a.overallScore ?? a.shareScore ?? a.readinessScore ?? NaN);
     return !isNaN(v) && v > 0 ? v : null;
   };
 
@@ -212,7 +213,7 @@ export default function MyStartupsPage() {
             })}
             {/* Legacy analyses rendered as cards inside the same grid */}
             {legacy.map((a) => {
-              const score = Number(a.overallScore ?? a.shareScore ?? a.scores?.overall ?? NaN);
+              const score = a.scores ? getCalculatedVentureScore(a.scores) : Number(a.overallScore ?? a.shareScore ?? NaN);
               const deckSlides = a.pitchDeckData?.slides || a.pitchReadiness?.slides || [];
               const name = a.startupProfile?.companyName || a.projectName || a.ideaDescription?.slice(0, 40) || 'Analysis';
               return (
