@@ -533,7 +533,7 @@ export const calculateFinalScore = (
 };
 
 export const getCalculatedVentureScore = (scores: any) => {
-  if (!scores) return 85;
+  if (!scores) return 0;
   const getVal = (key: string, altKey?: string) => {
     const val = scores[key] ?? (altKey ? scores[altKey] : undefined);
     if (val === undefined || val === null) return null;
@@ -554,7 +554,7 @@ export const getCalculatedVentureScore = (scores: any) => {
   const scale = getVal('scalability');
 
   if (idea === null && market === null && investor === null && exec === null && comp === null) {
-    return typeof scores.overall === 'number' ? scores.overall : 85;
+    return typeof scores.overall === 'number' ? scores.overall : 0;
   }
 
   const ideaScore = idea ?? 0;

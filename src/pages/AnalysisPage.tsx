@@ -131,6 +131,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [retryToken, setRetryToken] = useState(0);
+  const hasStartedAnalysisRef = useRef(false);
 
   useEffect(() => {
     if (id) {
@@ -139,6 +140,8 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       }
       fetchAnalysis(id);
     } else if (location.state?.idea && user) {
+      if (hasStartedAnalysisRef.current) return;
+      hasStartedAnalysisRef.current = true;
       startNewAnalysis(location.state.idea);
     } else {
       navigate('/');

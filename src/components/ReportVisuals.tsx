@@ -336,7 +336,7 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                   <AnimatedCounter value={score} />
                 </span>
                 <span className="text-[12px] font-bold text-brand-text-muted opacity-30 italic font-display">
-                  %
+                  /100
                 </span>
               </div>
             </motion.div>
@@ -542,7 +542,7 @@ export const CircularProgress = ({ score, size = 120, strokeWidth = 8, label, ex
             animate={{ opacity: 1 }}
             className="text-xl font-black text-brand-text-primary"
           >
-            {score}%
+            {score}/100
           </motion.span>
         </div>
       </div>
