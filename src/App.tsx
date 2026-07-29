@@ -231,11 +231,11 @@ function AppContent() {
           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           <Route path="/compare" element={<RequireTier tier="growth" featureName="Startup Comparisons"><ComparisonPage /></RequireTier>} />
 
-          {/* ── Investor Network ── */}
-          <Route path="/investor-network" element={<InvestorNetworkPage user={user} onOpenAccess={() => setIsOnboardingOpen(true)} />} />
-          <Route path="/investor-matches" element={<InvestorMatchesPage user={user} />} />
-          <Route path="/investor-submissions" element={<InvestorSubmissionsPage user={user} />} />
-          <Route path="/investor-history" element={<InvestorHistoryPage user={user} />} />
+          {/* ── Investor Network — Coming Soon, all routes redirect to pricing ── */}
+          <Route path="/investor-network" element={<Navigate to="/pricing" replace />} />
+          <Route path="/investor-matches" element={<Navigate to="/pricing" replace />} />
+          <Route path="/investor-submissions" element={<Navigate to="/pricing" replace />} />
+          <Route path="/investor-history" element={<Navigate to="/pricing" replace />} />
           <Route path="/team" element={<TeamMemberDashboardPage user={user} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpChoosePage />} />

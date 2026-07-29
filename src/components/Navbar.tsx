@@ -37,7 +37,6 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
     { label: 'ABOUT US', path: '/about' },
     { label: 'MY STARTUPS', path: '/startups', hidden: !user },
     { label: 'PRICING', path: '/pricing' },
-    { label: 'INVESTOR NETWORK', path: '/investor-network' },
   ];
   const teamMemberLinks = [
     { label: 'DASHBOARD', path: '/team' },
