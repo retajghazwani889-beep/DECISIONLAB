@@ -5,6 +5,7 @@ import { Rocket, User as UserIcon, LogOut, ChevronDown, Zap, Lock, Database, Cre
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { safeLocalStorage as localStorage } from '../lib/storage';
+import { getTier } from '../lib/tiers';
 
 import Logo from './Logo';
 
@@ -59,11 +60,16 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
   const fullName =
     profile?.displayName || (profile as any)?.fullName || user?.displayName || 'Member';
   const firstName = fullName.split(' ')[0] || fullName;
+  const tierLabel: Record<string, string> = {
+    growth:  'Startup Grow',
+    founder: 'Startup Validation',
+    free:    'Startup at a Glance',
+  };
   const roleLabel = isTeamMember
     ? 'Team Member'
     : (isInvestor
         ? ((profile as any)?.investorBadge || 'Investor')
-        : ((profile as any)?.roleType || 'Member'));
+        : tierLabel[getTier(profile)] ?? 'Member');
 
   const handleLogout = async () => {
     try {
