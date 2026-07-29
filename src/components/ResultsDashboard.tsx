@@ -1485,50 +1485,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
     setSavingShare(false);
   };
 
-  // The share gate appears only for Growth-tier founders whose analysis scored
-  // 80% or higher and who haven't answered yet.
-  const shareScoreNow = getCalculatedVentureScore(currentAnalysis.scores);
-  if (!investorView && hasAccess(profile, 'growth') && shareScoreNow >= 80 && (currentAnalysis as any).sharedWithInvestors === undefined) {
-    const previewScore = shareScoreNow;
-    return (
-      <div className="fixed inset-0 z-[1400] bg-brand-bg flex items-center justify-center p-6 overflow-y-auto">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-brand-accent/5 blur-[140px] rounded-full pointer-events-none" />
-        <div className="relative w-full max-w-lg bg-brand-section border border-brand-border rounded-[2.5rem] p-8 sm:p-10 shadow-huge text-center">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
-            <Handshake size={28} />
-          </div>
-          <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Analysis Ready</span>
-          <h2 className="text-2xl sm:text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4 leading-tight">
-            Share with investors?
-          </h2>
-          <p className="text-sm text-slate-300 font-medium leading-relaxed mb-2">
-            Your analysis for <span className="text-white font-bold">{(displayProfile.companyName || 'your startup').replace(/\./g, '')}</span> scored <span className="text-brand-accent font-black">{previewScore}%</span>.
-          </p>
-          <p className="text-sm text-brand-text-secondary font-medium leading-relaxed mb-8">
-            Would you like verified investors on DecisionLab to be able to discover this startup and view your report? Only investors looking for your stage will see it. You choose once now, so pick what you're comfortable with.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => handleShareChoice(false)}
-              disabled={savingShare}
-              className="flex-1 px-6 py-4 rounded-2xl bg-brand-card border border-white/5 text-brand-text-secondary hover:text-white text-[11px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95"
-            >
-              No, keep it private
-            </button>
-            <button
-              onClick={() => handleShareChoice(true)}
-              disabled={savingShare}
-              className="flex-1 px-6 py-4 rounded-2xl bg-brand-accent text-brand-text-primary text-[11px] font-black uppercase tracking-widest shadow-lg shadow-brand-accent/20 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
-            >
-              {savingShare ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              Yes, share it
-            </button>
-          </div>
-          <p className="text-[10px] text-brand-text-muted font-bold uppercase tracking-widest mt-6">This is a one-time choice for this analysis</p>
-        </div>
-      </div>
-    );
-  }
+  // Investor matching is coming soon — share gate is disabled.
 
   // When an investor is selected, take over the screen with the full-page,
   // tabbed Investor Playbook (built instantly from this analysis).
@@ -2392,6 +2349,23 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           )}
 
           {effectiveTab === 'investors' && (() => {
+            return (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center max-w-md px-6">
+                  <div className="w-20 h-20 mx-auto mb-8 rounded-3xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+                    <Lock size={36} />
+                  </div>
+                  <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Coming Soon</span>
+                  <h3 className="text-2xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4">Investor Network</h3>
+                  <p className="text-sm text-brand-text-secondary font-medium leading-relaxed">
+                    We're building a curated network of verified investors matched to your startup. This feature will be available soon — your analysis will be ready to share the moment it launches.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {effectiveTab === 'investors_disabled' && (() => {
             const ind = (currentAnalysis.startupProfile?.industry || 'Intelligent Systems').trim();
             const stage = (currentAnalysis.startupProfile?.stage || 'Idea Stage').trim();
             const region = (currentAnalysis.startupProfile?.country || 'GCC').trim();
