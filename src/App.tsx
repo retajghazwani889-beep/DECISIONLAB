@@ -73,7 +73,8 @@ function AppContent() {
       const p = location.pathname;
       const inNewSignupFlow =
         p.startsWith('/signup') || p.startsWith('/welcome') ||
-        p.startsWith('/setup') || p.startsWith('/startups') || p === '/login';
+        p.startsWith('/setup') || p.startsWith('/startups') || p === '/login' ||
+        p.startsWith('/billing') || p.startsWith('/pricing') || p.startsWith('/contact');
       if (inNewSignupFlow) return;
       if (!profile || !profile.onboardingCompleted) {
         setIsOnboardingOpen(true);
