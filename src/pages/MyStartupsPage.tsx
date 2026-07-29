@@ -277,6 +277,7 @@ export default function MyStartupsPage() {
             })}
           </div>
         )}
+      </div>
 
       {/* Free plan limit reached → upgrade prompt */}
       {showLimitPrompt && (
