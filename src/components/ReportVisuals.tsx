@@ -142,9 +142,10 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
 
         <div className="absolute inset-4">
           {riskItems.map((item, idx) => {
-            const impact = item.data.impact;
-            const likelihood = item.data.likelihood;
-            
+            // Normalize to 1–10 scale in case Gemini returned 0–100
+            const impact = item.data.impact > 10 ? item.data.impact / 10 : item.data.impact;
+            const likelihood = item.data.likelihood > 10 ? item.data.likelihood / 10 : item.data.likelihood;
+
             const left = ((likelihood - 1) / 9) * 100;
             const top = 100 - ((impact - 1) / 9) * 100;
 
@@ -288,7 +289,10 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
           const riskData = riskKey ? risks[riskKey] : null;
           if (!riskData) return null;
 
-          const score = riskData.impact * riskData.likelihood;
+          // Normalize: Gemini sometimes returns 0–100 instead of 1–10
+          const normImpact = riskData.impact > 10 ? riskData.impact / 10 : riskData.impact;
+          const normLikelihood = riskData.likelihood > 10 ? riskData.likelihood / 10 : riskData.likelihood;
+          const score = Math.round(normImpact * normLikelihood);
           const style = getRiskStyles(score);
           const isSelected = selectedNode === m.id;
 
@@ -456,9 +460,13 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                        ))}
                      </div>
                      <div className="text-right pl-4 border-l border-brand-border/10 flex items-center justify-center min-h-[56px]">
-                        <p className={cn("text-3xl md:text-4xl font-black italic tracking-tighter tabular-nums leading-none", getRiskStyles(risks[selectedNode.toLowerCase()]?.impact * risks[selectedNode.toLowerCase()]?.likelihood || 0).color)}>
-                          {risks[selectedNode.toLowerCase()]?.impact * risks[selectedNode.toLowerCase()]?.likelihood}%
-                        </p>
+                        {(() => {
+                          const r = risks[selectedNode.toLowerCase()];
+                          const ni = r?.impact > 10 ? r.impact / 10 : (r?.impact || 0);
+                          const nl = r?.likelihood > 10 ? r.likelihood / 10 : (r?.likelihood || 0);
+                          const s = Math.round(ni * nl);
+                          return <p className={cn("text-3xl md:text-4xl font-black italic tracking-tighter tabular-nums leading-none", getRiskStyles(s).color)}>{s}%</p>;
+                        })()}
                      </div>
                   </div>
 
@@ -466,14 +474,14 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
                         <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Impact Radius</p>
                         <div className="flex items-baseline gap-2">
-                           <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{risks[selectedNode.toLowerCase()]?.impact}</p>
+                           <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.impact; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>
                         </div>
                      </div>
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
                         <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Probability</p>
                         <div className="flex items-baseline gap-2">
-                           <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{risks[selectedNode.toLowerCase()]?.likelihood}</p>
+                           <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.likelihood; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>
                         </div>
                      </div>
