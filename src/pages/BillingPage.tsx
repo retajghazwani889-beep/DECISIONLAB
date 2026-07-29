@@ -43,7 +43,8 @@ export default function BillingPage() {
   // otherwise fall back to the tier-changed date stored separately.
   const renewDate = (() => {
     if (!isPaid) return null;
-    const base = (p as any).subscriptionStartedAt?.toDate?.() || (p as any).tierGrantedAt?.toDate?.() || null;
+    const raw = (p as any).subscriptionStartedAt || (p as any).tierGrantedAt;
+    const base = raw ? (raw.toDate?.() ?? new Date(raw)) : null;
     if (!base) return null;
     const d = new Date(base);
     d.setMonth(d.getMonth() + 1);

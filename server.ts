@@ -178,7 +178,7 @@ async function startServer() {
           gumroadSubscriptionId: subscriptionId,
           gumroadSaleId: saleId,
           subscriptionUpdatedAt: new Date().toISOString(),
-          subscriptionStartedAt: new Date(),
+          subscriptionStartedAt: new Date().toISOString(),
         }, { merge: true });
         console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
       } else {
