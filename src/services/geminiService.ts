@@ -1,9 +1,18 @@
-export async function analyzeStartupIdea(description: string, isPremium: boolean = false) {
+import { auth } from '../lib/firebase';
+
+async function getIdToken(): Promise<string | undefined> {
+  try { return await auth.currentUser?.getIdToken(); } catch { return undefined; }
+}
+
+export async function analyzeStartupIdea(description: string, _isPremium: boolean = false) {
   try {
+    const idToken = await getIdToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
     const response = await fetch('/api/gemini/analyze-startup-idea', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description, isPremium })
+      headers,
+      body: JSON.stringify({ description })
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -18,9 +27,12 @@ export async function analyzeStartupIdea(description: string, isPremium: boolean
 
 export async function generateCompanyAnalysis(profile: any) {
   try {
+    const idToken = await getIdToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
     const response = await fetch('/api/gemini/generate-company-analysis', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ profile })
     });
     if (!response.ok) {

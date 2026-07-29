@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { 
   collection, 
   addDoc, 
@@ -162,9 +162,12 @@ const VentureOperator: React.FC = () => {
     setIsProcessing(true);
 
     try {
+      const idToken = await auth.currentUser?.getIdToken().catch(() => undefined);
+      const voHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (idToken) voHeaders['Authorization'] = `Bearer ${idToken}`;
       const response = await fetch('/api/gemini/venture-operator', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: voHeaders,
         body: JSON.stringify({ message: userMessage.content })
       });
       

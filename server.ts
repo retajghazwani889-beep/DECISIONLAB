@@ -492,6 +492,14 @@ async function startServer() {
     const { profile, template } = req.body;
     if (!profile) return res.status(400).json({ error: 'Profile is required' });
 
+    if (useAdminSdk) {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      try { await getAdminAuth().verifyIdToken(idToken); }
+      catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
+
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
       return res.status(500).json({ error: 'GEMINI_API_KEY environment variable is missing on the server' });
@@ -753,8 +761,22 @@ async function startServer() {
 
   // API proxy endpoint for analyzing a startup idea via Gemini
   app.post("/api/gemini/analyze-startup-idea", async (req, res) => {
-    const { description, isPremium } = req.body;
+    const { description } = req.body;
     if (!description) return res.status(400).json({ error: 'Description is required' });
+
+    // Resolve isPremium from the server — never trust the client flag.
+    let isPremium = false;
+    if (useAdminSdk) {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      try {
+        const decoded = await getAdminAuth().verifyIdToken(idToken);
+        const profileSnap = await adminDb.collection('profiles').doc(decoded.uid).get();
+        const sub = profileSnap.exists ? (profileSnap.data()?.subscriptionStatus || 'free') : 'free';
+        isPremium = ['founder', 'growth', 'investor_pro', 'premium'].includes(sub);
+      } catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
 
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
@@ -1188,6 +1210,14 @@ async function startServer() {
   app.post("/api/gemini/generate-company-analysis", async (req, res) => {
     const { profile } = req.body;
     if (!profile) return res.status(400).json({ error: 'Profile is required' });
+
+    if (useAdminSdk) {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      try { await getAdminAuth().verifyIdToken(idToken); }
+      catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
 
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
@@ -1634,6 +1664,14 @@ async function startServer() {
   app.post("/api/gemini/venture-operator", async (req, res) => {
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    if (useAdminSdk) {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      try { await getAdminAuth().verifyIdToken(idToken); }
+      catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
 
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
