@@ -137,7 +137,7 @@ export default function MyStartupsPage() {
 
         {loading ? (
           <div className="py-24 flex justify-center"><Loader2 size={24} className="animate-spin text-brand-accent" /></div>
-        ) : startups.length === 0 ? (
+        ) : startups.length === 0 && legacy.length === 0 ? (
           <div className="py-20 text-center bg-brand-section/30 rounded-[3rem] border border-dashed border-white/5 max-w-xl mx-auto px-8">
             <Rocket size={40} strokeWidth={1} className="mx-auto text-brand-accent mb-6" />
             <h3 className="text-xl font-black uppercase tracking-tight font-display mb-3">No startups yet</h3>
@@ -210,81 +210,73 @@ export default function MyStartupsPage() {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Legacy analyses & pitch decks (from before the workspace era) ── */}
-      {!loading && legacy.length > 0 && (
-        <div className="max-w-5xl mx-auto mt-16">
-          <div className="flex items-end justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-xl font-black uppercase tracking-tight font-display">Standalone Analyses</h2>
-              <p className="text-xs text-brand-text-secondary font-medium mt-1">
-                Analyses not attached to a startup yet — including quick idea checks. Link one to a startup to bring its score and report into that workspace.
-              </p>
-            </div>
-          </div>
-          <div className="space-y-3">
+            {/* Legacy analyses rendered as cards inside the same grid */}
             {legacy.map((a) => {
               const score = Number(a.overallScore ?? a.shareScore ?? a.scores?.overall ?? NaN);
               const deckSlides = a.pitchDeckData?.slides || a.pitchReadiness?.slides || [];
-              const created = a.createdAt?.toDate?.()
-                ? a.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+              const name = a.startupProfile?.companyName || a.projectName || a.ideaDescription?.slice(0, 40) || 'Analysis';
               return (
-                <div key={a.id} className="bg-brand-section border border-brand-border rounded-[1.75rem] p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-black uppercase tracking-tight truncate">
-                        {a.startupProfile?.companyName || a.projectName || a.ideaDescription?.slice(0, 60) || 'Analysis'}
+                <div key={a.id} className="bg-brand-section border border-brand-border rounded-[2rem] p-7 flex flex-col hover:border-brand-accent/40 transition-all">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent font-black shrink-0">
+                        {name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {!isNaN(score) && score > 0 && (
-                          <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">{Math.round(score)}% Score</span>
-                        )}
-                        {deckSlides.length > 0 && (
-                          <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10 flex items-center gap-1">
-                            <Presentation size={10} /> Deck · {deckSlides.length} slides
-                          </span>
-                        )}
-                        {created && <span className="text-[9px] font-black uppercase tracking-widest text-brand-text-muted">{created}</span>}
-                      </div>
+                      <h3 className="text-base font-black uppercase tracking-tight truncate">{name}</h3>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                      <button onClick={() => navigate(`/dashboard/startup/${a.id}/overview`)}
-                        className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-1.5">
-                        <FileText size={12} /> Open Report
-                      </button>
-                      {deckSlides.length > 0 && (
-                        <button onClick={() => navigate(`/pitch-deck?projectId=${a.id}`)}
-                          className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-1.5">
-                          <Presentation size={12} /> Open Deck
-                        </button>
-                      )}
-                      {startups.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={linkTargets[a.id] || ''}
-                            onChange={(e) => setLinkTargets((m) => ({ ...m, [a.id]: e.target.value }))}
-                            className="bg-brand-card border border-white/10 rounded-xl px-3 py-2.5 text-[11px] text-brand-text-primary focus:outline-none appearance-none max-w-[160px]"
-                          >
-                            <option value="" className="bg-[#102434]">Link to startup…</option>
-                            {startups.map((s) => <option key={s.id} value={s.id} className="bg-[#102434]">{s.name || 'Untitled'}</option>)}
-                          </select>
-                          <button onClick={() => linkLegacy(a.id)} disabled={!linkTargets[a.id] || linkingId === a.id}
-                            className="px-4 py-2.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5">
-                            {linkingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />} Link
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border bg-[#5da9ff]/10 text-[#5da9ff] border-[#5da9ff]/20">
+                      Analysis
+                    </span>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    {!isNaN(score) && score > 0 && (
+                      <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">{Math.round(score)}% Score</span>
+                    )}
+                    {deckSlides.length > 0 && (
+                      <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10 flex items-center gap-1">
+                        <Presentation size={10} /> {deckSlides.length} slides
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex-1" />
+
+                  <button
+                    onClick={() => navigate(`/dashboard/startup/${a.id}/overview`)}
+                    className="mt-5 w-full py-3.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <FileText size={13} /> Open Report
+                  </button>
+                  {deckSlides.length > 0 && (
+                    <button
+                      onClick={() => navigate(`/pitch-deck?projectId=${a.id}`)}
+                      className="mt-2 w-full py-3 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Presentation size={13} /> Open Deck
+                    </button>
+                  )}
+                  {startups.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <select
+                        value={linkTargets[a.id] || ''}
+                        onChange={(e) => setLinkTargets((m) => ({ ...m, [a.id]: e.target.value }))}
+                        className="flex-1 bg-brand-card border border-white/10 rounded-xl px-3 py-2.5 text-[11px] text-brand-text-primary focus:outline-none appearance-none"
+                      >
+                        <option value="" className="bg-[#102434]">Link to startup…</option>
+                        {startups.map((s) => <option key={s.id} value={s.id} className="bg-[#102434]">{s.name || 'Untitled'}</option>)}
+                      </select>
+                      <button onClick={() => linkLegacy(a.id)} disabled={!linkTargets[a.id] || linkingId === a.id}
+                        className="px-3 py-2.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5">
+                        {linkingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
       {/* Free plan limit reached → upgrade prompt */}
       {showLimitPrompt && (
