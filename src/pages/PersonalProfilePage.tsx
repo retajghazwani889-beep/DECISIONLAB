@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
@@ -36,8 +36,12 @@ export default function PersonalProfilePage() {
   const [error, setError] = useState('');
 
   // Editable fields, pre-filled from the profile (never filled twice).
+  const formInitialized = useRef(false);
   const [form, setForm] = useState<any>({});
   useEffect(() => {
+    if (formInitialized.current) return;
+    if (!profile) return;
+    formInitialized.current = true;
     setForm({
       phone: p.phone || '',
       city: p.city || '',

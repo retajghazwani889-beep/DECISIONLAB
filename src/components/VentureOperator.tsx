@@ -179,9 +179,7 @@ const VentureOperator: React.FC = () => {
         role: 'assistant',
         content: data.text || "I'm sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
-        modules: Math.random() > 0.6 ? [
-            { type: 'meter', data: { value: Math.floor(Math.random() * 40) + 60, label: 'Execution Readiness' } }
-        ] : undefined
+        modules: undefined
       };
 
       const finalMessages = [...newMessages, assistantMessage];

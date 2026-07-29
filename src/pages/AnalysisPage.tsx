@@ -28,11 +28,13 @@ const LOADING_STEPS = [
 
 const inMemoryAnalysesCache: Record<string, AnalysisReport> = {};
 
-const backupSaveToServer = async (analysisId: string, docData: any) => {
+const backupSaveToServer = async (analysisId: string, docData: any, idToken?: string) => {
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
     await fetch(`/api/analyses/${analysisId}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(docData)
     });
     console.log("Dual-writes proxy backup successful for ID:", analysisId);
@@ -140,7 +142,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       }
       fetchAnalysis(id);
     } else if (location.state?.idea && user) {
-      if (hasStartedAnalysisRef.current) return;
+      if (hasStartedAnalysisRef.current && retryToken === 0) return;
       hasStartedAnalysisRef.current = true;
       startNewAnalysis(location.state.idea);
     } else {
@@ -251,9 +253,11 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       ]);
 
       if (docSnap.exists()) {
-        const data = docSnap.data() as AnalysisReport;
+        const data = { id: docSnap.id, ...docSnap.data() } as AnalysisReport;
         setAnalysis(data);
-        setStatus(data.status);
+        // If the stored status is 'processing' the previous run crashed mid-flight —
+        // treat it as failed so the user gets a retry button instead of an infinite loader.
+        setStatus(data.status === 'processing' ? 'failed' : data.status);
       } else {
         const cached = localStorage.getItem('cached_analyses');
         if (cached) {
@@ -534,11 +538,12 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       const overallScore = Math.round(collectedScores.reduce((sum, v) => sum + v, 0) / collectedScores.length);
       resultsScores.overall = overallScore;
       
+      const safeNum = (v: any) => (typeof v === 'number' && !isNaN(v) ? v : 0);
       const calculatedRisk = results?.riskMatrix ? Math.round(
-        ((results.riskMatrix.market?.impact + results.riskMatrix.market?.likelihood) +
-         (results.riskMatrix.execution?.impact + results.riskMatrix.execution?.likelihood) +
-         (results.riskMatrix.competition?.impact + results.riskMatrix.competition?.likelihood) +
-         (results.riskMatrix.financial?.impact + results.riskMatrix.financial?.likelihood)) * 2.5
+        ((safeNum(results.riskMatrix.market?.impact) + safeNum(results.riskMatrix.market?.likelihood)) +
+         (safeNum(results.riskMatrix.execution?.impact) + safeNum(results.riskMatrix.execution?.likelihood)) +
+         (safeNum(results.riskMatrix.competition?.impact) + safeNum(results.riskMatrix.competition?.likelihood)) +
+         (safeNum(results.riskMatrix.financial?.impact) + safeNum(results.riskMatrix.financial?.likelihood))) * 2.5
       ) : null;
 
       const calculatedGrowth = resultsScores.scalability?.score ?? resultsScores.marketFit?.score ?? null;
@@ -608,7 +613,8 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
           ...finalAnalysis,
           status: 'completed'
         };
-        backupSaveToServer(targetAnalysisId, payload);
+        const idToken = await (user as any)?.getIdToken?.().catch(() => undefined);
+        backupSaveToServer(targetAnalysisId, payload, idToken);
         await setDoc(doc(db, 'analyses', targetAnalysisId), {
           ...payload,
           updatedAt: serverTimestamp()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
@@ -16,7 +16,13 @@ export default function AccountSettingsPage() {
   const navigate = useNavigate();
   const p: any = profile || {};
 
+  const nameInitialized = useRef(false);
   const [name, setName] = useState(p.displayName || user?.displayName || '');
+  useEffect(() => {
+    if (nameInitialized.current) return;
+    const resolved = profile?.displayName || user?.displayName || '';
+    if (resolved) { setName(resolved); nameInitialized.current = true; }
+  }, [profile, user]);
   const [newEmail, setNewEmail] = useState('');
   const [busy, setBusy] = useState('');
   const [notice, setNotice] = useState('');

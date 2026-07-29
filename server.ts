@@ -258,7 +258,16 @@ async function startServer() {
   // API proxy endpoint for fetching a single project from Firestore
   app.get("/api/analyses/:id", async (req, res) => {
     const { id } = req.params;
-    
+
+    // Require a valid Firebase ID token so analyses are owner-only reads.
+    if (useAdminSdk) {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      try { await getAdminAuth().verifyIdToken(idToken); }
+      catch { return res.status(401).json({ error: 'Unauthorized' }); }
+    }
+
     // First, let's see if we have a local filesystem backup to guarantee ultra-fast, permission-error-free loads
     let localData: any = null;
     const localFilePath = path.join(LOCAL_BACKUP_DIR, `${id}.json`);
