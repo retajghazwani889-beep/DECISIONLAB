@@ -1080,7 +1080,9 @@ async function startServer() {
       const prompt = `
         Analyze this NEW startup idea:
         "${description}"
-        
+
+        IMPORTANT: If the text above contains a "--- PITCH DECK CONTENT ---" section, treat it as the primary source of truth. Extract the startup name, problem, solution, business model, market, team, and financials directly from the deck. Your entire analysis must be grounded in what the deck says — not invented.
+
         CRITICAL EVALUATION SYSTEM FACTOR SEED: ${uniqueSeed}
         WARNING: Use the baseline seed parameter factor above to structurally offset token weights. Under no condition can scores be uniform or anchor onto defaults like 78. Evaluate the explicit content of the idea.
 

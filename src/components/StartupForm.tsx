@@ -70,8 +70,8 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
         setDeckName('');
         return;
       }
-      // Cap the extracted text so the analysis prompt stays focused and fast.
-      setDeckText(cleaned.slice(0, 4000));
+      // Cap at 12 000 chars — enough for a full pitch deck without overloading the prompt.
+      setDeckText(cleaned.slice(0, 12000));
     } catch (err) {
       console.error('Pitch deck parsing failed:', err);
       alert("We couldn't read that file. DOCX and TXT work most reliably; for PDFs make sure it's text-based (not a scan). You can still run the analysis with your description.");
