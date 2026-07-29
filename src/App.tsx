@@ -39,7 +39,6 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { RequireTier } from './components/UpgradeGate';
 import VentureOperator from './components/VentureOperator';
-import UserOnboarding from './components/UserOnboarding';
 
 // Pitch Deck Architect — live analysis-driven engine (replaces old PitchDeckArchitectPage)
 import PitchDeckArchitectEngine from './pages/PitchDeckArchitectPage';
@@ -58,29 +57,11 @@ function ScrollToTop() {
 
 function AppContent() {
   const { user, profile, loading, googleWorkspaceError, setGoogleWorkspaceError } = useAuth();
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const location  = useLocation();
   const navigate  = useNavigate();
 
   // Hide navbar/footer on the pitch deck editor so it gets the full viewport
   const isArchitect = location.pathname.startsWith('/pitch-deck');
-
-  // Trigger onboarding for new users — but never during the new signup /
-  // welcome / plan / setup flow, which handles onboarding itself. The old
-  // "Finalize" modal must not pop over those pages.
-  React.useEffect(() => {
-    if (user && !loading) {
-      const p = location.pathname;
-      const inNewSignupFlow =
-        p.startsWith('/signup') || p.startsWith('/welcome') ||
-        p.startsWith('/setup') || p.startsWith('/startups') || p === '/login' ||
-        p.startsWith('/billing') || p.startsWith('/pricing') || p.startsWith('/contact');
-      if (inNewSignupFlow) return;
-      if (!profile || !profile.onboardingCompleted) {
-        setIsOnboardingOpen(true);
-      }
-    }
-  }, [user, profile, loading, location.pathname]);
 
   // Resume a pending idea (typed on the homepage before signup/login).
   //  · Brand-new founders mid-onboarding (pricing → welcome → wizard): DON'T
@@ -305,10 +286,6 @@ function AppContent() {
 
       <VentureOperator />
 
-      <UserOnboarding
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-      />
     </div>
   );
 }
