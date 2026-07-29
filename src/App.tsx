@@ -216,7 +216,7 @@ function AppContent() {
         </div>
       )}
 
-      <main className={`bg-brand-bg ${isArchitect ? '' : 'pt-16'}`}>
+      <main className={`bg-brand-bg ${isArchitect ? '' : 'pt-24'}`}>
         <Routes>
           {/* ── Public pages ── */}
           <Route path="/"        element={<HomePage user={user} profile={profile} onOpenAccess={() => navigate('/signup')} />} />

@@ -64,11 +64,11 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             animate={{ opacity: 1, y: 0 }}
             className="text-left relative z-10"
           >
-            <h1 className="text-center text-5xl sm:text-7xl md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-12 md:mb-28 leading-[0.95] font-display uppercase max-w-4xl">
+            <h1 className="text-center text-4xl sm:text-7xl md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-8 md:mb-28 leading-[0.95] font-display uppercase max-w-4xl">
               Turn <span className="text-[#60A5FA] drop-shadow-[0_0_18px_rgba(96,165,250,0.55)]">Vision</span> <br className="hidden md:block" /> Into Reality
             </h1>
 
-            <p className="text-lg md:text-xl text-brand-text-primary max-w-2xl mb-16 md:mb-32 leading-[1.7] font-medium opacity-90">
+            <p className="text-base md:text-xl text-brand-text-primary max-w-2xl mb-8 md:mb-32 leading-[1.7] font-medium opacity-90">
               Startup validation, team building, pitch decks, and investor matching — turning your ideas into plans investors trust
             </p>
           </motion.div>
@@ -89,9 +89,9 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
       </section>
 
       {/* How it Works / Cinematic Demo */}
-      <section className="py-48 px-4 relative overflow-hidden bg-brand-bg">
+      <section className="py-16 md:py-32 lg:py-48 px-4 relative overflow-hidden bg-brand-bg">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-32">
+          <div className="text-center mb-10 md:mb-32">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -161,10 +161,10 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
       </section>
 
       {/* Investor Section */}
-      <section className="py-48 px-4 bg-brand-bg relative overflow-hidden">
+      <section className="py-16 md:py-32 lg:py-48 px-4 bg-brand-bg relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-brand-accent/[0.03] blur-[180px] rounded-full -z-10" />
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-32">
+          <div className="text-center mb-10 md:mb-32">
             <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-brand-bg border border-[#5da9ff]/30 text-[#5da9ff] text-xs font-black uppercase tracking-[0.4em] mb-12 drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">
               Venture Network
             </div>
@@ -232,7 +232,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
       </section>
 
       {/* Team Network Section — after Founder Matching */}
-      <section className="py-48 px-4 bg-brand-section relative overflow-hidden border-t border-white/5">
+      <section className="py-16 md:py-32 lg:py-48 px-4 bg-brand-section relative overflow-hidden border-t border-white/5">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-brand-accent/[0.03] blur-[160px] rounded-full -z-0 pointer-events-none" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24">

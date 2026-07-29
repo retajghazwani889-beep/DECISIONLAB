@@ -1844,7 +1844,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <section className="bg-brand-section p-8 rounded-[2.5rem] border border-brand-border">
                   <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-5">Market Opportunity</h4>
-                  <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
                     <div className="bg-[#0c1421] rounded-2xl p-4 border border-white/5">
                       <div className="text-[9px] font-black text-brand-text-muted uppercase tracking-widest mb-1">Size</div>
                       <div className="text-base font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</div>
@@ -2056,7 +2056,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Market Opportunity</h4>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
                       <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Market Size</p>
                       <p className="text-lg font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</p>
@@ -2093,7 +2093,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Competition & Revenue</h4>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
                       <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Competition</p>
                       <p className="text-lg font-black text-amber-400">{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium', /low|medium|high/i)}</p>

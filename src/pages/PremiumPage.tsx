@@ -219,7 +219,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           </button>
         </div>
       )}
-      <div className="text-center mb-32 space-y-6">
+      <div className="text-center mb-10 md:mb-32 space-y-6">
         <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-brand-accent/10 text-brand-accent text-xs font-black uppercase tracking-[0.2em] mb-6 border border-brand-accent/20">
           Scale your startup
         </div>

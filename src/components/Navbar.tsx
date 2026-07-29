@@ -126,7 +126,7 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
               {mobileOpen ? <CloseX size={18} /> : <Menu size={18} />}
             </button>
             {user ? (
-              <div className="relative">
+              <div className="relative hidden lg:block">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-4 p-2 pr-6 rounded-2xl border border-brand-accent/10 bg-brand-accent/5 hover:bg-brand-accent/10 transition-all group"
@@ -263,7 +263,31 @@ export default function Navbar({ onOpenAccess }: NavbarProps) {
                 </Link>
               );
             })}
-            {!user && (
+            {user ? (
+              <div className="pt-3 mt-2 border-t border-white/5 space-y-2">
+                <div className="px-4 py-3 flex items-center gap-3">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-lg border border-brand-accent/20" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-brand-section border border-brand-accent/20 flex items-center justify-center">
+                      <UserIcon size={14} className="text-brand-accent" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-black text-brand-text-primary uppercase tracking-tight">{firstName}</p>
+                    <p className="text-[10px] font-semibold text-brand-accent uppercase tracking-wider">{roleLabel}</p>
+                  </div>
+                </div>
+                <Link to="/settings" onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-center bg-brand-card border border-white/10 text-brand-text-primary">
+                  Account Settings
+                </Link>
+                <button onClick={() => { setMobileOpen(false); handleLogout(); }}
+                  className="w-full block px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-center bg-brand-coral/10 text-brand-coral">
+                  Logout
+                </button>
+              </div>
+            ) : (
               <div className="pt-3 mt-2 border-t border-white/5 space-y-2">
                 {investorArea && (
                   <Link to="/" onClick={() => setMobileOpen(false)}
