@@ -38,8 +38,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       // getTier can't see the fresh profile from inside this closure reliably,
       // so read straight from the refreshed context on next tick via reload.
       if (attempts >= 8) {
-        // Give up polling politely — the webhook may just be slow. Reload:
-        // the tier will show as soon as it's written.
+        setLoadingTier(null);
         if (fromSignup) navigate('/welcome/founder', { replace: true });
         else window.location.reload();
         return;
@@ -79,8 +78,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       uid: activeUser.uid,
       email: activeUser.email,
     });
+    // Keep loading state active while polling — cleared only when polling finishes or gives up.
     waitForTierThenContinue(targetTier);
-    setLoadingTier(null);
+    // Do NOT call setLoadingTier(null) here — polling callback handles it.
   };
 
   const PlanCard = ({
@@ -274,11 +274,11 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           features={[
             "Validation Features",
             "Team Building",
-            "Investor Matching",
             "Pitch Decks",
             "Executive Reports",
             "Compare Startups",
             "Growth Opportunities",
+            "Priority Support",
           ]}
           cta="Choose Grow"
         />

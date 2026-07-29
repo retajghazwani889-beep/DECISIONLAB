@@ -922,7 +922,7 @@ export const InvestorRelationshipNetwork = ({ investors, startupName }: { invest
         const x = 50 + Math.cos((angle * Math.PI) / 180) * radius;
         const y = 50 + Math.sin((angle * Math.PI) / 180) * radius;
         const isHovered = hoveredIdx === idx;
-        const matchScore = 85 + (idx * 3);
+        const matchScore = inv.matchScore ?? Math.min(99, 75 + (idx * 2));
 
           return (
             <motion.div

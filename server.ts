@@ -160,7 +160,8 @@ async function startServer() {
     let uid = (await findUidByEmail(email)) || "";
     if (!uid) {
       console.error(`Gumroad Ping: no uid for email=${email}, permalink=${shortPermalink}`);
-      return res.status(200).json({ ok: true, warning: "no uid resolved" });
+      // Return 500 so Gumroad retries the ping — do NOT return 200 or the payment is permanently lost.
+      return res.status(500).json({ error: "uid not resolved, will retry" });
     }
 
     try {
@@ -229,12 +230,15 @@ async function startServer() {
         return res.status(502).json({ error: "Could not cancel with the payment provider. Please try again or contact support." });
       }
 
+      const endDate = gmJson?.subscriber?.ended_at || gmJson?.ended_at || null;
       try {
-        await adminDb.collection("profiles").doc(uid).set({ subscriptionCancelAt: "scheduled" }, { merge: true });
+        await adminDb.collection("profiles").doc(uid).set({
+          subscriptionCancelAt: endDate || new Date().toISOString(),
+        }, { merge: true });
       } catch (e) { console.warn("Could not store subscriptionCancelAt:", e); }
 
-      console.log(`Billing: Gumroad sub ${subId} for ${uid} cancelled.`);
-      return res.status(200).json({ ok: true });
+      console.log(`Billing: Gumroad sub ${subId} for ${uid} cancelled. Ends: ${endDate}`);
+      return res.status(200).json({ ok: true, endsAt: endDate });
     } catch (err) {
       console.error("Cancel endpoint error:", err);
       return res.status(500).json({ error: "Something went wrong. Please try again." });

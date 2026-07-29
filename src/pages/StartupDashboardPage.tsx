@@ -86,7 +86,7 @@ export default function StartupDashboardPage({ user, profile }: StartupDashboard
         try {
           docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            const data = docSnap.data() as AnalysisReport;
+            const data = { id: docSnap.id, ...docSnap.data() } as AnalysisReport;
             if (data.status === 'completed') {
               setAnalysis(data);
               setStatus('completed');

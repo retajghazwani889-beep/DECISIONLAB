@@ -70,7 +70,7 @@ export default function BillingPage() {
         count('positions', 'founderId'),
       ]);
       if (cancelled) return;
-      const analyses = analysesSnap.docs.map((d: any) => d.data());
+      const analyses = analysesSnap.docs.map((d: any) => d.data()).filter((a: any) => a.status !== 'failed');
       setUsage({
         startups,
         analyses: analyses.length,

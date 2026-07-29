@@ -13,6 +13,7 @@ import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { generateCompanyAnalysis } from '../services/geminiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -572,7 +573,7 @@ export const getCalculatedVentureScore = (scores: any) => {
     metric5: compScore
   };
 
-  const countryFactor = marketScore;
+  const countryFactor = scaleScore;
   const riskDeductions = Math.max(0, Math.round((100 - compScore) * 0.08));
 
   return calculateFinalScore(matrixMetrics, countryFactor, ideaScore, riskDeductions);
@@ -987,6 +988,7 @@ interface ResultsDashboardProps {
 
 export default function ResultsDashboard({ analysis, profile, investorView = false }: ResultsDashboardProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -1199,7 +1201,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
       try {
         const q = query(
           collection(db, 'analyses'),
-          where('userId', '==', profile?.uid || currentAnalysis.userId)
+          where('userId', '==', user?.uid || currentAnalysis.userId)
         );
         const querySnapshot = await getDocs(q);
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnalysisReport));
