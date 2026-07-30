@@ -133,24 +133,24 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
       {/* Live Signals Bar */}
       <section className="py-24 border-y border-white/5 bg-brand-section relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap lg:flex-nowrap items-stretch justify-between gap-12 lg:gap-20">
+          <div className="grid grid-cols-2 lg:flex lg:flex-nowrap items-stretch justify-between gap-8 lg:gap-20">
             {[
               { label: 'Instant Analysis', value: '✓', desc: 'Reports in minutes', color: 'text-[#dbe4ea]', size: '50px' },
               { label: 'Clear Insights', value: '✓', desc: 'Easy to understand', color: 'text-[#e3e7e9]', size: '50px' },
               { label: 'Better Pitches', value: '✓', desc: 'Investor-ready decks', color: 'text-[#cfdde6]', size: '50px' },
               { label: 'Risk Checks', value: '✓', desc: 'Know your weak spots', color: 'text-[#deeaf1]', size: '50px' },
             ].map((stat, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                className="flex-1 flex flex-col text-center md:text-left h-auto font-display min-w-0 w-full sm:min-w-[200px]"
+                className="flex flex-col text-center lg:text-left h-auto font-display"
               >
-                <div className="flex flex-col justify-start gap-3">
-                   <p className="text-xl md:text-2xl font-medium text-brand-accent uppercase tracking-[0.12em] leading-relaxed overflow-visible whitespace-nowrap">
+                <div className="flex flex-col justify-start gap-2">
+                   <p className="text-base sm:text-xl md:text-2xl font-medium text-brand-accent uppercase tracking-[0.08em] leading-relaxed">
                      {stat.label}
                    </p>
-                   <p className={cn("text-base md:text-lg font-normal opacity-60 leading-relaxed tracking-[0.06em] px-1", stat.color)}>
+                   <p className={cn("text-sm sm:text-base font-normal opacity-60 leading-relaxed tracking-[0.04em]", stat.color)}>
                      {stat.desc}
                    </p>
                 </div>

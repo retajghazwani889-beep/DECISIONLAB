@@ -1,10 +1,10 @@
 export default function Logo() {
   return (
     <div className="flex items-center gap-3">
-      <div className="relative w-[58px] h-[58px] flex items-center justify-center">
+      <div className="relative w-[38px] h-[38px] sm:w-[58px] sm:h-[58px] flex items-center justify-center">
         <svg
-          width="54"
-          height="54"
+          width="100%"
+          height="100%"
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -74,11 +74,11 @@ export default function Logo() {
       </div>
 
       <div className="leading-none">
-        <h1 className="text-white font-semibold text-[44px] tracking-tight">
+        <h1 className="text-white font-semibold text-[28px] sm:text-[44px] tracking-tight">
           Decision<span className="text-[#60A5FA]">Lab</span>
         </h1>
 
-        <p className="mt-1 text-[#93A4B5] text-[10px] uppercase tracking-[0.45em] font-medium">
+        <p className="mt-1 text-[#93A4B5] text-[9px] uppercase tracking-[0.25em] sm:tracking-[0.45em] font-medium">
           ANALYZE · VALIDATE · GROW
         </p>
       </div>
