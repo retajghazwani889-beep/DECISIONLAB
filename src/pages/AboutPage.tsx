@@ -43,11 +43,11 @@ const AboutPage: React.FC = () => {
             </span>
             <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-6 sm:mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
               Streamline your startup journey <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-text-primary via-brand-text-primary to-brand-accent/60 font-medium" style={{ fontFamily: 'system-ui' }}>
+              <span className="text-brand-accent/80 font-medium" style={{ fontFamily: 'system-ui' }}>
                 From idea to investment
               </span>
             </h1>
-            <p className="max-w-2xl mx-auto text-xl md:text-2xl text-slate-200 leading-relaxed font-medium mb-12 opacity-95 tracking-[0.02em]">
+            <p className="max-w-2xl mx-auto text-base sm:text-xl md:text-2xl text-slate-200 leading-relaxed font-medium mb-8 sm:mb-12 opacity-95 tracking-[0.02em]">
               Validate smarter. Build faster. Raise capital with confidence. Every insight, strategy, and investor-ready document you need to turn an idea into a fundable startup.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -391,7 +391,7 @@ const AboutPage: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.2em] text-sm rounded-2xl sm:rounded-full shadow-huge hover:shadow-[0_0_60px_rgba(93,169,255,0.4)] transition-all duration-300"
+                  className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.05em] sm:tracking-[0.2em] text-sm rounded-2xl sm:rounded-full shadow-huge hover:shadow-[0_0_60px_rgba(93,169,255,0.4)] transition-all duration-300 whitespace-nowrap"
                 >
                   Enter the Dashboard
                 </motion.button>
