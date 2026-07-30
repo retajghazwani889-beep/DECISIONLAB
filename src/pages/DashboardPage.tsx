@@ -1224,7 +1224,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
               </div>
 
               {!profile || !isPremium ? (
-                <div className="p-16 bg-brand-section rounded-[4rem] border border-white/5 flex flex-col md:flex-row items-center gap-12 shadow-huge relative overflow-hidden group">
+                <div className="p-6 sm:p-16 bg-brand-section rounded-3xl sm:rounded-[4rem] border border-white/5 flex flex-col md:flex-row items-center gap-6 md:gap-12 shadow-huge relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 group-hover:rotate-0 transition-transform duration-1000">
                     <Zap size={120} className="text-brand-accent" />
                   </div>
@@ -1245,7 +1245,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
               ) : isEditing ? (
                 <form onSubmit={handleSaveAndAnalyze} className="space-y-12 max-w-5xl">
                   {/* Basic Info Section with Matte Background and Custom Interactive Inputs */}
-                  <div className="bg-[#102434] p-12 rounded-[4rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.3)] space-y-10 relative overflow-hidden">
+                  <div className="bg-[#102434] p-6 sm:p-12 rounded-3xl sm:rounded-[4rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.3)] space-y-10 relative overflow-hidden">
                     <div className="flex items-center gap-5">
                        <div className="w-2 h-8 bg-[#5da9ff] rounded-full shadow-[0_0_15px_#5da9ff]" />
                        <h3 className="text-sm font-bold uppercase tracking-[0.4em] text-white">Profile</h3>
@@ -1275,7 +1275,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                           <ImageIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-white/30 group-focus-within/field:text-[#5da9ff] transition-colors" size={20} />
                           <input
                             type="text"
-                            className="w-full pl-16 pr-44 py-5 bg-[#102434] border border-white/20 rounded-2xl font-bold text-white placeholder:text-slate-500 placeholder:font-medium transition-all outline-none focus:border-[#5da9ff] focus:ring-4 focus:ring-[#5da9ff]/20 shadow-[0_4px_20px_rgba(0,0,0,0.15)] focus:shadow-[0_0_20px_rgba(93,169,255,0.35)]"
+                            className="w-full pl-16 pr-24 sm:pr-44 py-5 bg-[#102434] border border-white/20 rounded-2xl font-bold text-white placeholder:text-slate-500 placeholder:font-medium transition-all outline-none focus:border-[#5da9ff] focus:ring-4 focus:ring-[#5da9ff]/20 shadow-[0_4px_20px_rgba(0,0,0,0.15)] focus:shadow-[0_0_20px_rgba(93,169,255,0.35)]"
                             style={{ fontSize: '115%', color: '#ffffff' }}
                             placeholder="Enter logo link or choose file"
                             value={companyLogo.startsWith('data:') ? 'Local Image File Loaded' : companyLogo}
@@ -1563,7 +1563,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                   </div>
 
                   {/* Business Model Section */}
-                  <div className="bg-[#102434] p-12 rounded-[4rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.3)] space-y-10 relative overflow-hidden">
+                  <div className="bg-[#102434] p-6 sm:p-12 rounded-3xl sm:rounded-[4rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.3)] space-y-10 relative overflow-hidden">
                     <div className="flex items-center gap-5">
                        <div className="w-2 h-8 bg-[#5da9ff] rounded-full shadow-[0_0_15px_#5da9ff]" />
                        <h3 className="text-sm font-bold uppercase tracking-[0.4em] text-white" style={{ fontSize: '115%', color: '#ffffff' }}>REVENUE SYSTEM</h3>
@@ -2245,7 +2245,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                                 </ul>
                                 {slide.metric && (
                                    <div 
-                                      className="mt-12 p-10 rounded-[2.5rem] border inline-block min-w-[340px]"
+                                      className="mt-12 p-6 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border w-full min-w-0"
                                       style={{
                                         color: slide.colorAccent || '#3b82f6',
                                         backgroundColor: `${slide.colorAccent || '#3b82f6'}10`,
@@ -2353,7 +2353,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                         </div>
                      </div>
 
-                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24">
                         <div className="space-y-12">
                            <textarea
                              className="w-full text-2xl text-neutral-600 font-medium leading-relaxed border-l-4 border-neutral-100 pl-8 italic bg-transparent focus:outline-none focus:border-brand-accent transition-all resize-none min-h-[140px] placeholder:text-neutral-300"
@@ -2388,7 +2388,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                            
                            {currentSlideData?.metric && (
                               <div 
-                                className="mt-16 p-12 rounded-[3.5rem] border inline-block min-w-[380px] shadow-sm bg-white"
+                                className="mt-8 sm:mt-16 p-6 sm:p-12 rounded-2xl sm:rounded-[3.5rem] border w-full min-w-0 max-w-full shadow-sm bg-white"
                                 style={MetricTheme(currentSlideData)}
                               >
                                  <p className="text-[11px] font-black uppercase mb-4 tracking-[0.4em] opacity-70">Strategic Proof Point</p>

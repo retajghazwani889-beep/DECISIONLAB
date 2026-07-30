@@ -232,7 +232,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         <p className="mt-6 text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">Trusted by founders worldwide</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 md:gap-10 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-10 md:gap-10 items-stretch">
         <PlanCard
           tier="free"
           title="Startup at a Glance"

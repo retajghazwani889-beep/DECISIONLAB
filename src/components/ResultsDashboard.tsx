@@ -1571,7 +1571,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           </motion.div>
               <div className="flex flex-col">
               <div className="flex items-center gap-4">
-                <h1 className="text-4xl font-black text-brand-text-primary tracking-tighter uppercase font-display leading-[1.1]">
+                <h1 className="text-2xl sm:text-4xl font-black text-brand-text-primary tracking-tighter uppercase font-display leading-[1.1] min-w-0 truncate max-w-[200px] sm:max-w-none">
                   {displayProfile.companyName || 'STARTUP NAME'}
                 </h1>
                 <button 
@@ -1949,10 +1949,10 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
           {effectiveTab === 'overview' && !investorView && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
                 <div className="relative">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-14">
                     <div>
                       <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Startup Overview</h3>
                       <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Overall evaluation of your startup idea</p>
@@ -1990,7 +1990,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                 </div>
               </section>
 
-              <section className="bg-brand-section/40 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative">
+              <section className="bg-brand-section/40 p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative">
                 <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-6">Executive Summary</h4>
                 <p className="text-base text-slate-300 leading-relaxed font-sans">{displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 pt-10 border-t border-white/5">
@@ -2038,7 +2038,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           {/* ==================== 02 / STARTUP SUMMARY TAB ==================== */}
           {effectiveTab === 'analysis' && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none" />
                 <div className="relative">
                   <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Key Insights</h3>
@@ -2132,7 +2132,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               </div>
 
               {/* SWOT Matrix Grid */}
-              <div className="bg-brand-section/50 p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge space-y-8">
+              <div className="bg-brand-section/50 p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge space-y-8">
                 <div>
                   <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">SWOT Analysis</h4>
                   <p className="text-sm text-brand-text-muted font-bold">A simple look at your strengths, weaknesses, opportunities, and threats</p>
@@ -2257,7 +2257,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           {/* ==================== 03 / RISK CENTER TAB ==================== */}
           {effectiveTab === 'risk' && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-coral/5 blur-[120px] rounded-full pointer-events-none" />
                 <div className="relative">
                   <div className="flex items-center justify-between mb-12">
@@ -2301,7 +2301,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           {/* ==================== 04 / GROWTH CENTER TAB ==================== */}
           {effectiveTab === 'growth' && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full" />
                 <div className="relative">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -2400,7 +2400,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
             return (
               <div className="space-y-12">
                 {/* Venture Capital Search Intelligence Summary Banner */}
-                <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+                <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
                   <div className="relative">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
@@ -2549,7 +2549,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           {/* ==================== 06 / REPORTS TAB ==================== */}
           {effectiveTab === 'reports' && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border/20 shadow-huge text-center relative overflow-hidden">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border/20 shadow-huge text-center relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-brand-accent/5 blur-[120px] rounded-full" />
                 <div className="relative max-w-lg mx-auto space-y-8 py-8">
                   <FileText size={56} className="text-brand-accent mx-auto" strokeWidth={1} />
@@ -2584,7 +2584,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           {/* ==================== 07 / PITCH DECK ARCHITECT TAB ==================== */}
           {effectiveTab === 'architect' && (
             <div className="space-y-12">
-              <section className="bg-brand-section p-10 lg:p-14 rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
+              <section className="bg-brand-section p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-accent/5 blur-[120px] rounded-full pointer-events-none group-hover:bg-brand-accent/10 transition-all duration-1000" />
                 <div className="relative">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">

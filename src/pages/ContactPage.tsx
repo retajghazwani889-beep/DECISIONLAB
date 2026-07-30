@@ -145,7 +145,7 @@ export default function ContactPage() {
 
             <div>
               <label className={label}>Name *</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="" className={field} />
                   <span className="text-[10px] text-brand-text-muted font-medium mt-1 block pl-1">First</span>

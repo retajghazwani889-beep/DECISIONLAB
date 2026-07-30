@@ -41,7 +41,7 @@ const AboutPage: React.FC = () => {
             <span className="inline-block text-[10px] md:text-[12px] font-black tracking-[0.8em] text-[#5da9ff] uppercase mb-8 drop-shadow-[0_0_10px_rgba(93,169,255,0.45)]">
               About Us
             </span>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-brand-text-primary mb-6 sm:mb-10 tracking-tight leading-[1.05] font-display max-w-5xl mx-auto">
               Streamline your startup journey <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-text-primary via-brand-text-primary to-brand-accent/60 font-medium" style={{ fontFamily: 'system-ui' }}>
                 From idea to investment
@@ -55,7 +55,7 @@ const AboutPage: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-10 py-5 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.15em] text-sm rounded-full shadow-[0_0_30px_rgba(93,169,255,0.3)] hover:shadow-[0_0_50px_rgba(93,169,255,0.5)] transition-all duration-300"
+                  className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.15em] text-sm rounded-2xl sm:rounded-full shadow-[0_0_30px_rgba(93,169,255,0.3)] hover:shadow-[0_0_50px_rgba(93,169,255,0.5)] transition-all duration-300"
                 >
                   Start Now
                 </motion.button>
@@ -68,7 +68,7 @@ const AboutPage: React.FC = () => {
       {/* 2. PLATFORM PHILOSOPHY */}
       <section className="py-24 px-6 border-y border-white/5 bg-brand-section/30">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20 items-center">
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -95,7 +95,7 @@ const AboutPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="relative p-12 rounded-[3.5rem] bg-brand-card/40 border border-brand-border/40 overflow-hidden"
+              className="relative p-6 sm:p-12 rounded-3xl sm:rounded-[3.5rem] bg-brand-card/40 border border-brand-border/40 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/5 to-transparent pointer-events-none" />
               <div className="grid grid-cols-2 gap-6 relative z-10">
@@ -105,7 +105,7 @@ const AboutPage: React.FC = () => {
                   { label: "Risk Safety", value: "Verified", icon: Shield },
                   { label: "Capital Efficiency", value: "Auto", icon: BarChart3 }
                 ].map((stat, i) => (
-                  <div key={i} className="p-8 rounded-3xl bg-brand-bg/50 border border-white/5">
+                  <div key={i} className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-brand-bg/50 border border-white/5">
                     <stat.icon className="w-6 h-6 text-brand-accent mb-4 opacity-70" />
                     <div className="text-2xl font-black text-brand-text-primary mb-1">{stat.value}</div>
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-secondary opacity-60">{stat.label}</div>
@@ -175,7 +175,7 @@ const AboutPage: React.FC = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -8 }}
-                className="p-10 rounded-[2.5rem] bg-brand-section/50 border border-brand-border/40 relative group"
+                className="p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] bg-brand-section/50 border border-brand-border/40 relative group"
               >
                 <div className={`w-12 h-12 rounded-2xl bg-${module.color}/10 flex items-center justify-center mb-8 border border-${module.color}/20 group-hover:scale-110 transition-transform duration-500`}>
                   <module.icon className={`w-6 h-6 text-${module.color}`} />
@@ -220,7 +220,7 @@ const AboutPage: React.FC = () => {
             viewport={{ once: true }}
             className="space-y-10"
           >
-            <h2 className="text-5xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
+            <h2 className="text-2xl sm:text-4xl md:text-7xl font-black text-brand-text-primary tracking-tighter leading-tight font-display italic">
               "Ideas are everywhere — great decisions are rare"
             </h2>
             <p className="text-base md:text-xl font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_12px_rgba(93,169,255,0.45)]">
@@ -299,7 +299,7 @@ const AboutPage: React.FC = () => {
           </div>
 
           {/* Interactive Steps Content Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-12 relative z-10 pt-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-12 relative z-10 pt-4 lg:pt-16">
             {[
               { label: "SUBMIT", desc: "Share your startup" },
               { label: "ANALYZE", desc: "Evaluate your potential" },
@@ -354,7 +354,7 @@ const AboutPage: React.FC = () => {
                     <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-3 leading-tight">
                       {step.label}
                     </h4>
-                    <p className="text-sm md:text-base font-medium text-white opacity-95 leading-snug tracking-[0.02em] max-w-[170px] mx-auto uppercase">
+                    <p className="text-sm md:text-base font-medium text-white opacity-95 leading-snug tracking-[0.02em] max-w-full sm:max-w-[170px] mx-auto uppercase">
                       {step.desc}
                     </p>
                   </div>
@@ -380,7 +380,7 @@ const AboutPage: React.FC = () => {
       {/* 6. CLOSING CTA */}
       <section className="py-24 px-6 border-t border-brand-border/40">
         <div className="max-w-7xl mx-auto">
-          <div className="p-16 md:p-24 rounded-[4rem] bg-brand-section/80 border border-brand-border/60 relative overflow-hidden text-center group">
+          <div className="p-6 sm:p-16 md:p-24 rounded-3xl sm:rounded-[3rem] md:rounded-[4rem] bg-brand-section/80 border border-brand-border/60 relative overflow-hidden text-center group">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(93,169,255,0.1)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
             
             <div className="relative z-10">
@@ -391,7 +391,7 @@ const AboutPage: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-12 py-6 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.2em] text-sm rounded-full shadow-huge hover:shadow-[0_0_60px_rgba(93,169,255,0.4)] transition-all duration-300"
+                  className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-brand-accent text-brand-bg font-black uppercase tracking-[0.2em] text-sm rounded-2xl sm:rounded-full shadow-huge hover:shadow-[0_0_60px_rgba(93,169,255,0.4)] transition-all duration-300"
                 >
                   Enter the Dashboard
                 </motion.button>

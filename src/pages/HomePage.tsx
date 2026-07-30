@@ -102,7 +102,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             <motion.h2 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-5xl md:text-7xl font-black tracking-[-0.03em] mb-10 text-brand-text-primary uppercase font-display leading-[0.9]"
+              className="text-3xl sm:text-5xl md:text-7xl font-black tracking-[-0.03em] mb-10 text-brand-text-primary uppercase font-display leading-[0.9]"
             >
               How we <br />
               <span className="text-brand-accent">help founders</span>
@@ -144,7 +144,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
                 key={idx}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                className="flex-1 flex flex-col text-center md:text-left h-auto font-display min-w-[200px]"
+                className="flex-1 flex flex-col text-center md:text-left h-auto font-display min-w-0 w-full sm:min-w-[200px]"
               >
                 <div className="flex flex-col justify-start gap-3">
                    <p className="text-xl md:text-2xl font-medium text-brand-accent uppercase tracking-[0.12em] leading-relaxed overflow-visible whitespace-nowrap">
@@ -201,7 +201,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
               <motion.div
                 key={idx}
                 whileHover={{ y: -15, scale: 1.02 }}
-                className="relative p-12 rounded-[4rem] bg-brand-card border border-[#5da9ff]/15 shadow-huge group/card transition-all duration-300 hover:border-[#5da9ff]/35 hover:shadow-[0_0_20px_rgba(93,169,255,0.1)]"
+                className="relative p-6 sm:p-12 rounded-[2rem] sm:rounded-[4rem] bg-brand-card border border-[#5da9ff]/15 shadow-huge group/card transition-all duration-300 hover:border-[#5da9ff]/35 hover:shadow-[0_0_20px_rgba(93,169,255,0.1)]"
               >
                 <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest mb-16 bg-[#5da9ff]/10 text-[#5da9ff]">
                    <div className="w-2 h-2 rounded-full bg-[#5da9ff] animate-pulse" />

@@ -674,17 +674,17 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
         </div>
         <h3 className="text-4xl font-black text-white mb-6 text-center uppercase tracking-tighter font-display">Analysis Interrupted</h3>
         <p className="text-brand-text-muted mb-14 max-w-md text-center font-bold text-lg leading-relaxed">{error}</p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md">
           <button
             onClick={() => setRetryToken(t => t + 1)}
-            className="px-12 py-6 bg-brand-accent text-brand-text-primary font-black text-sm uppercase tracking-widest rounded-2xl hover:opacity-90 transition-all active:scale-95 shadow-huge flex items-center gap-3"
+            className="w-full sm:w-auto px-8 py-5 bg-brand-accent text-brand-text-primary font-black text-sm uppercase tracking-widest rounded-2xl hover:opacity-90 transition-all active:scale-95 shadow-huge flex items-center justify-center gap-3"
           >
             <RefreshCw size={18} />
             Try Again
           </button>
           <button
             onClick={() => navigate('/')}
-            className="px-12 py-6 bg-brand-section border border-white/5 text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-white/5 transition-all active:scale-95 shadow-huge"
+            className="w-full sm:w-auto px-8 py-5 bg-brand-section border border-white/5 text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-white/5 transition-all active:scale-95 shadow-huge"
           >
             Return to Launchpad
           </button>
@@ -712,7 +712,7 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
 
     return (
       <div className="bg-[#102434] min-h-screen">
-        <div className="max-w-[1400px] mx-auto py-24">
+        <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-8 md:py-24">
           <ResultsDashboard analysis={analysis} profile={profile} />
         </div>
       </div>
