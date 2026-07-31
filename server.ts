@@ -492,10 +492,11 @@ async function startServer() {
     const { profile, template } = req.body;
     if (!profile) return res.status(400).json({ error: 'Profile is required' });
 
-    if (useAdminSdk) {
+    {
       const authHeader = req.headers.authorization || '';
       const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      if (!useAdminSdk) return res.status(503).json({ error: 'Auth unavailable' });
       try { await getAdminAuth().verifyIdToken(idToken); }
       catch { return res.status(401).json({ error: 'Unauthorized' }); }
     }
@@ -766,10 +767,11 @@ async function startServer() {
 
     // Resolve isPremium from the server — never trust the client flag.
     let isPremium = false;
-    if (useAdminSdk) {
+    {
       const authHeader = req.headers.authorization || '';
       const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      if (!useAdminSdk) return res.status(503).json({ error: 'Auth unavailable' });
       try {
         const decoded = await getAdminAuth().verifyIdToken(idToken);
         const profileSnap = await adminDb.collection('profiles').doc(decoded.uid).get();
@@ -1211,10 +1213,11 @@ async function startServer() {
     const { profile } = req.body;
     if (!profile) return res.status(400).json({ error: 'Profile is required' });
 
-    if (useAdminSdk) {
+    {
       const authHeader = req.headers.authorization || '';
       const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      if (!useAdminSdk) return res.status(503).json({ error: 'Auth unavailable' });
       try { await getAdminAuth().verifyIdToken(idToken); }
       catch { return res.status(401).json({ error: 'Unauthorized' }); }
     }
@@ -1665,10 +1668,11 @@ async function startServer() {
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
 
-    if (useAdminSdk) {
+    {
       const authHeader = req.headers.authorization || '';
       const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
+      if (!useAdminSdk) return res.status(503).json({ error: 'Auth unavailable' });
       try { await getAdminAuth().verifyIdToken(idToken); }
       catch { return res.status(401).json({ error: 'Unauthorized' }); }
     }

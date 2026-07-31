@@ -1146,8 +1146,6 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
   useEffect(() => {
     if (isEditingProfile && autoSyncEnabled) {
-      const recalculation = recalculateVentureSuite(editedProfile);
-      
       const companyNameClean = (editedProfile.companyName || '').replace(/\./g, '');
       const industryClean = (editedProfile.industry || '').replace(/\./g, '');
       const descClean = (editedProfile.businessDescription || '').replace(/\./g, '');
@@ -1159,20 +1157,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           companyName: companyNameClean,
           industry: industryClean,
           businessDescription: descClean
-        },
-        scores: recalculation.scores as any,
-        riskMatrix: recalculation.riskMatrix,
-        pitchReadiness: recalculation.pitchReadiness,
-        traction: recalculation.traction,
-        overallScore: recalculation.scores.overall,
-        analysisScore: recalculation.scores.overall,
-        riskScore: Math.round(
-          ((recalculation.riskMatrix.market.impact + recalculation.riskMatrix.market.likelihood) +
-           (recalculation.riskMatrix.execution.impact + recalculation.riskMatrix.execution.likelihood) +
-           (recalculation.riskMatrix.competition.impact + recalculation.riskMatrix.competition.likelihood) +
-           (recalculation.riskMatrix.financial.impact + recalculation.riskMatrix.financial.likelihood)) * 2.5
-        ),
-        growthScore: recalculation.scores.scalability.score
+        }
       };
 
       setCurrentAnalysis(updatedAnalysis);
@@ -1266,26 +1251,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
         }
       };
 
-      if (autoSyncEnabled) {
-        const recalculation = recalculateVentureSuite(editedProfile);
-        
-        updatedItem = {
-          ...updatedItem,
-          scores: recalculation.scores as any,
-          riskMatrix: recalculation.riskMatrix,
-            pitchReadiness: recalculation.pitchReadiness,
-          traction: recalculation.traction,
-          overallScore: recalculation.scores.overall,
-          analysisScore: recalculation.scores.overall,
-          riskScore: Math.round(
-            ((recalculation.riskMatrix.market.impact + recalculation.riskMatrix.market.likelihood) +
-             (recalculation.riskMatrix.execution.impact + recalculation.riskMatrix.execution.likelihood) +
-             (recalculation.riskMatrix.competition.impact + recalculation.riskMatrix.competition.likelihood) +
-             (recalculation.riskMatrix.financial.impact + recalculation.riskMatrix.financial.likelihood)) * 2.5
-          ),
-          growthScore: recalculation.scores.scalability.score
-        };
-      }
+      // AI scores are preserved as-is; only profile text is updated
 
       await updateDoc(doc(db, 'analyses', currentAnalysis.id), {
         ...updatedItem,

@@ -58,12 +58,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
     navigate(`/compare?ids=${selectedIds.join(',')}`);
   };
 
-  const isPremium = 
-    profile?.subscriptionStatus === 'premium' || 
-    user?.email === 'retajghazwani889@gmail.com' ||
-    user?.email?.toLowerCase().includes('retaj') ||
-    user?.displayName?.toLowerCase().includes('retaj') ||
-    user?.displayName?.toLowerCase().includes('assad');
+  const isPremium = ['founder', 'growth', 'investor_pro', 'premium'].includes(profile?.subscriptionStatus || '');
 
   const riskData = profile?.companyAnalysis?.scores ? [
     { subject: 'Market', A: (profile.companyAnalysis.scores.marketFit as any)?.score || profile.companyAnalysis.scores.marketFit || 0, fullMark: 100 },
@@ -124,70 +119,6 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
   const [pitchDecks, setPitchDecks] = useState<any[]>([]);
   const [decksLoading, setDecksLoading] = useState(true);
 
-  // Auto-seed sample pitch decks if they do not exist
-  const seedDefaultDecks = async () => {
-    if (!user) return;
-    try {
-      const seedDecksData = [
-        {
-          id: 'fixnest',
-          projectName: 'FixNest Pitch Deck',
-          slidesCount: 12,
-          updatedAt: new Date().toISOString(), // Today
-        },
-        {
-          id: 'seatme',
-          projectName: 'SeatMe Pitch Deck',
-          slidesCount: 10,
-          updatedAt: new Date(2026, 5, 18).toISOString(), // June 18
-        },
-        {
-          id: 'nexshield',
-          projectName: 'NexShield Pitch Deck',
-          slidesCount: 11,
-          updatedAt: new Date(2026, 5, 12).toISOString(), // June 12
-        }
-      ];
-
-      for (const d of seedDecksData) {
-        // Build sample slides for display
-        const slides = Array.from({ length: d.slidesCount }, (_, idx) => ({
-          id: `${d.id}-s${idx}`,
-          title: idx === 0 ? "Executive Summary" : `Slide ${idx + 1}`,
-          content: idx === 0 ? `Comprehensive review of ${d.projectName}.` : `Key strategy details and metrics for slide ${idx + 1}.`,
-          layout: idx === 0 ? 'hero' : 'split',
-          points: [`Highly optimized delivery models for ${d.projectName}`, "Defensible IP with substantial margin profiles", "Experienced executive leadership teams"],
-          imageKeywords: 'minimal business tech',
-          imageUrl: 'https://images.unsplash.com/photo-1544256718-3bcf237f3974?auto=format&fit=crop&q=80&w=800&h=450'
-        }));
-
-        await setDoc(doc(db, 'pitchDecks', d.id), {
-          id: d.id,
-          userId: user.uid,
-          projectName: d.projectName,
-          template: 'Silicon Valley VC',
-          theme: {
-            primaryColor: '#0a0d14',
-            secondaryColor: '#10b981',
-            fontFamily: 'Inter',
-            mode: 'light',
-            borderRadius: 'lg',
-            shadow: 'md',
-            headerWeight: 'bold',
-            backgroundGradient: 'none'
-          },
-          slides: slides,
-          generatedAt: d.updatedAt,
-          updatedAt: d.updatedAt,
-          status: 'DRAFT',
-          versions: []
-        });
-      }
-    } catch (err) {
-      console.warn("Seeding default pitch decks failed:", err);
-    }
-  };
-
   const fetchPitchDecks = async () => {
     if (!user) {
       setDecksLoading(false);
@@ -238,15 +169,6 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
   useEffect(() => {
     fetchPitchDecks();
   }, [user]);
-
-  // Seeder trigger effect
-  useEffect(() => {
-    if (!decksLoading && pitchDecks.length === 0 && user) {
-      seedDefaultDecks().then(() => {
-        fetchPitchDecks();
-      });
-    }
-  }, [decksLoading, pitchDecks.length, user]);
 
   const formatLastEdited = (timestamp: any) => {
     if (!timestamp) return 'Last Edited Today';
@@ -551,6 +473,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
   const handleSaveAndAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setUpdating(true);
     setAnalyzing(true);
     try {
@@ -617,6 +540,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setUpdating(true);
     try {
       await updateDoc(doc(db, 'profiles', user.uid), {
@@ -646,7 +570,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
   };
 
   const handleRunAnalysis = async () => {
-    if (!profile) return;
+    if (!profile || !user) return;
     
     // Validation: Require at least a description or pitch
     if (!profile.companyDescription?.trim() && !profile.pitchSummary?.trim()) {
@@ -735,7 +659,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
 
   const currentSlideData = profile?.pitchDeck?.slides[currentSlide];
   const bgImageUrl = currentSlideData?.imageKeywords 
-    ? `https://images.unsplash.com/photo-1?auto=format&fit=crop&q=80&w=1200&h=800&keywords=${encodeURIComponent(currentSlideData.imageKeywords)}`
+    ? `https://source.unsplash.com/1200x800/?${encodeURIComponent(currentSlideData.imageKeywords)}`
     : `https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200&h=800`;
 
   return (
@@ -2182,7 +2106,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
             <div className="hidden print:block space-y-0 bg-white">
                {profile.pitchDeck.slides.map((slide, sIdx) => {
                   const printBgUrl = slide.imageKeywords 
-                    ? `https://images.unsplash.com/photo-1?auto=format&fit=crop&q=80&w=1200&h=800&keywords=${encodeURIComponent(slide.imageKeywords)}`
+                    ? `https://source.unsplash.com/1200x800/?${encodeURIComponent(slide.imageKeywords)}`
                     : `https://picsum.photos/seed/${sIdx}/1200/800`;
                     
                   return (
@@ -2266,7 +2190,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                              </div>
                              <div className="bg-neutral-50 p-12 rounded-[3.5rem] border-4 border-dashed border-neutral-200 flex flex-col justify-center items-center text-center relative overflow-hidden">
                                 <img 
-                                   src={`https://images.unsplash.com/photo-1?auto=format&fit=crop&q=80&w=600&h=400&keywords=${encodeURIComponent(slide.imageKeywords || 'modern business')}`}
+                                   src={`https://source.unsplash.com/600x400/?${encodeURIComponent(slide.imageKeywords || 'modern business')}`}
                                    className="absolute inset-0 w-full h-full object-cover opacity-10"
                                    referrerPolicy="no-referrer"
                                 />
@@ -2406,7 +2330,7 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                         <div className="space-y-12">
                            <div className="bg-neutral-50 p-12 rounded-[4rem] border-4 border-dashed border-neutral-100 flex flex-col justify-center items-center text-center min-h-[450px] group transition-all hover:bg-neutral-100 relative overflow-hidden shadow-inner">
                               <img 
-                                src={`https://images.unsplash.com/photo-1?auto=format&fit=crop&q=80&w=800&h=600&keywords=${encodeURIComponent(currentSlideData?.imageKeywords || 'business technology')}`}
+                                src={`https://source.unsplash.com/800x600/?${encodeURIComponent(currentSlideData?.imageKeywords || 'business technology')}`}
                                 className="absolute inset-0 w-full h-full object-cover opacity-5 group-hover:opacity-10 transition-opacity"
                                 referrerPolicy="no-referrer"
                               />
