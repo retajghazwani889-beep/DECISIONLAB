@@ -13,6 +13,7 @@ import { Loader2, CheckCircle2, AlertCircle, Rocket, BarChart3, ShieldAlert, Zap
 import ResultsDashboard from '../components/ResultsDashboard';
 import GuaranteedAnalysisLoader from '../components/GuaranteedAnalysisLoader';
 import { safeLocalStorage as localStorage } from '../lib/storage';
+import { track } from '../lib/analytics';
 
 interface AnalysisPageProps {
   user: User | null;
@@ -464,9 +465,11 @@ export default function AnalysisPage({ user, profile }: AnalysisPageProps) {
       console.log("Placeholder committed to permanent database storage:", analysisId);
 
       const isPremiumUser = hasAccess(profile, 'founder');
+      track.analysisStarted();
 
       const results = await analyzeStartupIdea(idea, isPremiumUser);
       console.log("ANALYSIS_COMPLETED");
+      track.analysisCompleted();
 
       if (hasNavigatedRef.current) {
         clearTimeout(timeoutTimer);

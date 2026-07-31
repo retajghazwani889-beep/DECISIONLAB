@@ -6,6 +6,7 @@ import { Upload, ArrowRight, Sparkles, FileText, Info, Target, BarChart3, Shield
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
+import { track } from '../lib/analytics';
 
 interface StartupFormProps {
   user: any;
@@ -105,9 +106,12 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
 
       if (!user) {
         localStorage.setItem('pending_analysis_idea', combinedIdea);
+        track.ideaSubmitted();
+        track.signupStarted('email');
         onOpenAccess();
         return;
       }
+      track.ideaSubmitted();
       // Navigate to analyze page with state
       navigate('/analyze', { state: { idea: combinedIdea } });
     } catch (error: any) {

@@ -6,6 +6,7 @@ import { auth, db } from '../lib/firebase';
 import { Mail, Lock, User, MapPin, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { formatAuthError } from '../lib/utils';
+import { track } from '../lib/analytics';
 
 export default function FounderSignUpPage() {
   const { signUpWithEmail, signInWithGoogle, refreshProfile, user, profile, logout, loading } = useAuth();
@@ -55,6 +56,7 @@ export default function FounderSignUpPage() {
           console.warn('Profile save failed (offline mode?):', e);
         }
       }
+      track.signupCompleted('email');
       navigate('/pricing', { replace: true, state: { fromSignup: true } });
     } catch (e: any) {
       setErr(formatAuthError(e));
@@ -97,7 +99,7 @@ export default function FounderSignUpPage() {
         if (t === 'investor') navigate('/investor-matches', { replace: true });
         else if (t === 'teamMember') navigate('/team', { replace: true });
         else if (existing) navigate('/startups', { replace: true });
-        else navigate('/pricing', { replace: true, state: { fromSignup: true } });
+        else { track.signupCompleted('google'); navigate('/pricing', { replace: true, state: { fromSignup: true } }); }
       }
     } catch (e: any) {
       setErr(formatAuthError(e));
