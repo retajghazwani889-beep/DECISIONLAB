@@ -1734,6 +1734,24 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+
+    app.get('/robots.txt', (_req, res) => {
+      res.type('text/plain').send(
+        'User-agent: *\nAllow: /\nSitemap: https://decisionlabhub.com/sitemap.xml'
+      );
+    });
+
+    app.get('/sitemap.xml', (_req, res) => {
+      const now = new Date().toISOString().split('T')[0];
+      const pages = ['', 'about', 'pricing', 'contact'];
+      const urls = pages.map(p =>
+        `<url><loc>https://decisionlabhub.com/${p}</loc><lastmod>${now}</lastmod><changefreq>${p === '' ? 'daily' : 'weekly'}</changefreq><priority>${p === '' ? '1.0' : '0.7'}</priority></url>`
+      ).join('\n  ');
+      res.type('application/xml').send(
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ${urls}\n</urlset>`
+      );
+    });
+
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
