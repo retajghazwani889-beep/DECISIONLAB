@@ -76,10 +76,9 @@ try {
 
 // Resolved at first call by querying the API key's available models
 let GEMINI_MODELS: string[] = [
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
+  "gemini-2.0-flash-lite",
+  "gemini-2.5-flash",
 ];
 let modelsResolved = false;
 
