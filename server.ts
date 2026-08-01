@@ -87,12 +87,16 @@ async function resolveGeminiModels(apiKey: string) {
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     const data = await r.json() as any;
+    const EXCLUDED_KEYWORDS = ['tts', 'image', 'robotics', 'computer-use', 'research', 'antigravity', 'lyria', 'nano', 'omni', 'gemma', 'preview'];
     const available = (data.models || [])
       .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
       .map((m: any) => (m.name as string).replace('models/', ''))
-      .filter((n: string) => n.startsWith('gemini'));
+      .filter((n: string) => n.startsWith('gemini') && !EXCLUDED_KEYWORDS.some(ex => n.includes(ex)));
+    // Always keep gemini-2.0-flash first (confirmed stable), then append others
+    const preferred = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    const rest = available.filter((n: string) => !preferred.includes(n));
     if (available.length > 0) {
-      GEMINI_MODELS = available;
+      GEMINI_MODELS = [...preferred.filter((p: string) => available.includes(p)), ...rest];
       modelsResolved = true;
       console.log('Gemini models resolved:', GEMINI_MODELS.slice(0, 5));
     }
