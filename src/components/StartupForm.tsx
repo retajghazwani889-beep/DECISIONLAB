@@ -48,7 +48,7 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
         const pdfjs: any = await import('pdfjs-dist');
         // Worker is loaded from a CDN matching the exact installed version,
         // which avoids bundler worker-path issues.
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
         const data = await file.arrayBuffer();
         const pdf = await pdfjs.getDocument({ data }).promise;
         const pages: string[] = [];
