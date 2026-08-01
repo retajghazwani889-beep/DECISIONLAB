@@ -74,6 +74,32 @@ try {
   }
 }
 
+// Ordered from newest to oldest — first one that doesn't 404 wins
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+];
+
+async function geminiGenerateContent(client: any, params: { contents: any; config?: any }): Promise<any> {
+  let lastErr: any;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const result = await client.models.generateContent({ model, ...params });
+      return result;
+    } catch (err: any) {
+      const msg = err?.message || JSON.stringify(err);
+      if (msg.includes('404') || msg.includes('NOT_FOUND') || msg.includes('no longer available') || msg.includes('deprecated')) {
+        lastErr = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
@@ -704,8 +730,7 @@ async function startServer() {
         Ensure all titles, points, and metrics have no trailing punctuation or full stops. Use simple, direct language.
       `;
 
-      const result = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+      const result = await geminiGenerateContent(client, {
         contents: promptStr,
         config: {
           systemInstruction,
@@ -1190,8 +1215,7 @@ async function startServer() {
         - businessType: B2B, B2C, B2B2C, Marketplace, D2C
       `;
 
-      const result = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+      const result = await geminiGenerateContent(client, {
         contents: prompt,
         config: {
           systemInstruction,
@@ -1645,8 +1669,7 @@ async function startServer() {
         Provide fully computed TAM/SAM metric assessments and complete validation breakdowns in accordance with system directives.
       `;
 
-      const result = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+      const result = await geminiGenerateContent(client, {
         contents: dynamicPrompt,
         config: {
           systemInstruction,
@@ -1709,8 +1732,7 @@ async function startServer() {
         User Command: ${message}
       `;
 
-      const response = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+      const response = await geminiGenerateContent(client, {
         contents: prompt,
         config: {
           systemInstruction: "You are an elite venture analyst. Output must be structured as: Direct Answer, Strategic Insight, and Recommendation. Total brevity mandatory."
