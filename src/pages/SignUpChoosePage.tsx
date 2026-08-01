@@ -14,7 +14,7 @@ export default function SignUpChoosePage() {
       icon: Rocket,
       title: 'Founder',
       body: 'Build, validate, and grow startups.',
-      cta: 'Continue as Founder',
+      cta: 'Sign Up as Founder',
       path: '/signup/founder',
     },
     {
@@ -31,7 +31,7 @@ export default function SignUpChoosePage() {
       icon: Users,
       title: 'Team Member',
       body: 'Join startups looking for developers, designers, marketers, advisors, and other professionals.',
-      cta: 'Continue as Team Member',
+      cta: 'Sign Up as Team Member',
       path: '/signup/team',
     },
   ];
