@@ -74,15 +74,36 @@ try {
   }
 }
 
-// Ordered from newest to oldest — first one that doesn't 404 wins
-const GEMINI_MODELS = [
+// Resolved at first call by querying the API key's available models
+let GEMINI_MODELS: string[] = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-flash",
   "gemini-1.5-pro",
 ];
+let modelsResolved = false;
 
-async function geminiGenerateContent(client: any, params: { contents: any; config?: any }): Promise<any> {
+async function resolveGeminiModels(apiKey: string) {
+  if (modelsResolved) return;
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    const data = await r.json() as any;
+    const available = (data.models || [])
+      .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m: any) => (m.name as string).replace('models/', ''))
+      .filter((n: string) => n.startsWith('gemini'));
+    if (available.length > 0) {
+      GEMINI_MODELS = available;
+      modelsResolved = true;
+      console.log('Gemini models resolved:', GEMINI_MODELS.slice(0, 5));
+    }
+  } catch {
+    // keep defaults
+  }
+}
+
+async function geminiGenerateContent(client: any, params: { contents: any; config?: any }, apiKey?: string): Promise<any> {
+  if (apiKey) await resolveGeminiModels(apiKey);
   let lastErr: any;
   for (const model of GEMINI_MODELS) {
     try {
@@ -513,6 +534,22 @@ async function startServer() {
     }
   });
 
+  // Debug: list available models for this API key
+  app.get("/api/gemini/list-models", async (_req, res) => {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return res.status(500).json({ error: 'No GEMINI_API_KEY' });
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+      const data = await r.json() as any;
+      const models = (data.models || [])
+        .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+        .map((m: any) => m.name);
+      res.json({ models });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // API proxy endpoint for generating slides via Gemini
   app.post("/api/gemini/generate-slides", async (req, res) => {
     const { profile, template } = req.body;
@@ -737,7 +774,7 @@ async function startServer() {
           responseMimeType: "application/json",
           responseSchema: responseSchema as any
         }
-      });
+      }, key);
 
       const parsed = JSON.parse(result.text || '{}');
       const rawSlides = parsed.slides || [];
@@ -1222,7 +1259,7 @@ async function startServer() {
           responseMimeType: "application/json",
           responseSchema: responseSchema as any
         }
-      });
+      }, key);
 
       const parsed = JSON.parse(result.text || '{}');
       res.json(parsed);
@@ -1676,7 +1713,7 @@ async function startServer() {
           responseMimeType: "application/json",
           responseSchema: responseSchema as any
         }
-      });
+      }, key);
 
       const parsed = JSON.parse(result.text || '{}');
       res.json(parsed);
@@ -1737,7 +1774,7 @@ async function startServer() {
         config: {
           systemInstruction: "You are an elite venture analyst. Output must be structured as: Direct Answer, Strategic Insight, and Recommendation. Total brevity mandatory."
         }
-      });
+      }, key);
 
       res.json({ text: response.text || "I'm sorry, I encountered an error. Please try again." });
     } catch (error: any) {
