@@ -705,7 +705,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: promptStr,
         config: {
           systemInstruction,
@@ -1191,7 +1191,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: prompt,
         config: {
           systemInstruction,
@@ -1646,7 +1646,7 @@ async function startServer() {
       `;
 
       const result = await client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: dynamicPrompt,
         config: {
           systemInstruction,
@@ -1710,7 +1710,7 @@ async function startServer() {
       `;
 
       const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: prompt,
         config: {
           systemInstruction: "You are an elite venture analyst. Output must be structured as: Direct Answer, Strategic Insight, and Recommendation. Total brevity mandatory."
