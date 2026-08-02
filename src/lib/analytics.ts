@@ -13,7 +13,7 @@ const fire = (eventName: string, params?: Record<string, string | number>) => {
 export const track = {
   ideaSubmitted: () => fire('idea_submitted'),
   signupStarted: (method: 'email' | 'google') => fire('signup_started', { method }),
-  signupCompleted: (method: 'email' | 'google') => fire('signup_completed', { method }),
+  signupCompleted: (method: 'email' | 'google') => fire('sign_up', { method }),
   analysisStarted: () => fire('analysis_started'),
   analysisCompleted: () => fire('analysis_completed'),
   pitchDeckGenerated: () => fire('pitch_deck_generated'),

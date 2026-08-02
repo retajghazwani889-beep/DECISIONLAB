@@ -6,6 +6,7 @@ import { auth, db } from '../lib/firebase';
 import { Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { formatAuthError } from '../lib/utils';
+import { track } from '../lib/analytics';
 
 export default function TeamMemberSignUpPage() {
   const { signUpWithEmail, signInWithGoogle, refreshProfile, user, profile, logout, loading } = useAuth();
@@ -50,6 +51,7 @@ export default function TeamMemberSignUpPage() {
           console.warn('Profile save failed (offline mode?):', e);
         }
       }
+      track.signupCompleted('email');
       navigate('/team', { replace: true });
     } catch (e: any) {
       setErr(formatAuthError(e));
@@ -81,6 +83,7 @@ export default function TeamMemberSignUpPage() {
               onboardingCompleted: true,
               createdAt: serverTimestamp(),
             });
+            track.signupCompleted('google');
           }
           await refreshProfile();
         } catch (e) {
