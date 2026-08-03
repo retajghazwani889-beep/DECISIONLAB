@@ -10,15 +10,14 @@ export function openGumroadCheckout(opts: {
   uid: string;
   email?: string | null;
 }): void {
-  const params = new URLSearchParams({ wanted: 'true', uid: opts.uid });
+  const redirectBack = `${window.location.origin}/billing?upgraded=1`;
+  const params = new URLSearchParams({
+    uid: opts.uid,
+    redirect: redirectBack,
+    redirect_url: redirectBack,
+  });
   if (opts.email) params.set('email', opts.email);
-  params.set('redirect_url', `${window.location.origin}/billing?upgraded=1`);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Navigate in the same tab so the redirect_url brings users back here.
+  window.location.href = url;
 }

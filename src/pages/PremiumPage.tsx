@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Zap, Rocket, Shield, Crown, ArrowRight } from 'lucide-react';
 import { User } from 'firebase/auth';
@@ -28,26 +28,41 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
 
-  // After Gumroad reports a successful purchase, the WEBHOOK on our server
-  // writes the new tier to Firestore (usually within a few seconds). This polls
-  // the profile until the change lands, then continues the flow.
+  // Safety-net poll: if the Gumroad redirect fails for any reason and the user
+  // ends up back here, detect the tier change and navigate to billing ourselves.
+  const initialTierRef = useRef<string>(currentTier);
+  const safetyPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const waitForTierThenContinue = (expected: string) => {
+    initialTierRef.current = currentTier;
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
-      try { await refreshProfile(); } catch (_) {}
-      // getTier can't see the fresh profile from inside this closure reliably,
-      // so read straight from the refreshed context on next tick via reload.
+      let freshTier = initialTierRef.current;
+      try {
+        await refreshProfile();
+        // Read Firestore directly to avoid stale closure.
+        const { getDoc, doc: fsDoc } = await import('firebase/firestore');
+        const { db: firestoreDb } = await import('../lib/firebase');
+        if (user?.uid) {
+          const snap = await getDoc(fsDoc(firestoreDb, 'profiles', user.uid));
+          if (snap.exists()) freshTier = snap.data()?.subscriptionStatus || 'free';
+        }
+      } catch (_) {}
+      if (freshTier !== initialTierRef.current) {
+        setLoadingTier(null);
+        navigate('/billing?upgraded=1', { replace: true });
+        return;
+      }
       if (attempts >= 30) {
         setLoadingTier(null);
         if (fromSignup) navigate('/welcome/founder', { replace: true });
-        else window.location.reload();
+        else navigate('/billing', { replace: true });
         return;
       }
-      setTimeout(poll, 2000);
+      safetyPollRef.current = setTimeout(poll, 2000);
     };
-    // Small head start so the webhook has time to arrive.
-    setTimeout(poll, 3000);
+    safetyPollRef.current = setTimeout(poll, 3000);
   };
 
   // REAL checkout via Gumroad. The card form is Gumroad's — card data
