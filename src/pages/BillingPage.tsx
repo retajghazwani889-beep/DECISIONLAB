@@ -38,7 +38,6 @@ export default function BillingPage() {
 
   const confirmTier = async (tier: string) => {
     localStorage.removeItem('pending_upgrade');
-    localStorage.setItem('gumroad_confirmed', '1'); // signals popup to auto-close
     waitingRef.current = false;
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     await refreshProfile();

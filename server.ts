@@ -299,8 +299,11 @@ async function startServer() {
           );
           const data: any = await r.json();
           const sales = data?.sales || [];
+          const cutoff = Date.now() - 24 * 60 * 60 * 1000; // only purchases in the last 24h
           const active = sales.find((s: any) =>
-            !s.refunded && !s.chargebacked && s.email?.toLowerCase() === email.toLowerCase()
+            !s.refunded && !s.chargebacked &&
+            s.email?.toLowerCase() === email.toLowerCase() &&
+            new Date(s.created_at).getTime() > cutoff
           );
           if (active) {
             appliedTier = tier;

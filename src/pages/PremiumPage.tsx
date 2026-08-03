@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Zap, Rocket, Shield, Crown, ArrowRight } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../lib/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
 import { openGumroadCheckout, GUMROAD_PRODUCTS } from '../lib/gumroad';
@@ -19,8 +17,34 @@ interface PremiumPageProps {
 export default function PremiumPage({ user, profile }: PremiumPageProps) {
   const { signInWithGoogle, refreshProfile } = useAuth();
   const [loadingTier, setLoadingTier] = useState<Tier | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // While popup is open, poll the server every 2s for a tier change.
+  // When the server confirms the tier changed, set gumroad_confirmed so
+  // gumroad.ts closes the popup and triggers onSuccess.
+  // This is the ONLY legitimate trigger — no client-side postMessage guessing.
+  useEffect(() => {
+    if (!loadingTier || !user) {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      return;
+    }
+    const expectedTier = loadingTier;
+    const previousTier = getTier(profile);
+    pollRef.current = setInterval(async () => {
+      try {
+        const token = await (user as any).getIdToken(true);
+        const res = await fetch('/api/profile/tier', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const { tier } = await res.json();
+        if (tier === expectedTier && tier !== previousTier) {
+          localStorage.setItem('gumroad_confirmed', '1');
+        }
+      } catch {}
+    }, 2000);
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [loadingTier, user]);
   // Founders arriving from the signup flow get a "continue setup" path so
   // they're never stranded here: choose a plan (or stay free) → onboarding.
   const fromSignup = Boolean((location.state as any)?.fromSignup);

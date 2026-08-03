@@ -27,31 +27,15 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
     return;
   }
 
-  let purchaseConfirmed = false;
-
-  // Listen for Gumroad's postMessage success event fired from the popup.
-  // Only trust explicit purchase events — NOT generic strings that may include
-  // "gumroad" in analytics/tracking messages sent on every page load.
-  const onMessage = (e: MessageEvent) => {
-    if (purchaseConfirmed) return;
-    const d = e.data;
-    const isSuccess =
-      typeof d === 'object' && d !== null &&
-      (d.type === 'gumroad:purchase' || (d.sale && typeof d.sale === 'object'));
-    if (isSuccess) {
-      purchaseConfirmed = true;
-      window.removeEventListener('message', onMessage);
-    }
-  };
-  window.addEventListener('message', onMessage);
+  // NO client-side postMessage detection — Gumroad fires purchase events before
+  // the charge is actually confirmed (e.g. on card decline), so we cannot trust them.
+  // The ONLY signal that triggers onSuccess is gumroad_confirmed in localStorage,
+  // which is written by PremiumPage's server poll AFTER the server confirms the tier changed.
 
   const timer = setInterval(() => {
-    // BillingPage confirms tier updated → close popup and celebrate.
     if (localStorage.getItem('gumroad_confirmed')) {
       localStorage.removeItem('gumroad_confirmed');
-      purchaseConfirmed = true;
       clearInterval(timer);
-      window.removeEventListener('message', onMessage);
       popup.close();
       opts.onSuccess?.();
       return;
@@ -59,16 +43,9 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
 
     if (popup.closed) {
       clearInterval(timer);
-      window.removeEventListener('message', onMessage);
-      if (purchaseConfirmed) {
-        // Popup closed after Gumroad fired success postMessage.
-        opts.onSuccess?.();
-      } else {
-        // Popup closed without a confirmed purchase (error, cancel, VPN issue etc).
-        // Clean up pending_upgrade so billing doesn't show false "ACTIVATING" banner.
-        localStorage.removeItem('pending_upgrade');
-        opts.onDismissed?.();
-      }
+      // Popup closed without server confirming the purchase.
+      localStorage.removeItem('pending_upgrade');
+      opts.onDismissed?.();
     }
   }, 500);
 }
