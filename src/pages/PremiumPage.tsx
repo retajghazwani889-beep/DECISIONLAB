@@ -67,7 +67,9 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       uid: activeUser.uid,
       email: activeUser.email,
       onSuccess: () => {
-        // Overlay closed after successful payment — go straight to billing to poll.
+        // Tier confirmed by server — popup auto-closed, go straight to billing.
+        setLoadingTier(null);
+        localStorage.removeItem('pending_upgrade');
         navigate('/billing?upgraded=1', { replace: true });
       },
     });

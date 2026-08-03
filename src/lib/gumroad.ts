@@ -5,61 +5,58 @@ export const GUMROAD_PRODUCTS = {
 
 const GUMROAD_BASE = 'https://decisionlab888.gumroad.com/l';
 
-// Load Gumroad's overlay script once and resolve when ready.
-let gumroadScriptPromise: Promise<void> | null = null;
-function loadGumroadScript(): Promise<void> {
-  if (gumroadScriptPromise) return gumroadScriptPromise;
-  gumroadScriptPromise = new Promise((resolve) => {
-    if (document.querySelector('script[src*="gumroad.com/js/gumroad"]')) {
-      resolve();
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = 'https://gumroad.com/js/gumroad.js';
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => resolve(); // fall back gracefully
-    document.head.appendChild(s);
-  });
-  return gumroadScriptPromise;
-}
-
 export interface GumroadCheckoutOpts {
   productPermalink: string;
   uid: string;
   email?: string | null;
-  /** Called when Gumroad reports a successful purchase (overlay closed after payment). */
-  onSuccess?: () => void;
+  /** Called as soon as the server confirms the tier changed. */
+  onSuccess: () => void;
 }
 
-export async function openGumroadCheckout(opts: GumroadCheckoutOpts): Promise<void> {
-  await loadGumroadScript();
-
+export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
   const params = new URLSearchParams({ wanted: 'true', uid: opts.uid });
   if (opts.email) params.set('email', opts.email);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
 
-  // Gumroad's JS intercepts <a> clicks to gumroad.com and opens them as an
-  // overlay modal on the current page. The user never navigates away.
-  const a = document.createElement('a');
-  a.href = url;
-  a.setAttribute('data-gumroad-overlay-checkout', 'true');
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Open Gumroad in a small popup. The main window stays on DecisionLab and
+  // polls the server every 2 s. When the tier changes the popup is closed and
+  // onSuccess() is called — no redirect needed.
+  const popup = window.open(
+    url,
+    'gumroad_checkout',
+    'width=760,height=700,scrollbars=yes,resizable=yes'
+  );
 
-  // Listen for Gumroad's postMessage when the purchase completes.
-  if (opts.onSuccess) {
-    const handler = (e: MessageEvent) => {
-      // Gumroad fires { type: 'purchase' } or the string 'purchase' on success.
-      const isPurchase =
-        e.data === 'purchase' ||
-        (e.data && typeof e.data === 'object' && e.data.type === 'purchase');
-      if (!isPurchase) return;
-      window.removeEventListener('message', handler);
-      opts.onSuccess!();
-    };
-    window.addEventListener('message', handler);
-  }
+  let closed = false;
+  const finish = () => {
+    if (closed) return;
+    closed = true;
+    clearInterval(pollInterval);
+    try { popup?.close(); } catch {}
+    opts.onSuccess();
+  };
+
+  // Poll /api/profile/tier every 2 s. We read the token fresh each tick so
+  // token expiry never silently breaks polling during a long checkout.
+  const pollInterval = setInterval(async () => {
+    // If the user closed the popup themselves, stop polling.
+    if (popup?.closed) {
+      clearInterval(pollInterval);
+      return;
+    }
+    try {
+      const { auth } = await import('./firebase');
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+      const res = await fetch('/api/profile/tier', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const { tier } = await res.json();
+      if (tier && tier !== 'free') finish();
+    } catch {}
+  }, 2000);
+
+  // Safety timeout — give up after 10 min and let the user continue anyway.
+  setTimeout(() => { clearInterval(pollInterval); }, 10 * 60 * 1000);
 }
