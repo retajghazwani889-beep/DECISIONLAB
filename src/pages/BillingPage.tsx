@@ -28,19 +28,23 @@ export default function BillingPage() {
   const p: any = profile || {};
 
   // ── Post-payment landing ──
-  // When Gumroad redirects back with ?upgraded=1 we poll Firestore until the
-  // server webhook has written the new tier (can take up to ~60 s).
+  // Triggered by ?upgraded=1 (Gumroad redirect) OR a pending_upgrade key in
+  // localStorage (set before navigating away — survives even without redirect).
   const justUpgraded = searchParams.get('upgraded') === '1';
-  const [waitingForTier, setWaitingForTier] = useState(justUpgraded);
+  const pendingUpgrade = (() => {
+    try { return JSON.parse(localStorage.getItem('pending_upgrade') || 'null'); } catch { return null; }
+  })();
+  const hasPending = justUpgraded || (pendingUpgrade && Date.now() - pendingUpgrade.ts < 10 * 60 * 1000);
+
+  const [waitingForTier, setWaitingForTier] = useState(hasPending);
   const [tierConfirmed, setTierConfirmed] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Use a ref for the initial tier so the closure always reads the right value.
   const initialTierRef = useRef<string>('free');
 
   useEffect(() => {
-    if (!justUpgraded) return;
-    setSearchParams({}, { replace: true });
-    initialTierRef.current = (profile as any)?.subscriptionStatus || 'free';
+    if (!hasPending) return;
+    if (justUpgraded) setSearchParams({}, { replace: true });
+    initialTierRef.current = pendingUpgrade?.previousTier || (profile as any)?.subscriptionStatus || 'free';
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
@@ -56,13 +60,14 @@ export default function BillingPage() {
         }
       } catch (_) {}
       if (freshTier !== initialTierRef.current) {
+        localStorage.removeItem('pending_upgrade');
         setWaitingForTier(false);
         setTierConfirmed(true);
-        // Fire GA4 purchase event
         try { (window as any).gtag?.('event', 'purchase', { tier: freshTier }); } catch (_) {}
         return;
       }
       if (attempts >= 40) {
+        localStorage.removeItem('pending_upgrade');
         setWaitingForTier(false);
         return;
       }
@@ -202,6 +207,19 @@ export default function BillingPage() {
               <p className="text-sm font-black text-emerald-400 uppercase tracking-wide">Payment Confirmed — Plan Activated!</p>
               <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your new plan is live. All features are now unlocked on your account.</p>
             </div>
+          </div>
+        )}
+        {!waitingForTier && !tierConfirmed && (
+          <div className="mb-6 flex justify-end">
+            <button
+              onClick={() => {
+                localStorage.setItem('pending_upgrade', JSON.stringify({ previousTier: tierKey, ts: Date.now() }));
+                setWaitingForTier(true);
+              }}
+              className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest hover:text-brand-accent transition-colors"
+            >
+              Just paid? Click to activate your plan →
+            </button>
           </div>
         )}
 

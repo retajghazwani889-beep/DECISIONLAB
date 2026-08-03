@@ -90,14 +90,18 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     }
 
     setLoadingTier(targetTier);
+    // Store intent so BillingPage can detect the return even without a redirect param.
+    localStorage.setItem('pending_upgrade', JSON.stringify({
+      tier: targetTier,
+      previousTier: currentTier,
+      ts: Date.now(),
+    }));
     openGumroadCheckout({
       productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
       uid: activeUser.uid,
       email: activeUser.email,
     });
-    // Keep loading state active while polling — cleared only when polling finishes or gives up.
-    waitForTierThenContinue(targetTier);
-    // Do NOT call setLoadingTier(null) here — polling callback handles it.
+    // openGumroadCheckout navigates away; polling won't run. BillingPage handles it on return.
   };
 
   const PlanCard = ({
