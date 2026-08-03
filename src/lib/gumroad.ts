@@ -30,12 +30,14 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
   let purchaseConfirmed = false;
 
   // Listen for Gumroad's postMessage success event fired from the popup.
+  // Only trust explicit purchase events — NOT generic strings that may include
+  // "gumroad" in analytics/tracking messages sent on every page load.
   const onMessage = (e: MessageEvent) => {
     if (purchaseConfirmed) return;
     const d = e.data;
     const isSuccess =
-      (typeof d === 'object' && d !== null && (d.type === 'gumroad:purchase' || d.sale)) ||
-      (typeof d === 'string' && (d.includes('gumroad') || d.includes('purchase')));
+      typeof d === 'object' && d !== null &&
+      (d.type === 'gumroad:purchase' || (d.sale && typeof d.sale === 'object'));
     if (isSuccess) {
       purchaseConfirmed = true;
       window.removeEventListener('message', onMessage);
