@@ -10,6 +10,7 @@ import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import crypto from "crypto";
 import fs from "fs";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
@@ -171,10 +172,45 @@ async function startServer() {
     return null;
   }
 
+  // ── Rate limiters ─────────────────────────────────────────────────────────
+  const webhookLimiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false });
+  const syncLimiter    = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+  const pollLimiter    = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false });
+  const adminLimiter   = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true, legacyHeaders: false });
+
+  // ── Audit logger ──────────────────────────────────────────────────────────
+  async function auditLog(event: {
+    type: string; uid: string; saleId?: string;
+    oldTier?: string; newTier?: string; note?: string;
+  }) {
+    const entry = { ...event, timestamp: new Date().toISOString() };
+    console.log("AUDIT:", JSON.stringify(entry));
+    if (!useAdminSdk || !adminDb) return;
+    try {
+      await adminDb.collection("auditLogs").add(entry);
+    } catch (err) {
+      console.error("Audit log write failed:", err);
+    }
+  }
+
+  // ── Atomic tier update with retry ─────────────────────────────────────────
+  async function setTierAtomic(uid: string, fields: Record<string, any>, retries = 3): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await adminDb.collection("profiles").doc(uid).set(fields, { merge: true });
+        return;
+      } catch (err: any) {
+        console.error(`Firestore write attempt ${i + 1} failed for ${uid}:`, err?.message);
+        if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+    console.error(`CRITICAL: Firestore write failed after ${retries} retries for uid=${uid}. Data:`, JSON.stringify(fields));
+  }
+
   // Webhook secret token — add ?secret=YOUR_SECRET to the Gumroad Ping URL to reject forgeries.
   const WEBHOOK_SECRET = (process.env.GUMROAD_WEBHOOK_SECRET || "").trim();
 
-  app.post("/api/gumroad/webhook", (req: any, res: any) => {
+  app.post("/api/gumroad/webhook", webhookLimiter, (req: any, res: any) => {
     const body = req.body || {};
 
     // Scenario 13: Reject requests missing the secret token (if configured).
@@ -254,36 +290,62 @@ async function startServer() {
         return;
       }
 
+      // Read current profile to get oldTier for audit and out-of-order protection.
+      let oldTier = "free";
+      let lastUpdated = "";
       try {
-        if (isCancelled || isRefunded || subEnded) {
-          // Scenario 17, 18, 27: Refund/chargeback/cancel → downgrade to free.
-          await adminDb.collection("profiles").doc(uid).set({
-            subscriptionStatus: "free",
-            subscriptionUpdatedAt: now,
-            subscriptionCancelAt: null,
-          }, { merge: true });
-          console.log(`Gumroad: profile ${uid} → 'free' (${resourceName}).`);
-        } else if (tier) {
-          // Scenario 1, 25, 26, 28: New purchase or renewal → grant tier.
-          await adminDb.collection("profiles").doc(uid).set({
-            subscriptionStatus: tier,
-            gumroadSubscriptionId: subscriptionId,
-            gumroadSaleId: saleId,
-            subscriptionUpdatedAt: now,
-            subscriptionStartedAt: now,
-          }, { merge: true });
-          console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
-        } else {
-          console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
+        const profSnap = await adminDb.collection("profiles").doc(uid).get();
+        if (profSnap.exists) {
+          oldTier = profSnap.data()?.subscriptionStatus || "free";
+          lastUpdated = profSnap.data()?.subscriptionUpdatedAt || "";
         }
       } catch (err) {
-        console.error("Gumroad webhook: Firestore write failed:", err);
+        console.warn("Gumroad webhook: could not read current profile:", err);
+      }
+
+      // Scenario 12: Out-of-order protection — skip if this event is older than last update.
+      if (lastUpdated && body.sale_timestamp) {
+        const eventTs = new Date(body.sale_timestamp).getTime();
+        const lastTs  = new Date(lastUpdated).getTime();
+        if (eventTs < lastTs && (isCancelled || isRefunded || subEnded)) {
+          console.warn(`Gumroad: out-of-order event skipped (event=${body.sale_timestamp} < last=${lastUpdated}).`);
+          return;
+        }
+      }
+
+      if (isCancelled || isRefunded || subEnded) {
+        // Scenario 17, 18, 27: Refund/chargeback/cancel → downgrade to free.
+        await setTierAtomic(uid, {
+          subscriptionStatus: "free",
+          subscriptionUpdatedAt: now,
+          subscriptionCancelAt: null,
+        });
+        await auditLog({ type: resourceName === "refund" ? "refund" : "cancellation", uid, saleId, oldTier, newTier: "free" });
+        console.log(`Gumroad: profile ${uid} → 'free' (${resourceName}).`);
+      } else if (tier) {
+        // Scenario 1, 25, 26, 28: New purchase or renewal → grant tier.
+        // Calculate expiry: 32 days from now (monthly sub with 2-day grace period).
+        const expiry = new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString();
+        await setTierAtomic(uid, {
+          subscriptionStatus: tier,
+          gumroadSubscriptionId: subscriptionId,
+          gumroadSaleId: saleId,
+          subscriptionUpdatedAt: now,
+          subscriptionStartedAt: oldTier === "free" ? now : undefined,
+          subscriptionExpiresAt: expiry,
+        });
+        const eventType = oldTier === "free" ? "purchase" : (tier === oldTier ? "renewal" : "upgrade");
+        await auditLog({ type: eventType, uid, saleId, oldTier, newTier: tier });
+        console.log(`Gumroad: profile ${uid} → '${tier}' (${eventType}, sale ${saleId}).`);
+      } else {
+        console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
+        await auditLog({ type: "webhook_unknown_product", uid, saleId, note: shortPermalink });
       }
     })();
   });
 
   // Scenario 45: Daily subscription audit — verifies all paid users still have active Gumroad subs.
-  app.post("/api/admin/audit-subscriptions", async (req: any, res: any) => {
+  app.post("/api/admin/audit-subscriptions", adminLimiter, async (req: any, res: any) => {
     const adminSecret = (process.env.ADMIN_SECRET || "").trim();
     if (!adminSecret || req.headers["x-admin-secret"] !== adminSecret) {
       return res.status(401).json({ error: "unauthorized" });
@@ -331,7 +393,7 @@ async function startServer() {
   });
 
   // Scenario 42 & 43: Admin manual grant/revoke tier.
-  app.post("/api/admin/set-tier", async (req: any, res: any) => {
+  app.post("/api/admin/set-tier", adminLimiter, async (req: any, res: any) => {
     const adminSecret = (process.env.ADMIN_SECRET || "").trim();
     if (!adminSecret || req.headers["x-admin-secret"] !== adminSecret) {
       return res.status(401).json({ error: "unauthorized" });
@@ -340,18 +402,21 @@ async function startServer() {
     const { uid, tier } = req.body || {};
     const validTiers = ["free", "founder", "growth", "investor_pro"];
     if (!uid || !validTiers.includes(tier)) return res.status(400).json({ error: "uid and valid tier required" });
-    await adminDb.collection("profiles").doc(uid).set({
+    const profSnap = await adminDb.collection("profiles").doc(uid).get();
+    const oldTier = profSnap.exists ? (profSnap.data()?.subscriptionStatus || "free") : "free";
+    await setTierAtomic(uid, {
       subscriptionStatus: tier,
       subscriptionUpdatedAt: new Date().toISOString(),
       manualOverride: true,
-    }, { merge: true });
+    });
+    await auditLog({ type: "admin_override", uid, oldTier, newTier: tier, note: "manual admin set-tier" });
     console.log(`Admin: manually set ${uid} → '${tier}'.`);
     return res.json({ ok: true, uid, tier });
   });
 
   // ── Fresh tier check (used by frontend polling) ───────────────────────────
   // Reads straight from Firestore so there's no React state caching issue.
-  app.get("/api/profile/tier", async (req: any, res: any) => {
+  app.get("/api/profile/tier", pollLimiter, async (req: any, res: any) => {
     try {
       const token = (req.headers.authorization || "").replace("Bearer ", "").trim();
       if (!token || !useAdminSdk) return res.status(401).json({ error: "unauthorized" });
@@ -359,7 +424,22 @@ async function startServer() {
       const decoded = await adminAuthInstance.verifyIdToken(token);
       const uid = decoded.uid;
       const snap = await adminDb!.collection("profiles").doc(uid).get();
-      const tier = snap.exists ? (snap.data()?.subscriptionStatus || "free") : "free";
+      const data = snap.exists ? snap.data() : {};
+      let tier: string = data?.subscriptionStatus || "free";
+
+      // Scenario 29: Auto-downgrade expired subscriptions.
+      // Lifetime purchases (no expiry set) are never downgraded.
+      const paidTiers = ["founder", "growth", "investor_pro"];
+      if (paidTiers.includes(tier) && data?.subscriptionExpiresAt) {
+        const expired = new Date(data.subscriptionExpiresAt).getTime() < Date.now();
+        if (expired) {
+          tier = "free";
+          await setTierAtomic(uid, { subscriptionStatus: "free", subscriptionUpdatedAt: new Date().toISOString() });
+          await auditLog({ type: "expiry", uid, oldTier: data?.subscriptionStatus, newTier: "free", note: `expired at ${data.subscriptionExpiresAt}` });
+          console.log(`Expiry: profile ${uid} downgraded to free (expired ${data.subscriptionExpiresAt}).`);
+        }
+      }
+
       return res.json({ tier });
     } catch {
       return res.status(401).json({ error: "unauthorized" });
@@ -369,7 +449,7 @@ async function startServer() {
   // ── Fallback sync: query Gumroad sales API to find a recent purchase ─────
   // Called by the frontend after polling times out with no tier change.
   // Looks up the most recent sale for this uid/email and applies the tier.
-  app.post("/api/gumroad/sync", async (req: any, res: any) => {
+  app.post("/api/gumroad/sync", syncLimiter, async (req: any, res: any) => {
     try {
       const token = (req.headers.authorization || "").replace("Bearer ", "").trim();
       if (!token || !useAdminSdk || !adminDb) return res.status(401).json({ error: "unauthorized" });
@@ -406,10 +486,13 @@ async function startServer() {
       }
 
       if (appliedTier) {
-        await adminDb.collection("profiles").doc(uid).set({
+        const currentTierSnap = await adminDb.collection("profiles").doc(uid).get();
+        const oldTier = currentTierSnap.exists ? (currentTierSnap.data()?.subscriptionStatus || "free") : "free";
+        await setTierAtomic(uid, {
           subscriptionStatus: appliedTier,
           subscriptionUpdatedAt: new Date().toISOString(),
-        }, { merge: true });
+        });
+        await auditLog({ type: "sync_recovery", uid, oldTier, newTier: appliedTier, note: "recovered via Gumroad sales API" });
         console.log(`Gumroad sync: profile ${uid} → '${appliedTier}' via sales API.`);
         return res.json({ tier: appliedTier });
       }
