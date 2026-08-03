@@ -46,21 +46,36 @@ export default function BillingPage() {
     return 'free';
   };
 
+  const confirmTier = async (tier: string) => {
+    localStorage.removeItem('pending_upgrade');
+    pollingRef.current = false;
+    await refreshProfile();
+    setWaitingForTier(false);
+    setTierConfirmed(true);
+    try { (window as any).gtag?.('event', 'purchase', { tier }); } catch {}
+  };
+
+  const callSync = async (): Promise<string> => {
+    try {
+      const token = await (user as any)?.getIdToken(true);
+      if (!token) return 'free';
+      const res = await fetch('/api/gumroad/sync', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) return (await res.json()).tier || 'free';
+    } catch {}
+    return 'free';
+  };
+
   const startPolling = (previousTier: string) => {
-    if (pollingRef.current) return; // already polling
+    if (pollingRef.current) return;
     pollingRef.current = true;
     setWaitingForTier(true);
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
-      const freshTier = await fetchFreshTier();
-      if (freshTier !== previousTier && freshTier !== 'free') {
-        localStorage.removeItem('pending_upgrade');
-        pollingRef.current = false;
-        await refreshProfile();
-        setWaitingForTier(false);
-        setTierConfirmed(true);
-        try { (window as any).gtag?.('event', 'purchase', { tier: freshTier }); } catch {}
+      // After 15 s with no webhook, actively query Gumroad's sales API.
+      const freshTier = attempts > 8 ? await callSync() : await fetchFreshTier();
+      if (freshTier && freshTier !== 'free' && freshTier !== previousTier) {
+        await confirmTier(freshTier);
         return;
       }
       if (attempts >= 40) {

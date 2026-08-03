@@ -264,6 +264,60 @@ async function startServer() {
     }
   });
 
+  // ── Fallback sync: query Gumroad sales API to find a recent purchase ─────
+  // Called by the frontend after polling times out with no tier change.
+  // Looks up the most recent sale for this uid/email and applies the tier.
+  app.post("/api/gumroad/sync", async (req: any, res: any) => {
+    try {
+      const token = (req.headers.authorization || "").replace("Bearer ", "").trim();
+      if (!token || !useAdminSdk || !adminDb) return res.status(401).json({ error: "unauthorized" });
+      const adminAuthInstance = getAdminAuth();
+      const decoded = await adminAuthInstance.verifyIdToken(token);
+      const uid = decoded.uid;
+
+      // Get the user's email from their profile.
+      const profileSnap = await adminDb.collection("profiles").doc(uid).get();
+      const email = profileSnap.exists ? profileSnap.data()?.email : null;
+      if (!email) return res.status(400).json({ error: "no email on profile" });
+
+      // Check each product for a valid sale for this email.
+      let appliedTier: string | null = null;
+      for (const [tier, permalink] of Object.entries({ founder: "rdnzb", growth: "tqownt" })) {
+        try {
+          const r = await fetch(
+            `https://api.gumroad.com/v2/sales?product_permalink=${permalink}&email=${encodeURIComponent(email)}&page_key=&before=&after=`,
+            { headers: { Authorization: `Bearer ${GUMROAD_ACCESS_TOKEN}` } }
+          );
+          const data: any = await r.json();
+          const sales = data?.sales || [];
+          const active = sales.find((s: any) =>
+            !s.refunded && !s.chargebacked && s.email?.toLowerCase() === email.toLowerCase()
+          );
+          if (active) {
+            appliedTier = tier;
+            break;
+          }
+        } catch {}
+      }
+
+      if (appliedTier) {
+        await adminDb.collection("profiles").doc(uid).set({
+          subscriptionStatus: appliedTier,
+          subscriptionUpdatedAt: new Date().toISOString(),
+        }, { merge: true });
+        console.log(`Gumroad sync: profile ${uid} → '${appliedTier}' via sales API.`);
+        return res.json({ tier: appliedTier });
+      }
+
+      // No active sale found — return current tier.
+      const currentTier = profileSnap.exists ? (profileSnap.data()?.subscriptionStatus || "free") : "free";
+      return res.json({ tier: currentTier });
+    } catch (err) {
+      console.error("Gumroad sync error:", err);
+      return res.status(500).json({ error: "sync failed" });
+    }
+  });
+
   app.post("/api/billing/cancel", async (req: any, res: any) => {
     try {
       if (!useAdminSdk || !adminDb) {
