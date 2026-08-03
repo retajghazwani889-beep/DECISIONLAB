@@ -5,6 +5,7 @@ import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
@@ -64,12 +65,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     if (!activeUser) {
       try {
         await signInWithGoogle();
+        // signInWithGoogle resolves after the popup closes — grab the live user.
+        activeUser = auth.currentUser;
       } catch (error) {
         console.error("Auth failed:", error);
         return;
       }
-      // After sign-in the user object updates via context; ask them to retry once.
-      return;
+      if (!activeUser) return; // popup closed without completing sign-in
     }
 
     setLoadingTier(targetTier);
