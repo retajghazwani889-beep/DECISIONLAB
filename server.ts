@@ -171,89 +171,88 @@ async function startServer() {
     return null;
   }
 
-  app.post("/api/gumroad/webhook", async (req: any, res: any) => {
+  app.post("/api/gumroad/webhook", (req: any, res: any) => {
     const body = req.body || {};
     console.log("GUMROAD PING:", JSON.stringify(body));
 
-    if (!useAdminSdk || !adminDb) {
-      return res.status(500).json({ error: "admin sdk unavailable" });
-    }
+    // Acknowledge immediately — Gumroad requires a response within 5 seconds.
+    // All processing happens async after the 200 is sent.
+    res.status(200).json({ received: true });
 
-    const email: string          = (body.email || "").toLowerCase().trim();
-    // short_product_id is the bare permalink (e.g. "rdnzb"); product_permalink
-    // is the full URL — use the short form for our tier map.
-    const shortPermalink: string = body.short_product_id || body.permalink || "";
-    const licenseKey: string     = body.license_key || "";
-    const saleId: string         = body.sale_id || "";
-    const subscriptionId: string = body.subscription_id || "";
+    // Test pings (from "Send test ping" button) have test=true — acknowledge only, don't process.
+    const isTest = body.test === "true" || body.test === true;
+    if (isTest) { console.log("Gumroad: test ping acknowledged, skipping processing."); return; }
 
-    const isCancelled = body.cancelled === "true" || body.cancelled === true;
-    const isRefunded  = body.refunded  === "true" || body.refunded  === true;
-    const subEnded    = !!body.subscription_ended_at || !!body.subscription_failed_at;
-    const tier        = GUMROAD_PERMALINK_TO_TIER[shortPermalink];
+    if (!useAdminSdk || !adminDb) { console.error("Gumroad webhook: admin sdk unavailable"); return; }
 
-    if (licenseKey && !isCancelled && !isRefunded && !subEnded) {
+    // Process async — response already sent above.
+    (async () => {
+      const email: string          = (body.email || "").toLowerCase().trim();
+      const shortPermalink: string = body.short_product_id || body.permalink || "";
+      const licenseKey: string     = body.license_key || "";
+      const saleId: string         = body.sale_id || "";
+      const subscriptionId: string = body.subscription_id || "";
+
+      const isCancelled = body.cancelled === "true" || body.cancelled === true;
+      const isRefunded  = body.refunded  === "true" || body.refunded  === true;
+      const subEnded    = !!body.subscription_ended_at || !!body.subscription_failed_at;
+      const tier        = GUMROAD_PERMALINK_TO_TIER[shortPermalink];
+
+      // Verify license for new purchases (not cancellations/refunds).
+      if (licenseKey && !isCancelled && !isRefunded && !subEnded) {
+        try {
+          const verified = await verifyGumroadLicense(shortPermalink, licenseKey);
+          if (!verified?.success) {
+            console.warn("Gumroad license verification failed:", JSON.stringify(verified).slice(0, 300));
+            return; // Gumroad already got 200 — log and stop, don't retry
+          }
+        } catch (err) {
+          console.error("Gumroad license verify request failed:", err);
+          return;
+        }
+      }
+
+      // Resolve uid from url_params, then fall back to email lookup.
+      let uid = "";
       try {
-        // Use short_product_id as product_id for verification
-        const verified = await verifyGumroadLicense(shortPermalink, licenseKey);
-        if (!verified?.success) {
-          console.warn("Gumroad license verification failed:", JSON.stringify(verified).slice(0, 300));
-          return res.status(400).json({ error: "license verification failed" });
+        const raw = body.url_params || "";
+        const qs = new URLSearchParams(raw);
+        uid = (qs.get("uid") || "").trim();
+        if (!uid) {
+          const parsed = JSON.parse(raw || "{}");
+          uid = (parsed.uid || "").toString().trim();
+        }
+      } catch {}
+      if (!uid) uid = (await findUidByEmail(email)) || "";
+      if (!uid) {
+        console.error(`Gumroad Ping: no uid for email=${email}, permalink=${shortPermalink} — manual reconciliation needed`);
+        return;
+      }
+
+      try {
+        if (isCancelled || isRefunded || subEnded) {
+          await adminDb.collection("profiles").doc(uid).set({
+            subscriptionStatus: "free",
+            subscriptionUpdatedAt: new Date().toISOString(),
+            subscriptionCancelAt: null,
+          }, { merge: true });
+          console.log(`Gumroad: profile ${uid} → 'free'.`);
+        } else if (tier) {
+          await adminDb.collection("profiles").doc(uid).set({
+            subscriptionStatus: tier,
+            gumroadSubscriptionId: subscriptionId,
+            gumroadSaleId: saleId,
+            subscriptionUpdatedAt: new Date().toISOString(),
+            subscriptionStartedAt: new Date().toISOString(),
+          }, { merge: true });
+          console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
+        } else {
+          console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
         }
       } catch (err) {
-        console.error("Gumroad license verify request failed:", err);
-        return res.status(500).json({ error: "could not verify license" });
+        console.error("Gumroad webhook: Firestore write failed:", err);
       }
-    }
-
-    // Prefer uid passed through checkout URL params; fall back to email lookup.
-    // Gumroad sends url_params as a URL-encoded string (e.g. "wanted=true&uid=abc"),
-    // NOT as JSON — parse both formats for resilience.
-    let uid = "";
-    try {
-      const raw = body.url_params || "";
-      // Try URL-encoded first (the actual Gumroad format).
-      const qs = new URLSearchParams(raw);
-      uid = (qs.get("uid") || "").trim();
-      // Fall back to JSON in case format ever changes.
-      if (!uid) {
-        const parsed = JSON.parse(raw || "{}");
-        uid = (parsed.uid || "").toString().trim();
-      }
-    } catch {}
-    if (!uid) uid = (await findUidByEmail(email)) || "";
-    if (!uid) {
-      console.error(`Gumroad Ping: no uid for email=${email}, permalink=${shortPermalink}`);
-      // Return 500 so Gumroad retries the ping — do NOT return 200 or the payment is permanently lost.
-      return res.status(500).json({ error: "uid not resolved, will retry" });
-    }
-
-    try {
-      if (isCancelled || isRefunded || subEnded) {
-        await adminDb.collection("profiles").doc(uid).set({
-          subscriptionStatus: "free",
-          subscriptionUpdatedAt: new Date().toISOString(),
-          subscriptionCancelAt: null,
-        }, { merge: true });
-        console.log(`Gumroad: profile ${uid} → 'free'.`);
-      } else if (tier) {
-        await adminDb.collection("profiles").doc(uid).set({
-          subscriptionStatus: tier,
-          gumroadSubscriptionId: subscriptionId,
-          gumroadSaleId: saleId,
-          subscriptionUpdatedAt: new Date().toISOString(),
-          subscriptionStartedAt: new Date().toISOString(),
-        }, { merge: true });
-        console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
-      } else {
-        console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
-      }
-    } catch (err) {
-      console.error("Gumroad webhook: Firestore write failed:", err);
-      return res.status(500).json({ error: "write failed" });
-    }
-
-    return res.status(200).json({ received: true });
+    })();
   });
 
   // ── Fresh tier check (used by frontend polling) ───────────────────────────
