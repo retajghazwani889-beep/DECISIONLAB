@@ -29,10 +29,18 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
     return;
   }
 
-  // Poll until the popup closes — fires whether user paid or dismissed.
+  // Poll until the popup closes (user dismissed) OR billing signals payment confirmed.
   const timer = setInterval(() => {
     if (popup.closed) {
       clearInterval(timer);
+      opts.onSuccess?.();
+      return;
+    }
+    // BillingPage sets this key in localStorage when it confirms the tier upgrade.
+    if (localStorage.getItem('gumroad_confirmed')) {
+      localStorage.removeItem('gumroad_confirmed');
+      clearInterval(timer);
+      popup.close();
       opts.onSuccess?.();
     }
   }, 500);
