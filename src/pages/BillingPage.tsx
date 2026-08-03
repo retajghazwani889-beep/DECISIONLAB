@@ -77,30 +77,34 @@ export default function BillingPage() {
       });
     }
 
-    // Fallback: after 10s, actively query Gumroad sales API in case webhook missed.
-    timeoutRef.current = setTimeout(async () => {
-      if (!waitingRef.current) return;
-      const syncedTier = await callSync();
-      if (syncedTier && syncedTier !== 'free' && syncedTier !== previousTier) {
-        await confirmTier(syncedTier);
-        return;
-      }
-      // Still nothing after sync — give up and show helpful message.
-      if (waitingRef.current) {
-        localStorage.removeItem('pending_upgrade');
-        waitingRef.current = false;
-        if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
-        setWaitingForTier(false);
-        setTimedOut(true);
-      }
-    }, 10000);
+    // Sync immediately (2s) and again at 8s in case webhook is slow or missed.
+    const trySyncAt = async (delay: number) => {
+      timeoutRef.current = setTimeout(async () => {
+        if (!waitingRef.current) return;
+        const syncedTier = await callSync();
+        if (syncedTier && syncedTier !== 'free' && syncedTier !== previousTier) {
+          await confirmTier(syncedTier);
+          return;
+        }
+        if (delay < 8000) {
+          trySyncAt(8000 - delay); // one more attempt at ~8s total
+        } else if (waitingRef.current) {
+          localStorage.removeItem('pending_upgrade');
+          waitingRef.current = false;
+          if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+          setWaitingForTier(false);
+          setTimedOut(true);
+        }
+      }, delay);
+    };
+    trySyncAt(2000);
   };
 
   // Trigger waiting whenever ?upgraded=1 or pending_upgrade in localStorage.
   useEffect(() => {
     if (!user) return;
     const upgraded = searchParams.get('upgraded') === '1';
-    if (upgraded) setSearchParams({}, { replace: true });
+    if (upgraded) setSearchParams({}, { replace: true }); // strip params from URL
 
     let previousTier = 'free';
     try {
