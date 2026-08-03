@@ -172,6 +172,126 @@ async function startServer() {
     return null;
   }
 
+  // ── Receipt email ─────────────────────────────────────────────────────────
+  const TIER_RECEIPT: Record<string, { name: string; price: string; features: string[] }> = {
+    founder: {
+      name: 'Startup Validation',
+      price: '$39/month',
+      features: ['Unlimited Ideas', 'Market & Competitor Analysis', 'Revenue & SWOT', 'Risk Analysis', 'Growth Roadmap'],
+    },
+    growth: {
+      name: 'Startup Grow',
+      price: '$99/month',
+      features: ['Everything in Validation', 'Team Building', 'Pitch Decks', 'Executive Reports', 'Compare Startups', 'Growth Opportunities', 'Priority Support'],
+    },
+  };
+
+  async function sendReceiptEmail(opts: { to: string; tier: string; saleId: string; purchasedAt: string }): Promise<void> {
+    const host = (process.env.SMTP_HOST || "").trim();
+    const user = (process.env.SMTP_USER || "").trim();
+    const pass = (process.env.SMTP_PASS || "").trim();
+    const from = (process.env.SMTP_FROM || user).trim();
+    if (!host || host.includes('@') || !user || !pass) {
+      console.warn(`Receipt email skipped (SMTP not configured) for ${opts.to}`);
+      return;
+    }
+
+    const plan = TIER_RECEIPT[opts.tier];
+    if (!plan) { console.warn(`Receipt email: unknown tier '${opts.tier}'`); return; }
+
+    const date = new Date(opts.purchasedAt).toLocaleDateString('en-US', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    const featureRows = plan.features
+      .map(f => `<tr><td style="padding:6px 0;color:rgba(255,255,255,0.75);font-size:14px;">✓ &nbsp;${f}</td></tr>`)
+      .join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#04090E;font-family:sans-serif;">
+  <div style="max-width:600px;margin:40px auto;background:#08131D;border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0d2035 0%,#08131D 100%);padding:40px 40px 32px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <p style="margin:0 0 16px;font-size:11px;font-weight:800;letter-spacing:0.25em;text-transform:uppercase;color:#5DA9FF;">DecisionLab</p>
+      <div style="width:56px;height:56px;background:#22c55e;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <span style="font-size:28px;line-height:1;">✓</span>
+      </div>
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.03em;">Payment Confirmed</h1>
+      <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.5);">Your subscription is now active</p>
+    </div>
+
+    <!-- Receipt body -->
+    <div style="padding:36px 40px;">
+
+      <!-- Plan summary -->
+      <div style="background:rgba(93,169,255,0.07);border:1px solid rgba(93,169,255,0.2);border-radius:16px;padding:24px;margin-bottom:28px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#5DA9FF;">Plan</td>
+            <td style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#5DA9FF;" align="right">Amount</td>
+          </tr>
+          <tr>
+            <td style="padding-top:10px;font-size:18px;font-weight:900;color:#ffffff;">${plan.name}</td>
+            <td style="padding-top:10px;font-size:18px;font-weight:900;color:#ffffff;" align="right">${plan.price}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:rgba(255,255,255,0.4);">
+              Date: ${date} &nbsp;·&nbsp; Order: ${opts.saleId || 'N/A'}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Features unlocked -->
+      <p style="margin:0 0 12px;font-size:11px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);">What's included</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+        ${featureRows}
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;">
+        <a href="https://decisionlabhub.com/dashboard"
+           style="display:inline-block;padding:16px 40px;background:#5DA9FF;color:#04090E;font-size:11px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;border-radius:14px;text-decoration:none;">
+          Go to Dashboard →
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:24px 40px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+      <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.3);line-height:1.6;">
+        Questions? Reply to this email or visit <a href="https://decisionlabhub.com/contact" style="color:#5DA9FF;text-decoration:none;">decisionlabhub.com/contact</a><br>
+        DecisionLab · Subscription billed monthly via Gumroad
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+    const transporter = nodemailer.createTransport({
+      host, port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user, pass },
+    });
+
+    try {
+      await transporter.sendMail({
+        from,
+        to: opts.to,
+        subject: `Your DecisionLab receipt — ${plan.name}`,
+        html,
+      });
+      console.log(`Receipt sent to ${opts.to} (tier=${opts.tier}, sale=${opts.saleId})`);
+    } catch (err: any) {
+      console.error(`Receipt email failed for ${opts.to}:`, err?.message || err);
+    }
+  }
+
   // ── Rate limiters ─────────────────────────────────────────────────────────
   const webhookLimiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false });
   const syncLimiter    = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
@@ -337,6 +457,8 @@ async function startServer() {
         const eventType = oldTier === "free" ? "purchase" : (tier === oldTier ? "renewal" : "upgrade");
         await auditLog({ type: eventType, uid, saleId, oldTier, newTier: tier });
         console.log(`Gumroad: profile ${uid} → '${tier}' (${eventType}, sale ${saleId}).`);
+        // Send receipt email — fire-and-forget, never blocks the webhook response.
+        sendReceiptEmail({ to: email, tier, saleId, purchasedAt: now }).catch(() => {});
       } else {
         console.warn(`Gumroad Ping: unknown permalink '${shortPermalink}'.`);
         await auditLog({ type: "webhook_unknown_product", uid, saleId, note: shortPermalink });
