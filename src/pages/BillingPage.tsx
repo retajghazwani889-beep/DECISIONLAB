@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import {
   CreditCard, Zap, ArrowRight, Loader2, Rocket, BarChart3, Presentation,
   FileText, Users, Handshake, XCircle, Receipt,
@@ -29,28 +29,20 @@ export default function BillingPage() {
 
   const [waitingForTier, setWaitingForTier] = useState(false);
   const [tierConfirmed, setTierConfirmed] = useState(false);
-  const [showManualCheck, setShowManualCheck] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollingRef = useRef(false);
+  const [timedOut, setTimedOut] = useState(false);
+  const waitingRef = useRef(false);
+  const unsubRef = useRef<(() => void) | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always sync profile from server on mount so navbar + billing show the same tier.
   useEffect(() => { refreshProfile().catch(() => {}); }, []);
 
-  // Helper: ask the SERVER for the latest tier (bypasses all React state caching).
-  const fetchFreshTier = async (): Promise<string> => {
-    try {
-      const token = await (user as any)?.getIdToken();
-      if (!token) return 'free';
-      const res = await fetch('/api/profile/tier', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) return (await res.json()).tier || 'free';
-    } catch {}
-    return 'free';
-  };
-
   const confirmTier = async (tier: string) => {
     localStorage.removeItem('pending_upgrade');
     localStorage.setItem('gumroad_confirmed', '1'); // signals popup to auto-close
-    pollingRef.current = false;
+    waitingRef.current = false;
+    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     await refreshProfile();
     setWaitingForTier(false);
     setTierConfirmed(true);
@@ -67,64 +59,64 @@ export default function BillingPage() {
     return 'free';
   };
 
-  const startPolling = (previousTier: string) => {
-    if (pollingRef.current) return;
-    pollingRef.current = true;
+  const startWaiting = (previousTier: string) => {
+    if (waitingRef.current) return;
+    waitingRef.current = true;
     setWaitingForTier(true);
-    setShowManualCheck(false);
-    // Show "Check Now" button after 8s if still waiting.
-    setTimeout(() => { if (pollingRef.current) setShowManualCheck(true); }, 8000);
-    let attempts = 0;
-    const getExpected = () => {
-      try { return JSON.parse(localStorage.getItem('pending_upgrade') || '{}').tier || ''; } catch { return ''; }
-    };
-    const poll = async () => {
-      attempts += 1;
-      // First 2 attempts: check Firestore (webhook may have fired instantly).
-      // From attempt 3 onwards: actively query Gumroad sales API every attempt.
-      const freshTier = attempts <= 2 ? await fetchFreshTier() : await callSync();
-      const expected = getExpected();
-      const upgraded = freshTier && freshTier !== 'free' &&
-        (freshTier !== previousTier || (expected && freshTier === expected));
-      if (upgraded) {
-        await confirmTier(freshTier);
+    setTimedOut(false);
+
+    // Real-time Firestore listener — fires the instant the webhook writes the tier.
+    if (user?.uid) {
+      unsubRef.current = onSnapshot(doc(db, 'profiles', user.uid), async (snap) => {
+        if (!waitingRef.current) return;
+        const tier = (snap.data()?.subscriptionStatus || 'free').toString().toLowerCase();
+        const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
+        if (isPaidTier && tier !== previousTier) {
+          await confirmTier(tier);
+        }
+      });
+    }
+
+    // Fallback: after 10s, actively query Gumroad sales API in case webhook missed.
+    timeoutRef.current = setTimeout(async () => {
+      if (!waitingRef.current) return;
+      const syncedTier = await callSync();
+      if (syncedTier && syncedTier !== 'free' && syncedTier !== previousTier) {
+        await confirmTier(syncedTier);
         return;
       }
-      if (attempts >= 20) { // give up after ~30s total
+      // Still nothing after sync — give up and show helpful message.
+      if (waitingRef.current) {
         localStorage.removeItem('pending_upgrade');
-        pollingRef.current = false;
+        waitingRef.current = false;
+        if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
         setWaitingForTier(false);
-        return;
+        setTimedOut(true);
       }
-      // First two checks are fast (1s), then slow down to every 3s.
-      pollRef.current = setTimeout(poll, attempts <= 2 ? 1000 : 3000);
-    };
-    pollRef.current = setTimeout(poll, 1000);
+    }, 10000);
   };
 
-  // Trigger polling whenever ?upgraded=1 appears OR localStorage has a recent pending_upgrade.
+  // Trigger waiting whenever ?upgraded=1 or pending_upgrade in localStorage.
   useEffect(() => {
     if (!user) return;
     const upgraded = searchParams.get('upgraded') === '1';
     if (upgraded) setSearchParams({}, { replace: true });
 
     let previousTier = 'free';
-    let expectedTier = '';
     try {
       const raw = localStorage.getItem('pending_upgrade');
       if (raw) {
         const pending = JSON.parse(raw);
         if (Date.now() - pending.ts < 30 * 60 * 1000) {
           previousTier = pending.previousTier || 'free';
-          expectedTier = pending.tier || '';
-          // Only instant-confirm if the tier actually upgraded from previousTier —
-          // prevents false confirmation when user already had this tier.
+          const expectedTier = pending.tier || '';
+          // Instant-confirm if tier already changed (webhook was fast).
           const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
           if (expectedTier && currentTierKey === expectedTier && currentTierKey !== previousTier) {
             confirmTier(expectedTier);
             return;
           }
-          startPolling(previousTier);
+          startWaiting(previousTier);
           return;
         } else {
           localStorage.removeItem('pending_upgrade');
@@ -132,9 +124,12 @@ export default function BillingPage() {
       }
     } catch { localStorage.removeItem('pending_upgrade'); }
 
-    if (upgraded) startPolling(previousTier);
+    if (upgraded) startWaiting(previousTier);
 
-    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
+    return () => {
+      if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, searchParams]);
 
@@ -252,22 +247,18 @@ export default function BillingPage() {
         {waitingForTier && (
           <div className="mb-8 p-6 rounded-3xl bg-brand-accent/10 border border-brand-accent/30 flex items-center gap-4">
             <Loader2 size={20} className="animate-spin text-brand-accent shrink-0" />
-            <div className="flex-1">
+            <div>
               <p className="text-sm font-black text-brand-text-primary uppercase tracking-wide">Activating your plan…</p>
-              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment received — updating your account, please stay on this page.</p>
-              {showManualCheck && (
-                <button
-                  onClick={async () => {
-                    setShowManualCheck(false);
-                    const tier = await callSync();
-                    if (tier && tier !== 'free') { await confirmTier(tier); }
-                    else setShowManualCheck(true);
-                  }}
-                  className="mt-3 text-[10px] font-black text-brand-accent uppercase tracking-widest underline underline-offset-2"
-                >
-                  Taking too long? Check now →
-                </button>
-              )}
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment received — your plan will update automatically in seconds.</p>
+            </div>
+          </div>
+        )}
+        {timedOut && (
+          <div className="mb-8 p-6 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-4">
+            <div className="w-5 h-5 rounded-full border-2 border-amber-400 flex items-center justify-center shrink-0 text-amber-400 font-black text-xs">!</div>
+            <div>
+              <p className="text-sm font-black text-amber-400 uppercase tracking-wide">Payment received — plan updating shortly</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your payment went through. Your plan may take a few more minutes to activate — refresh this page in 2 minutes or contact <span className="text-brand-accent">support@decisionlabhub.com</span> if it doesn't update.</p>
             </div>
           </div>
         )}
