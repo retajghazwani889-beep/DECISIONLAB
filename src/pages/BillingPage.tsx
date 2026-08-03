@@ -8,10 +8,71 @@ import {
   FileText, Users, Handshake, XCircle, Receipt,
 } from 'lucide-react';
 
+const WELCOME_INFO: Record<string, { title: string; subtitle: string; perks: string[] }> = {
+  founder: {
+    title: 'Welcome to Startup Validation',
+    subtitle: 'Your subscription is now active.',
+    perks: ['Unlimited Ideas', 'Market & Competitor Analysis', 'Revenue & SWOT', 'Risk Analysis', 'Growth Roadmap'],
+  },
+  growth: {
+    title: 'Welcome to Startup Grow',
+    subtitle: 'Your subscription is now active.',
+    perks: ['Everything in Validation', 'Team Building', 'Pitch Decks', 'Executive Reports', 'Compare Startups', 'Growth Opportunities', 'Priority Support'],
+  },
+  investor_pro: {
+    title: 'Welcome to Investor Pro',
+    subtitle: 'Your subscription is now active.',
+    perks: ['Browse Startups', 'Startup Reports', 'Pitch Decks', 'Founder Contacts', 'Track Startups', 'Investor Dashboard'],
+  },
+};
+
+function WelcomeModal({ tier, onClose }: { tier: string; onClose: () => void }) {
+  const info = WELCOME_INFO[tier];
+  if (!info) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative w-full max-w-md bg-brand-section border border-emerald-500/30 rounded-3xl p-8 shadow-2xl shadow-emerald-500/10 text-center"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Animated checkmark */}
+        <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M5 14l6 6L23 8" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        <p className="text-3xl mb-2">🎉</p>
+        <h2 className="text-xl font-black uppercase tracking-tight text-brand-text-primary font-display mb-1">{info.title}</h2>
+        <p className="text-sm font-medium text-emerald-400 mb-6">{info.subtitle}</p>
+
+        <ul className="space-y-2 mb-8 text-left">
+          {info.perks.map((perk) => (
+            <li key={perk} className="flex items-center gap-3 text-sm font-medium text-neutral-300">
+              <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                  <path d="M1.5 4l2 2L6.5 2" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              {perk}
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={onClose}
+          className="w-full py-4 bg-emerald-500 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-400 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+        >
+          Start Using {info.title.replace('Welcome to ', '')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BillingPage — current plan, live usage pulled from real data, and
-// subscription management. Payment methods & invoices show honest
-// placeholders until a real payment provider (PayPal/Stripe) is connected.
+// subscription management.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PLAN_INFO: Record<string, { name: string; price: string }> = {
@@ -28,7 +89,7 @@ export default function BillingPage() {
   const p: any = profile || {};
 
   const [waitingForTier, setWaitingForTier] = useState(false);
-  const [tierConfirmed, setTierConfirmed] = useState(false);
+  const [confirmedTier, setConfirmedTier] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const waitingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,7 +116,7 @@ export default function BillingPage() {
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     await refreshProfile();
     setWaitingForTier(false);
-    setTierConfirmed(true);
+    setConfirmedTier(tier);
     try { (window as any).gtag?.('event', 'purchase', { tier }); } catch {}
   };
 
@@ -296,16 +357,8 @@ export default function BillingPage() {
             </button>
           </div>
         )}
-        {tierConfirmed && (
-          <div className="mb-8 p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-            <div>
-              <p className="text-sm font-black text-emerald-400 uppercase tracking-wide">Payment Confirmed — Plan Activated!</p>
-              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your new plan is live. All features are now unlocked on your account.</p>
-            </div>
-          </div>
+        {confirmedTier && (
+          <WelcomeModal tier={confirmedTier} onClose={() => setConfirmedTier(null)} />
         )}
 
         {/* ── Current Plan ── */}
