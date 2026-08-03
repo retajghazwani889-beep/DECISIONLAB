@@ -62,6 +62,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       return;
     }
 
+    // Scenario 7: Prevent double-click — if a popup is already open, focus it.
+    if (loadingTier) {
+      const existing = window.open('', 'gumroad_checkout');
+      existing?.focus();
+      return;
+    }
+
     // Open the popup SYNCHRONOUSLY here — Chrome only allows window.open
     // inside a direct user-gesture handler, before any async awaits.
     const w = 520, h = 700;

@@ -171,40 +171,68 @@ async function startServer() {
     return null;
   }
 
+  // Webhook secret token — add ?secret=YOUR_SECRET to the Gumroad Ping URL to reject forgeries.
+  const WEBHOOK_SECRET = (process.env.GUMROAD_WEBHOOK_SECRET || "").trim();
+
   app.post("/api/gumroad/webhook", (req: any, res: any) => {
     const body = req.body || {};
+
+    // Scenario 13: Reject requests missing the secret token (if configured).
+    if (WEBHOOK_SECRET) {
+      const provided = (req.query.secret || "").toString().trim();
+      if (provided !== WEBHOOK_SECRET) {
+        console.warn("Gumroad webhook: invalid secret — possible forgery attempt.");
+        return res.status(200).json({ received: true }); // 200 so attacker learns nothing
+      }
+    }
+
     console.log("GUMROAD PING:", JSON.stringify(body));
 
     // Acknowledge immediately — Gumroad requires a response within 5 seconds.
-    // All processing happens async after the 200 is sent.
     res.status(200).json({ received: true });
 
-    // Test pings (from "Send test ping" button) have test=true — acknowledge only, don't process.
+    // Test pings — acknowledge only, skip processing.
     const isTest = body.test === "true" || body.test === true;
-    if (isTest) { console.log("Gumroad: test ping acknowledged, skipping processing."); return; }
+    if (isTest) { console.log("Gumroad: test ping acknowledged."); return; }
 
     if (!useAdminSdk || !adminDb) { console.error("Gumroad webhook: admin sdk unavailable"); return; }
 
-    // Process async — response already sent above.
     (async () => {
       const email: string          = (body.email || "").toLowerCase().trim();
       const shortPermalink: string = body.short_product_id || body.permalink || "";
       const licenseKey: string     = body.license_key || "";
       const saleId: string         = body.sale_id || "";
+      const resourceName: string   = body.resource_name || "sale";
       const subscriptionId: string = body.subscription_id || "";
+      const now                    = new Date().toISOString();
 
       const isCancelled = body.cancelled === "true" || body.cancelled === true;
-      const isRefunded  = body.refunded  === "true" || body.refunded  === true;
+      const isRefunded  = body.refunded  === "true" || body.refunded  === true || resourceName === "refund";
       const subEnded    = !!body.subscription_ended_at || !!body.subscription_failed_at;
       const tier        = GUMROAD_PERMALINK_TO_TIER[shortPermalink];
 
-      // Verify license for new purchases (not cancellations/refunds).
+      // Scenario 11 & 32: Idempotent processing — deduplicate on saleId + resourceName.
+      if (saleId) {
+        const eventKey = `${saleId}_${resourceName}`;
+        try {
+          const existing = await adminDb.collection("webhookEvents").doc(eventKey).get();
+          if (existing.exists) {
+            console.log(`Gumroad: duplicate webhook ${eventKey} — skipping.`);
+            return;
+          }
+          await adminDb.collection("webhookEvents").doc(eventKey).set({ processedAt: now, email, saleId, resourceName });
+        } catch (err) {
+          console.warn("Gumroad: could not check duplicate, proceeding anyway:", err);
+        }
+      }
+
+      // Verify license for new purchases.
       if (licenseKey && !isCancelled && !isRefunded && !subEnded) {
         try {
           const verified = await verifyGumroadLicense(shortPermalink, licenseKey);
           if (!verified?.success) {
             console.warn("Gumroad license verification failed:", JSON.stringify(verified).slice(0, 300));
-            return; // Gumroad already got 200 — log and stop, don't retry
+            return;
           }
         } catch (err) {
           console.error("Gumroad license verify request failed:", err);
@@ -218,10 +246,7 @@ async function startServer() {
         const raw = body.url_params || "";
         const qs = new URLSearchParams(raw);
         uid = (qs.get("uid") || "").trim();
-        if (!uid) {
-          const parsed = JSON.parse(raw || "{}");
-          uid = (parsed.uid || "").toString().trim();
-        }
+        if (!uid) { const parsed = JSON.parse(raw || "{}"); uid = (parsed.uid || "").toString().trim(); }
       } catch {}
       if (!uid) uid = (await findUidByEmail(email)) || "";
       if (!uid) {
@@ -231,19 +256,21 @@ async function startServer() {
 
       try {
         if (isCancelled || isRefunded || subEnded) {
+          // Scenario 17, 18, 27: Refund/chargeback/cancel → downgrade to free.
           await adminDb.collection("profiles").doc(uid).set({
             subscriptionStatus: "free",
-            subscriptionUpdatedAt: new Date().toISOString(),
+            subscriptionUpdatedAt: now,
             subscriptionCancelAt: null,
           }, { merge: true });
-          console.log(`Gumroad: profile ${uid} → 'free'.`);
+          console.log(`Gumroad: profile ${uid} → 'free' (${resourceName}).`);
         } else if (tier) {
+          // Scenario 1, 25, 26, 28: New purchase or renewal → grant tier.
           await adminDb.collection("profiles").doc(uid).set({
             subscriptionStatus: tier,
             gumroadSubscriptionId: subscriptionId,
             gumroadSaleId: saleId,
-            subscriptionUpdatedAt: new Date().toISOString(),
-            subscriptionStartedAt: new Date().toISOString(),
+            subscriptionUpdatedAt: now,
+            subscriptionStartedAt: now,
           }, { merge: true });
           console.log(`Gumroad: profile ${uid} → '${tier}' (sale ${saleId}).`);
         } else {
@@ -253,6 +280,73 @@ async function startServer() {
         console.error("Gumroad webhook: Firestore write failed:", err);
       }
     })();
+  });
+
+  // Scenario 45: Daily subscription audit — verifies all paid users still have active Gumroad subs.
+  app.post("/api/admin/audit-subscriptions", async (req: any, res: any) => {
+    const adminSecret = (process.env.ADMIN_SECRET || "").trim();
+    if (!adminSecret || req.headers["x-admin-secret"] !== adminSecret) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+    if (!useAdminSdk || !adminDb || !GUMROAD_ACCESS_TOKEN) {
+      return res.status(500).json({ error: "admin sdk or gumroad token unavailable" });
+    }
+    res.json({ started: true });
+    (async () => {
+      try {
+        const snap = await adminDb.collection("profiles")
+          .where("subscriptionStatus", "in", ["founder", "growth"]).get();
+        let fixed = 0;
+        for (const docSnap of snap.docs) {
+          const uid = docSnap.id;
+          const prof: any = docSnap.data();
+          const email: string = (prof.email || "").toLowerCase();
+          if (!email) continue;
+          let hasActiveSale = false;
+          for (const permalink of ["rdnzb", "tqownt"]) {
+            try {
+              const r = await fetch(
+                `https://api.gumroad.com/v2/sales?product_permalink=${permalink}&email=${encodeURIComponent(email)}`,
+                { headers: { Authorization: `Bearer ${GUMROAD_ACCESS_TOKEN}` } }
+              );
+              const data: any = await r.json();
+              const active = (data?.sales || []).find((s: any) => !s.refunded && !s.chargebacked);
+              if (active) { hasActiveSale = true; break; }
+            } catch {}
+          }
+          if (!hasActiveSale) {
+            await adminDb.collection("profiles").doc(uid).set({
+              subscriptionStatus: "free",
+              subscriptionUpdatedAt: new Date().toISOString(),
+            }, { merge: true });
+            console.log(`Audit: downgraded ${uid} (${email}) — no active Gumroad sale.`);
+            fixed++;
+          }
+        }
+        console.log(`Audit complete: checked ${snap.docs.length} paid users, fixed ${fixed}.`);
+      } catch (err) {
+        console.error("Audit error:", err);
+      }
+    })();
+  });
+
+  // Scenario 42 & 43: Admin manual grant/revoke tier.
+  app.post("/api/admin/set-tier", async (req: any, res: any) => {
+    const adminSecret = (process.env.ADMIN_SECRET || "").trim();
+    if (!adminSecret || req.headers["x-admin-secret"] !== adminSecret) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+    if (!useAdminSdk || !adminDb) return res.status(500).json({ error: "admin sdk unavailable" });
+    const { uid, tier } = req.body || {};
+    const validTiers = ["free", "founder", "growth", "investor_pro"];
+    if (!uid || !validTiers.includes(tier)) return res.status(400).json({ error: "uid and valid tier required" });
+    await adminDb.collection("profiles").doc(uid).set({
+      subscriptionStatus: tier,
+      subscriptionUpdatedAt: new Date().toISOString(),
+      manualOverride: true,
+    }, { merge: true });
+    console.log(`Admin: manually set ${uid} → '${tier}'.`);
+    return res.json({ ok: true, uid, tier });
   });
 
   // ── Fresh tier check (used by frontend polling) ───────────────────────────

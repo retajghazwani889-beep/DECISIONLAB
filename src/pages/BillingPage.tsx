@@ -36,8 +36,21 @@ export default function BillingPage() {
   // Always sync profile from server on mount so navbar + billing show the same tier.
   useEffect(() => { refreshProfile().catch(() => {}); }, []);
 
+  // Scenario 6 & 37: Multi-tab sync — when another tab confirms a tier change,
+  // refresh this tab automatically so all tabs show the correct plan.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'tier_confirmed') refreshProfile().catch(() => {});
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const confirmTier = async (tier: string) => {
     localStorage.removeItem('pending_upgrade');
+    // Broadcast to other tabs so they refresh too (Scenario 6, 37).
+    localStorage.setItem('tier_confirmed', Date.now().toString());
+    localStorage.removeItem('tier_confirmed');
     waitingRef.current = false;
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     await refreshProfile();
