@@ -104,6 +104,11 @@ export default function BillingPage() {
     const upgraded = searchParams.get('upgraded') === '1';
     if (upgraded) setSearchParams({}, { replace: true }); // strip params from URL
 
+    // Only show the "ACTIVATING" banner when redirected from checkout with ?upgraded=1.
+    // pending_upgrade in localStorage alone is NOT enough — the card may have been
+    // declined, the popup may still be open, or the user may just be browsing billing.
+    if (!upgraded) return;
+
     let previousTier = 'free';
     try {
       const raw = localStorage.getItem('pending_upgrade');
@@ -112,21 +117,19 @@ export default function BillingPage() {
         if (Date.now() - pending.ts < 30 * 60 * 1000) {
           previousTier = pending.previousTier || 'free';
           const expectedTier = pending.tier || '';
-          // Instant-confirm if tier already changed (webhook was fast).
+          // Instant-confirm if webhook already updated the tier before we landed here.
           const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
           if (expectedTier && currentTierKey === expectedTier && currentTierKey !== previousTier) {
             confirmTier(expectedTier);
             return;
           }
-          startWaiting(previousTier);
-          return;
         } else {
           localStorage.removeItem('pending_upgrade');
         }
       }
     } catch { localStorage.removeItem('pending_upgrade'); }
 
-    if (upgraded) startWaiting(previousTier);
+    startWaiting(previousTier);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
