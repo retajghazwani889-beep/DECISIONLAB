@@ -70,9 +70,11 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         popup,
         onSuccess: () => {
           setLoadingTier(null);
-          // Use a timestamp so billing's useEffect always re-triggers even if
-          // already on /billing (searchParams changes = new effect run).
           navigate(`/billing?upgraded=1&t=${Date.now()}`, { replace: true });
+        },
+        onDismissed: () => {
+          // Payment was not completed — reset button, don't navigate.
+          setLoadingTier(null);
         },
       });
     };

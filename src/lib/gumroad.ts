@@ -9,8 +9,9 @@ export interface GumroadCheckoutOpts {
   productPermalink: string;
   uid: string;
   email?: string | null;
-  popup?: Window | null; // pre-opened popup from the synchronous click handler
+  popup?: Window | null;
   onSuccess?: () => void;
+  onDismissed?: () => void; // called when popup closed WITHOUT a confirmed payment
 }
 
 export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
@@ -18,30 +19,54 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
   if (opts.email) params.set('email', opts.email);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
 
-  // Use the pre-opened popup (Chrome allows this because window.open was called
-  // synchronously in the user-gesture handler). Navigate it to the checkout URL.
   const popup = opts.popup;
   if (popup && !popup.closed) {
     popup.location.href = url;
   } else {
-    // Fallback: same-tab navigation. App.tsx + pending_upgrade handles return.
     window.location.href = url;
     return;
   }
 
-  // Poll until the popup closes (user dismissed) OR billing signals payment confirmed.
+  let purchaseConfirmed = false;
+
+  // Listen for Gumroad's postMessage success event fired from the popup.
+  const onMessage = (e: MessageEvent) => {
+    if (purchaseConfirmed) return;
+    const d = e.data;
+    const isSuccess =
+      (typeof d === 'object' && d !== null && (d.type === 'gumroad:purchase' || d.sale)) ||
+      (typeof d === 'string' && (d.includes('gumroad') || d.includes('purchase')));
+    if (isSuccess) {
+      purchaseConfirmed = true;
+      window.removeEventListener('message', onMessage);
+    }
+  };
+  window.addEventListener('message', onMessage);
+
   const timer = setInterval(() => {
-    if (popup.closed) {
+    // BillingPage confirms tier updated → close popup and celebrate.
+    if (localStorage.getItem('gumroad_confirmed')) {
+      localStorage.removeItem('gumroad_confirmed');
+      purchaseConfirmed = true;
       clearInterval(timer);
+      window.removeEventListener('message', onMessage);
+      popup.close();
       opts.onSuccess?.();
       return;
     }
-    // BillingPage sets this key in localStorage when it confirms the tier upgrade.
-    if (localStorage.getItem('gumroad_confirmed')) {
-      localStorage.removeItem('gumroad_confirmed');
+
+    if (popup.closed) {
       clearInterval(timer);
-      popup.close();
-      opts.onSuccess?.();
+      window.removeEventListener('message', onMessage);
+      if (purchaseConfirmed) {
+        // Popup closed after Gumroad fired success postMessage.
+        opts.onSuccess?.();
+      } else {
+        // Popup closed without a confirmed purchase (error, cancel, VPN issue etc).
+        // Clean up pending_upgrade so billing doesn't show false "ACTIVATING" banner.
+        localStorage.removeItem('pending_upgrade');
+        opts.onDismissed?.();
+      }
     }
   }, 500);
 }
