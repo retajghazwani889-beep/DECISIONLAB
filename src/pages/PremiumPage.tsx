@@ -37,16 +37,16 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       try { await refreshProfile(); } catch (_) {}
       // getTier can't see the fresh profile from inside this closure reliably,
       // so read straight from the refreshed context on next tick via reload.
-      if (attempts >= 8) {
+      if (attempts >= 30) {
         setLoadingTier(null);
         if (fromSignup) navigate('/welcome/founder', { replace: true });
         else window.location.reload();
         return;
       }
-      setTimeout(poll, 1500);
+      setTimeout(poll, 2000);
     };
     // Small head start so the webhook has time to arrive.
-    setTimeout(poll, 2500);
+    setTimeout(poll, 3000);
   };
 
   // REAL checkout via Gumroad. The card form is Gumroad's — card data

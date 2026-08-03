@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
@@ -24,7 +24,36 @@ const PLAN_INFO: Record<string, { name: string; price: string }> = {
 export default function BillingPage() {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const p: any = profile || {};
+
+  // ── Post-payment landing ──
+  // When Gumroad redirects back with ?upgraded=1 we poll until the server
+  // webhook has written the new tier to Firestore (can take up to ~60 s).
+  const justUpgraded = searchParams.get('upgraded') === '1';
+  const [waitingForTier, setWaitingForTier] = useState(justUpgraded);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!justUpgraded) return;
+    // Strip the param so a refresh doesn't re-trigger.
+    setSearchParams({}, { replace: true });
+    const initialTier = (profile as any)?.subscriptionStatus || 'free';
+    let attempts = 0;
+    const poll = async () => {
+      attempts += 1;
+      try { await refreshProfile(); } catch (_) {}
+      const newTier = (profile as any)?.subscriptionStatus || 'free';
+      if (newTier !== initialTier || attempts >= 40) {
+        setWaitingForTier(false);
+        return;
+      }
+      pollRef.current = setTimeout(poll, 2000);
+    };
+    pollRef.current = setTimeout(poll, 3000);
+    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justUpgraded]);
 
   const tierKey = (p.subscriptionStatus || 'free').toString().toLowerCase();
   const plan = PLAN_INFO[tierKey] || PLAN_INFO.free;
@@ -136,6 +165,16 @@ export default function BillingPage() {
       <div className="max-w-3xl mx-auto">
         <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-3">Account</span>
         <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display mb-10">Billing & Subscription</h1>
+
+        {waitingForTier && (
+          <div className="mb-8 p-6 rounded-3xl bg-brand-accent/10 border border-brand-accent/30 flex items-center gap-4">
+            <Loader2 size={20} className="animate-spin text-brand-accent shrink-0" />
+            <div>
+              <p className="text-sm font-black text-brand-text-primary uppercase tracking-wide">Activating your plan…</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment confirmed. We're updating your account — this takes up to 60 seconds.</p>
+            </div>
+          </div>
+        )}
 
         {/* ── Current Plan ── */}
         <div className={sectionCls}>

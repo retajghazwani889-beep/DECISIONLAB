@@ -12,6 +12,7 @@ export function openGumroadCheckout(opts: {
 }): void {
   const params = new URLSearchParams({ wanted: 'true', uid: opts.uid });
   if (opts.email) params.set('email', opts.email);
+  params.set('redirect_url', `${window.location.origin}/billing?upgraded=1`);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
   const a = document.createElement('a');
   a.href = url;
