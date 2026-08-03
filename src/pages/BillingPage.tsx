@@ -160,14 +160,13 @@ export default function BillingPage() {
     setWaitingForTier(true);
     setTimedOut(false);
 
-    // Poll server endpoint every 2s — uses Admin SDK so Firestore rules don't apply.
     let attempts = 0;
     const poll = async () => {
       if (!waitingRef.current) return;
       attempts += 1;
-      // First 3 attempts: fast check via /api/profile/tier (webhook result).
-      // After that: active Gumroad sales sync as fallback.
-      const tier = attempts <= 3 ? await fetchFreshTier() : await callSync();
+      // Attempts 1–5: hit /api/profile/tier (Admin SDK, no cache, fast).
+      // Attempts 6+: fall back to /api/gumroad/sync (queries Gumroad sales API).
+      const tier = attempts <= 5 ? await fetchFreshTier() : await callSync();
       const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
       if (isPaidTier && tier !== previousTier) {
         await confirmTier(tier);
@@ -180,9 +179,13 @@ export default function BillingPage() {
         setTimedOut(true);
         return;
       }
-      timeoutRef.current = setTimeout(poll, attempts <= 3 ? 1500 : 2500);
+      // Retry cadence: immediate first check, then every 1s for first 5 attempts,
+      // then every 2s for the sync fallback.
+      timeoutRef.current = setTimeout(poll, attempts < 5 ? 1000 : 2000);
     };
-    timeoutRef.current = setTimeout(poll, 1500);
+    // Start immediately — by the time the user lands here from the popup,
+    // the Gumroad webhook has usually already updated Firestore.
+    poll();
   };
 
   // Trigger waiting whenever ?upgraded=1 or pending_upgrade in localStorage.
@@ -204,10 +207,16 @@ export default function BillingPage() {
         if (Date.now() - pending.ts < 30 * 60 * 1000) {
           previousTier = pending.previousTier || 'free';
           const expectedTier = pending.tier || '';
-          // Instant-confirm if webhook already updated the tier before we landed here.
-          const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
-          if (expectedTier && currentTierKey === expectedTier && currentTierKey !== previousTier) {
-            confirmTier(expectedTier);
+          // Instant-confirm: fetch fresh from server (not stale React state) so
+          // we detect a webhook that already landed before this page mounted.
+          if (expectedTier) {
+            fetchFreshTier().then(freshTier => {
+              if (freshTier === expectedTier && freshTier !== previousTier) {
+                confirmTier(freshTier);
+              } else {
+                startWaiting(previousTier);
+              }
+            }).catch(() => startWaiting(previousTier));
             return;
           }
         } else {
