@@ -247,6 +247,23 @@ async function startServer() {
     return res.status(200).json({ received: true });
   });
 
+  // ── Fresh tier check (used by frontend polling) ───────────────────────────
+  // Reads straight from Firestore so there's no React state caching issue.
+  app.get("/api/profile/tier", async (req: any, res: any) => {
+    try {
+      const token = (req.headers.authorization || "").replace("Bearer ", "").trim();
+      if (!token || !useAdminSdk) return res.status(401).json({ error: "unauthorized" });
+      const adminAuthInstance = getAdminAuth();
+      const decoded = await adminAuthInstance.verifyIdToken(token);
+      const uid = decoded.uid;
+      const snap = await adminDb!.collection("profiles").doc(uid).get();
+      const tier = snap.exists ? (snap.data()?.subscriptionStatus || "free") : "free";
+      return res.json({ tier });
+    } catch {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+  });
+
   app.post("/api/billing/cancel", async (req: any, res: any) => {
     try {
       if (!useAdminSdk || !adminDb) {

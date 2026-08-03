@@ -27,56 +27,79 @@ export default function BillingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const p: any = profile || {};
 
-  // ── Post-payment landing ──
-  // Triggered by ?upgraded=1 (Gumroad redirect) OR a pending_upgrade key in
-  // localStorage (set before navigating away — survives even without redirect).
-  const justUpgraded = searchParams.get('upgraded') === '1';
-  const pendingUpgrade = (() => {
-    try { return JSON.parse(localStorage.getItem('pending_upgrade') || 'null'); } catch { return null; }
-  })();
-  const hasPending = justUpgraded || (pendingUpgrade && Date.now() - pendingUpgrade.ts < 10 * 60 * 1000);
-
-  const [waitingForTier, setWaitingForTier] = useState(hasPending);
+  const [waitingForTier, setWaitingForTier] = useState(false);
   const [tierConfirmed, setTierConfirmed] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialTierRef = useRef<string>('free');
+  const pollingRef = useRef(false);
 
-  useEffect(() => {
-    if (!hasPending) return;
-    if (justUpgraded) setSearchParams({}, { replace: true });
-    initialTierRef.current = pendingUpgrade?.previousTier || (profile as any)?.subscriptionStatus || 'free';
+  // Always sync profile from server on mount so navbar + billing show the same tier.
+  useEffect(() => { refreshProfile().catch(() => {}); }, []);
+
+  // Helper: ask the SERVER for the latest tier (bypasses all React state caching).
+  const fetchFreshTier = async (): Promise<string> => {
+    try {
+      const token = await (user as any)?.getIdToken();
+      if (!token) return 'free';
+      const res = await fetch('/api/profile/tier', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) return (await res.json()).tier || 'free';
+    } catch {}
+    return 'free';
+  };
+
+  const startPolling = (previousTier: string) => {
+    if (pollingRef.current) return; // already polling
+    pollingRef.current = true;
+    setWaitingForTier(true);
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
-      let freshTier = initialTierRef.current;
-      try {
-        await refreshProfile();
-        // Read straight from Firestore to avoid stale React state in closure.
-        if (user?.uid) {
-          const { getDoc, doc } = await import('firebase/firestore');
-          const { db: firestoreDb } = await import('../lib/firebase');
-          const snap = await getDoc(doc(firestoreDb, 'profiles', user.uid));
-          if (snap.exists()) freshTier = snap.data()?.subscriptionStatus || 'free';
-        }
-      } catch (_) {}
-      if (freshTier !== initialTierRef.current) {
+      const freshTier = await fetchFreshTier();
+      if (freshTier !== previousTier && freshTier !== 'free') {
         localStorage.removeItem('pending_upgrade');
+        pollingRef.current = false;
+        await refreshProfile();
         setWaitingForTier(false);
         setTierConfirmed(true);
-        try { (window as any).gtag?.('event', 'purchase', { tier: freshTier }); } catch (_) {}
+        try { (window as any).gtag?.('event', 'purchase', { tier: freshTier }); } catch {}
         return;
       }
       if (attempts >= 40) {
         localStorage.removeItem('pending_upgrade');
+        pollingRef.current = false;
         setWaitingForTier(false);
         return;
       }
       pollRef.current = setTimeout(poll, 2000);
     };
-    pollRef.current = setTimeout(poll, 3000);
+    pollRef.current = setTimeout(poll, 2000);
+  };
+
+  // Trigger polling whenever ?upgraded=1 appears OR localStorage has a recent pending_upgrade.
+  useEffect(() => {
+    if (!user) return;
+    const upgraded = searchParams.get('upgraded') === '1';
+    if (upgraded) setSearchParams({}, { replace: true });
+
+    let previousTier = 'free';
+    try {
+      const raw = localStorage.getItem('pending_upgrade');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (Date.now() - p.ts < 30 * 60 * 1000) {
+          previousTier = p.previousTier || 'free';
+          startPolling(previousTier);
+          return;
+        } else {
+          localStorage.removeItem('pending_upgrade');
+        }
+      }
+    } catch { localStorage.removeItem('pending_upgrade'); }
+
+    if (upgraded) startPolling(previousTier);
+
     return () => { if (pollRef.current) clearTimeout(pollRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [justUpgraded]);
+  }, [user, searchParams]);
 
   const tierKey = (p.subscriptionStatus || 'free').toString().toLowerCase();
   const plan = PLAN_INFO[tierKey] || PLAN_INFO.free;
@@ -207,19 +230,6 @@ export default function BillingPage() {
               <p className="text-sm font-black text-emerald-400 uppercase tracking-wide">Payment Confirmed — Plan Activated!</p>
               <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your new plan is live. All features are now unlocked on your account.</p>
             </div>
-          </div>
-        )}
-        {!waitingForTier && !tierConfirmed && (
-          <div className="mb-6 flex justify-end">
-            <button
-              onClick={() => {
-                localStorage.setItem('pending_upgrade', JSON.stringify({ previousTier: tierKey, ts: Date.now() }));
-                setWaitingForTier(true);
-              }}
-              className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest hover:text-brand-accent transition-colors"
-            >
-              Just paid? Click to activate your plan →
-            </button>
           </div>
         )}
 
