@@ -81,6 +81,32 @@ function AppContent() {
     }
   }, [user, profile, loading, navigate, location.pathname]);
 
+  // ── Post-payment auto-redirect ───────────────────────────────────────────
+  // If a pending_upgrade is in localStorage (set before leaving for Gumroad),
+  // redirect to /billing as soon as the user lands on any page of the app.
+  // This fires whether they came back via browser back, a bookmark, or the
+  // Gumroad receipt link — no custom Gumroad redirect URL needed.
+  React.useEffect(() => {
+    if (!user || loading) return;
+    const raw = localStorage.getItem('pending_upgrade');
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      // Only act on upgrades initiated in the last 30 minutes.
+      if (Date.now() - pending.ts > 30 * 60 * 1000) {
+        localStorage.removeItem('pending_upgrade');
+        return;
+      }
+    } catch {
+      localStorage.removeItem('pending_upgrade');
+      return;
+    }
+    // Don't redirect if already on billing.
+    if (!location.pathname.startsWith('/billing')) {
+      navigate('/billing?upgraded=1', { replace: true });
+    }
+  }, [user, loading, location.pathname, navigate]);
+
   // ── HARD ROLE SEPARATION (all three roles) ────────────────────────────────
   // Each role sees ONLY its own logged-in area:
   //   · Team Member → /team (+ shared pages)
