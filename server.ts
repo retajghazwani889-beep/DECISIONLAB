@@ -140,7 +140,7 @@ async function startServer() {
 
   async function verifyGumroadLicense(permalink: string, licenseKey: string): Promise<any> {
     const params = new URLSearchParams({
-      product_id: permalink,
+      product_permalink: permalink,
       license_key: licenseKey,
       increment_uses_count: "false",
     });
@@ -206,8 +206,13 @@ async function startServer() {
       }
     }
 
-    // Gumroad Pings do not include url_params — resolve uid from email
-    let uid = (await findUidByEmail(email)) || "";
+    // Prefer uid passed through checkout URL params; fall back to email lookup.
+    let uid = "";
+    try {
+      const urlParams = JSON.parse(body.url_params || "{}");
+      uid = (urlParams.uid || "").toString().trim();
+    } catch {}
+    if (!uid) uid = (await findUidByEmail(email)) || "";
     if (!uid) {
       console.error(`Gumroad Ping: no uid for email=${email}, permalink=${shortPermalink}`);
       // Return 500 so Gumroad retries the ping — do NOT return 200 or the payment is permanently lost.

@@ -28,23 +28,41 @@ export default function BillingPage() {
   const p: any = profile || {};
 
   // ── Post-payment landing ──
-  // When Gumroad redirects back with ?upgraded=1 we poll until the server
-  // webhook has written the new tier to Firestore (can take up to ~60 s).
+  // When Gumroad redirects back with ?upgraded=1 we poll Firestore until the
+  // server webhook has written the new tier (can take up to ~60 s).
   const justUpgraded = searchParams.get('upgraded') === '1';
   const [waitingForTier, setWaitingForTier] = useState(justUpgraded);
+  const [tierConfirmed, setTierConfirmed] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Use a ref for the initial tier so the closure always reads the right value.
+  const initialTierRef = useRef<string>('free');
 
   useEffect(() => {
     if (!justUpgraded) return;
-    // Strip the param so a refresh doesn't re-trigger.
     setSearchParams({}, { replace: true });
-    const initialTier = (profile as any)?.subscriptionStatus || 'free';
+    initialTierRef.current = (profile as any)?.subscriptionStatus || 'free';
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
-      try { await refreshProfile(); } catch (_) {}
-      const newTier = (profile as any)?.subscriptionStatus || 'free';
-      if (newTier !== initialTier || attempts >= 40) {
+      let freshTier = initialTierRef.current;
+      try {
+        await refreshProfile();
+        // Read straight from Firestore to avoid stale React state in closure.
+        if (user?.uid) {
+          const { getDoc, doc } = await import('firebase/firestore');
+          const { db: firestoreDb } = await import('../lib/firebase');
+          const snap = await getDoc(doc(firestoreDb, 'profiles', user.uid));
+          if (snap.exists()) freshTier = snap.data()?.subscriptionStatus || 'free';
+        }
+      } catch (_) {}
+      if (freshTier !== initialTierRef.current) {
+        setWaitingForTier(false);
+        setTierConfirmed(true);
+        // Fire GA4 purchase event
+        try { (window as any).gtag?.('event', 'purchase', { tier: freshTier }); } catch (_) {}
+        return;
+      }
+      if (attempts >= 40) {
         setWaitingForTier(false);
         return;
       }
@@ -171,7 +189,18 @@ export default function BillingPage() {
             <Loader2 size={20} className="animate-spin text-brand-accent shrink-0" />
             <div>
               <p className="text-sm font-black text-brand-text-primary uppercase tracking-wide">Activating your plan…</p>
-              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment confirmed. We're updating your account — this takes up to 60 seconds.</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment received — updating your account. This takes up to 60 seconds, please stay on this page.</p>
+            </div>
+          </div>
+        )}
+        {tierConfirmed && (
+          <div className="mb-8 p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <p className="text-sm font-black text-emerald-400 uppercase tracking-wide">Payment Confirmed — Plan Activated!</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your new plan is live. All features are now unlocked on your account.</p>
             </div>
           </div>
         )}
