@@ -32,46 +32,50 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // REAL checkout via Gumroad. The card form is Gumroad's — card data
   // never touches our code. After payment, Gumroad Pings our server, and
   // the SERVER sets subscriptionStatus. The browser never writes tiers.
-  const handleSelectPlan = async (targetTier: Tier) => {
+  const handleSelectPlan = (targetTier: Tier) => {
     if (targetTier === 'free') {
-      // Logged-out visitors clicking "Start Free" begin signup; for
-      // logged-in users there's nothing to buy.
       if (!user) navigate('/signup');
       return;
     }
 
-    let activeUser = user;
-    if (!activeUser) {
-      try {
-        await signInWithGoogle();
-        // signInWithGoogle resolves after the popup closes — grab the live user.
-        activeUser = auth.currentUser;
-      } catch (error) {
-        console.error("Auth failed:", error);
-        return;
-      }
-      if (!activeUser) return; // popup closed without completing sign-in
-    }
+    // Open the popup SYNCHRONOUSLY here — Chrome only allows window.open
+    // inside a direct user-gesture handler, before any async awaits.
+    const w = 520, h = 700;
+    const left = Math.max(0, (window.screen.width - w) / 2);
+    const top  = Math.max(0, (window.screen.height - h) / 2);
+    const popup = window.open('about:blank', 'gumroad_checkout',
+      `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
 
-    setLoadingTier(targetTier);
-    const previousTier = currentTier;
-    // Store intent so BillingPage can detect the purchase even if the overlay
-    // message is missed (e.g. browser refresh, fallback path).
-    localStorage.setItem('pending_upgrade', JSON.stringify({
-      tier: targetTier,
-      previousTier,
-      ts: Date.now(),
-    }));
-    openGumroadCheckout({
-      productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
-      uid: activeUser.uid,
-      email: activeUser.email,
-      onSuccess: () => {
-        // Payment detected via overlay postMessage — go straight to billing.
-        setLoadingTier(null);
-        navigate('/billing?upgraded=1', { replace: true });
-      },
-    });
+    const proceed = async () => {
+      let activeUser = user;
+      if (!activeUser) {
+        try {
+          await signInWithGoogle();
+          activeUser = auth.currentUser;
+        } catch {
+          popup?.close();
+          return;
+        }
+        if (!activeUser) { popup?.close(); return; }
+      }
+
+      const previousTier = currentTier;
+      localStorage.setItem('pending_upgrade', JSON.stringify({ tier: targetTier, previousTier, ts: Date.now() }));
+      setLoadingTier(targetTier);
+
+      openGumroadCheckout({
+        productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
+        uid: activeUser.uid,
+        email: activeUser.email,
+        popup,
+        onSuccess: () => {
+          setLoadingTier(null);
+          navigate('/billing?upgraded=1', { replace: true });
+        },
+      });
+    };
+
+    proceed();
   };
 
   const PlanCard = ({

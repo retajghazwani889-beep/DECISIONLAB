@@ -9,6 +9,7 @@ export interface GumroadCheckoutOpts {
   productPermalink: string;
   uid: string;
   email?: string | null;
+  popup?: Window | null; // pre-opened popup from the synchronous click handler
   onSuccess?: () => void;
 }
 
@@ -17,24 +18,18 @@ export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
   if (opts.email) params.set('email', opts.email);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
 
-  // Open checkout as a centered popup window. Must be called synchronously
-  // inside the click handler so browsers don't block it as an unsolicited popup.
-  const w = 520, h = 700;
-  const left = Math.max(0, (window.screen.width - w) / 2);
-  const top = Math.max(0, (window.screen.height - h) / 2);
-  const popup = window.open(url, 'gumroad_checkout',
-    `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
-
-  if (!popup) {
-    // Popup blocked — fall back to same-tab navigation.
+  // Use the pre-opened popup (Chrome allows this because window.open was called
+  // synchronously in the user-gesture handler). Navigate it to the checkout URL.
+  const popup = opts.popup;
+  if (popup && !popup.closed) {
+    popup.location.href = url;
+  } else {
+    // Fallback: same-tab navigation. App.tsx + pending_upgrade handles return.
     window.location.href = url;
     return;
   }
 
-  // Poll until the popup closes (user completed or dismissed the checkout).
-  // When closed after a real purchase, the webhook will have already fired
-  // (or be in flight), and pending_upgrade in localStorage ensures billing
-  // picks it up.
+  // Poll until the popup closes — fires whether user paid or dismissed.
   const timer = setInterval(() => {
     if (popup.closed) {
       clearInterval(timer);
