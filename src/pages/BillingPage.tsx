@@ -7,6 +7,7 @@ import {
   CreditCard, Zap, ArrowRight, Loader2, Rocket, BarChart3, Presentation,
   FileText, Users, Handshake, XCircle, Receipt,
 } from 'lucide-react';
+import { ecommerce } from '../lib/analytics';
 
 const WELCOME_INFO: Record<string, { title: string; subtitle: string; perks: string[] }> = {
   founder: {
@@ -108,6 +109,18 @@ export default function BillingPage() {
   }, []);
 
   const confirmTier = async (tier: string) => {
+    // Read transaction_id from pending_upgrade before clearing it.
+    // Falls back to a timestamp so the dedup key is always unique per purchase.
+    let transactionId = `txn_${Date.now()}`;
+    try {
+      const raw = localStorage.getItem('pending_upgrade');
+      if (raw) {
+        const pending = JSON.parse(raw);
+        if (pending.saleId) transactionId = pending.saleId;
+        else if (pending.ts)  transactionId = `txn_${pending.ts}`;
+      }
+    } catch {}
+
     localStorage.removeItem('pending_upgrade');
     // Broadcast to other tabs so they refresh too (Scenario 6, 37).
     localStorage.setItem('tier_confirmed', Date.now().toString());
@@ -117,7 +130,8 @@ export default function BillingPage() {
     await refreshProfile();
     setWaitingForTier(false);
     setConfirmedTier(tier);
-    try { (window as any).gtag?.('event', 'purchase', { tier }); } catch {}
+    // Fire purchase ONLY here — after backend confirmed the tier change.
+    ecommerce.purchase(tier, transactionId);
   };
 
   const fetchFreshTier = async (): Promise<string> => {
