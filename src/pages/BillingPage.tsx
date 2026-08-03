@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import {
   CreditCard, Zap, ArrowRight, Loader2, Rocket, BarChart3, Presentation,
   FileText, Users, Handshake, XCircle, Receipt,
@@ -31,7 +31,6 @@ export default function BillingPage() {
   const [tierConfirmed, setTierConfirmed] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const waitingRef = useRef(false);
-  const unsubRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always sync profile from server on mount so navbar + billing show the same tier.
@@ -41,12 +40,21 @@ export default function BillingPage() {
     localStorage.removeItem('pending_upgrade');
     localStorage.setItem('gumroad_confirmed', '1'); // signals popup to auto-close
     waitingRef.current = false;
-    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     await refreshProfile();
     setWaitingForTier(false);
     setTierConfirmed(true);
     try { (window as any).gtag?.('event', 'purchase', { tier }); } catch {}
+  };
+
+  const fetchFreshTier = async (): Promise<string> => {
+    try {
+      const token = await (user as any)?.getIdToken(true);
+      if (!token) return 'free';
+      const res = await fetch('/api/profile/tier', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) return (await res.json()).tier || 'free';
+    } catch {}
+    return 'free';
   };
 
   const callSync = async (): Promise<string> => {
@@ -65,39 +73,29 @@ export default function BillingPage() {
     setWaitingForTier(true);
     setTimedOut(false);
 
-    // Real-time Firestore listener — fires the instant the webhook writes the tier.
-    if (user?.uid) {
-      unsubRef.current = onSnapshot(doc(db, 'profiles', user.uid), async (snap) => {
-        if (!waitingRef.current) return;
-        const tier = (snap.data()?.subscriptionStatus || 'free').toString().toLowerCase();
-        const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
-        if (isPaidTier && tier !== previousTier) {
-          await confirmTier(tier);
-        }
-      });
-    }
-
-    // Sync immediately (2s) and again at 8s in case webhook is slow or missed.
-    const trySyncAt = async (delay: number) => {
-      timeoutRef.current = setTimeout(async () => {
-        if (!waitingRef.current) return;
-        const syncedTier = await callSync();
-        if (syncedTier && syncedTier !== 'free' && syncedTier !== previousTier) {
-          await confirmTier(syncedTier);
-          return;
-        }
-        if (delay < 8000) {
-          trySyncAt(8000 - delay); // one more attempt at ~8s total
-        } else if (waitingRef.current) {
-          localStorage.removeItem('pending_upgrade');
-          waitingRef.current = false;
-          if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
-          setWaitingForTier(false);
-          setTimedOut(true);
-        }
-      }, delay);
+    // Poll server endpoint every 2s — uses Admin SDK so Firestore rules don't apply.
+    let attempts = 0;
+    const poll = async () => {
+      if (!waitingRef.current) return;
+      attempts += 1;
+      // First 3 attempts: fast check via /api/profile/tier (webhook result).
+      // After that: active Gumroad sales sync as fallback.
+      const tier = attempts <= 3 ? await fetchFreshTier() : await callSync();
+      const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
+      if (isPaidTier && tier !== previousTier) {
+        await confirmTier(tier);
+        return;
+      }
+      if (attempts >= 12) { // give up after ~20s
+        localStorage.removeItem('pending_upgrade');
+        waitingRef.current = false;
+        setWaitingForTier(false);
+        setTimedOut(true);
+        return;
+      }
+      timeoutRef.current = setTimeout(poll, attempts <= 3 ? 1500 : 2500);
     };
-    trySyncAt(2000);
+    timeoutRef.current = setTimeout(poll, 1500);
   };
 
   // Trigger waiting whenever ?upgraded=1 or pending_upgrade in localStorage.
@@ -131,7 +129,6 @@ export default function BillingPage() {
     if (upgraded) startWaiting(previousTier);
 
     return () => {
-      if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
