@@ -12,62 +12,33 @@ export interface GumroadCheckoutOpts {
   onSuccess?: () => void;
 }
 
-// Load Gumroad overlay script once.
-let scriptLoaded = false;
-function loadGumroadScript(): Promise<void> {
-  if (scriptLoaded) return Promise.resolve();
-  return new Promise((resolve) => {
-    const s = document.createElement('script');
-    s.src = 'https://gumroad.com/js/gumroad.js';
-    s.async = true;
-    s.onload = () => { scriptLoaded = true; resolve(); };
-    s.onerror = () => resolve(); // fail silently — fallback to same-tab
-    document.head.appendChild(s);
-  });
-}
-
-export async function openGumroadCheckout(opts: GumroadCheckoutOpts): Promise<void> {
+export function openGumroadCheckout(opts: GumroadCheckoutOpts): void {
   const params = new URLSearchParams({ wanted: 'true', uid: opts.uid });
   if (opts.email) params.set('email', opts.email);
   const url = `${GUMROAD_BASE}/${opts.productPermalink}?${params.toString()}`;
 
-  await loadGumroadScript();
+  // Open checkout as a centered popup window. Must be called synchronously
+  // inside the click handler so browsers don't block it as an unsolicited popup.
+  const w = 520, h = 700;
+  const left = Math.max(0, (window.screen.width - w) / 2);
+  const top = Math.max(0, (window.screen.height - h) / 2);
+  const popup = window.open(url, 'gumroad_checkout',
+    `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
 
-  // Listen for Gumroad's purchase-success postMessage.
-  let handled = false;
-  const onMessage = (e: MessageEvent) => {
-    if (handled) return;
-    // Gumroad fires { type: 'gumroad:purchase', ... } or a sale object.
-    const d = e.data;
-    const isPurchase =
-      (typeof d === 'object' && d !== null && (d.type === 'gumroad:purchase' || d.sale)) ||
-      (typeof d === 'string' && d.includes('gumroad'));
-    if (isPurchase) {
-      handled = true;
-      window.removeEventListener('message', onMessage);
+  if (!popup) {
+    // Popup blocked — fall back to same-tab navigation.
+    window.location.href = url;
+    return;
+  }
+
+  // Poll until the popup closes (user completed or dismissed the checkout).
+  // When closed after a real purchase, the webhook will have already fired
+  // (or be in flight), and pending_upgrade in localStorage ensures billing
+  // picks it up.
+  const timer = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(timer);
       opts.onSuccess?.();
     }
-  };
-  window.addEventListener('message', onMessage);
-
-  // Trigger overlay: create a hidden anchor with the gumroad-button class and click it.
-  // Gumroad's script intercepts these clicks and opens the overlay iframe.
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.className = 'gumroad-button';
-  anchor.style.display = 'none';
-  document.body.appendChild(anchor);
-  anchor.click();
-  // Clean up DOM element after a tick.
-  setTimeout(() => document.body.removeChild(anchor), 100);
-
-  // Fallback: if the overlay doesn't open (script blocked, etc.), fall back to
-  // same-tab navigation. The pending_upgrade in localStorage + App.tsx redirect
-  // handles the return flow.
-  setTimeout(() => {
-    if (!handled && !document.querySelector('.gumroad-overlay-container, iframe[src*="gumroad"]')) {
-      window.removeEventListener('message', onMessage);
-      window.location.href = url;
-    }
-  }, 2000);
+  }, 500);
 }

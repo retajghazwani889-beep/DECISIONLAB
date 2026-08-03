@@ -62,7 +62,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       previousTier,
       ts: Date.now(),
     }));
-    await openGumroadCheckout({
+    openGumroadCheckout({
       productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
       uid: activeUser.uid,
       email: activeUser.email,
