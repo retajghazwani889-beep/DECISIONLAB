@@ -113,9 +113,10 @@ export default function BillingPage() {
         if (Date.now() - pending.ts < 30 * 60 * 1000) {
           previousTier = pending.previousTier || 'free';
           expectedTier = pending.tier || '';
-          // If the profile already shows the expected paid tier, confirm immediately.
+          // Only instant-confirm if the tier actually upgraded from previousTier —
+          // prevents false confirmation when user already had this tier.
           const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
-          if (expectedTier && currentTierKey === expectedTier) {
+          if (expectedTier && currentTierKey === expectedTier && currentTierKey !== previousTier) {
             confirmTier(expectedTier);
             return;
           }
