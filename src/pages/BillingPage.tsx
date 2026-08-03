@@ -29,6 +29,7 @@ export default function BillingPage() {
 
   const [waitingForTier, setWaitingForTier] = useState(false);
   const [tierConfirmed, setTierConfirmed] = useState(false);
+  const [showManualCheck, setShowManualCheck] = useState(false);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingRef = useRef(false);
 
@@ -70,32 +71,35 @@ export default function BillingPage() {
     if (pollingRef.current) return;
     pollingRef.current = true;
     setWaitingForTier(true);
+    setShowManualCheck(false);
+    // Show "Check Now" button after 8s if still waiting.
+    setTimeout(() => { if (pollingRef.current) setShowManualCheck(true); }, 8000);
     let attempts = 0;
-    // Read expected tier from localStorage at poll time so it's always fresh.
     const getExpected = () => {
       try { return JSON.parse(localStorage.getItem('pending_upgrade') || '{}').tier || ''; } catch { return ''; }
     };
     const poll = async () => {
       attempts += 1;
-      // After 15 s with no webhook, actively query Gumroad's sales API.
-      const freshTier = attempts > 8 ? await callSync() : await fetchFreshTier();
+      // First 2 attempts: check Firestore (webhook may have fired instantly).
+      // From attempt 3 onwards: actively query Gumroad sales API every attempt.
+      const freshTier = attempts <= 2 ? await fetchFreshTier() : await callSync();
       const expected = getExpected();
-      // Confirm if tier is paid AND either matches expected or differs from previous.
       const upgraded = freshTier && freshTier !== 'free' &&
         (freshTier !== previousTier || (expected && freshTier === expected));
       if (upgraded) {
         await confirmTier(freshTier);
         return;
       }
-      if (attempts >= 40) {
+      if (attempts >= 20) { // give up after ~30s total
         localStorage.removeItem('pending_upgrade');
         pollingRef.current = false;
         setWaitingForTier(false);
         return;
       }
-      pollRef.current = setTimeout(poll, 2000);
+      // First two checks are fast (1s), then slow down to every 3s.
+      pollRef.current = setTimeout(poll, attempts <= 2 ? 1000 : 3000);
     };
-    pollRef.current = setTimeout(poll, 2000);
+    pollRef.current = setTimeout(poll, 1000);
   };
 
   // Trigger polling whenever ?upgraded=1 appears OR localStorage has a recent pending_upgrade.
@@ -248,9 +252,22 @@ export default function BillingPage() {
         {waitingForTier && (
           <div className="mb-8 p-6 rounded-3xl bg-brand-accent/10 border border-brand-accent/30 flex items-center gap-4">
             <Loader2 size={20} className="animate-spin text-brand-accent shrink-0" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-black text-brand-text-primary uppercase tracking-wide">Activating your plan…</p>
-              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment received — updating your account. This takes up to 60 seconds, please stay on this page.</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Payment received — updating your account, please stay on this page.</p>
+              {showManualCheck && (
+                <button
+                  onClick={async () => {
+                    setShowManualCheck(false);
+                    const tier = await callSync();
+                    if (tier && tier !== 'free') { await confirmTier(tier); }
+                    else setShowManualCheck(true);
+                  }}
+                  className="mt-3 text-[10px] font-black text-brand-accent uppercase tracking-widest underline underline-offset-2"
+                >
+                  Taking too long? Check now →
+                </button>
+              )}
             </div>
           </div>
         )}
