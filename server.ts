@@ -207,10 +207,19 @@ async function startServer() {
     }
 
     // Prefer uid passed through checkout URL params; fall back to email lookup.
+    // Gumroad sends url_params as a URL-encoded string (e.g. "wanted=true&uid=abc"),
+    // NOT as JSON — parse both formats for resilience.
     let uid = "";
     try {
-      const urlParams = JSON.parse(body.url_params || "{}");
-      uid = (urlParams.uid || "").toString().trim();
+      const raw = body.url_params || "";
+      // Try URL-encoded first (the actual Gumroad format).
+      const qs = new URLSearchParams(raw);
+      uid = (qs.get("uid") || "").trim();
+      // Fall back to JSON in case format ever changes.
+      if (!uid) {
+        const parsed = JSON.parse(raw || "{}");
+        uid = (parsed.uid || "").toString().trim();
+      }
     } catch {}
     if (!uid) uid = (await findUidByEmail(email)) || "";
     if (!uid) {
