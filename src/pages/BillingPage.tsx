@@ -270,7 +270,8 @@ export default function BillingPage() {
                 setWaitingForTier(true);
                 const tier = await callSync();
                 const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
-                if (isPaidTier) {
+                // Only confirm if it's a paid tier AND different from what's currently shown.
+                if (isPaidTier && tier !== tierKey) {
                   await confirmTier(tier);
                 } else {
                   setWaitingForTier(false);
