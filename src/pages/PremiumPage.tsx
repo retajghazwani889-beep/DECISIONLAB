@@ -62,14 +62,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       previousTier,
       ts: Date.now(),
     }));
-    openGumroadCheckout({
+    await openGumroadCheckout({
       productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
       uid: activeUser.uid,
       email: activeUser.email,
       onSuccess: () => {
-        // Tier confirmed by server — popup auto-closed, go straight to billing.
+        // Payment detected via overlay postMessage — go straight to billing.
         setLoadingTier(null);
-        localStorage.removeItem('pending_upgrade');
         navigate('/billing?upgraded=1', { replace: true });
       },
     });
