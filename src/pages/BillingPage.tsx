@@ -258,12 +258,29 @@ export default function BillingPage() {
           </div>
         )}
         {timedOut && (
-          <div className="mb-8 p-6 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-4">
+          <div className="mb-8 p-6 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="w-5 h-5 rounded-full border-2 border-amber-400 flex items-center justify-center shrink-0 text-amber-400 font-black text-xs">!</div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-black text-amber-400 uppercase tracking-wide">Payment received — plan updating shortly</p>
-              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your payment went through. Your plan may take a few more minutes to activate — refresh this page in 2 minutes or contact <span className="text-brand-accent">support@decisionlabhub.com</span> if it doesn't update.</p>
+              <p className="text-xs font-medium text-brand-text-secondary mt-0.5">Your payment went through. Click "Refresh My Plan" to check again or contact <span className="text-brand-accent">support@decisionlabhub.com</span> if it doesn't update.</p>
             </div>
+            <button
+              onClick={async () => {
+                setTimedOut(false);
+                setWaitingForTier(true);
+                const tier = await callSync();
+                const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
+                if (isPaidTier) {
+                  await confirmTier(tier);
+                } else {
+                  setWaitingForTier(false);
+                  setTimedOut(true);
+                }
+              }}
+              className="shrink-0 px-5 py-3 bg-amber-500 text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-amber-400 active:scale-95 transition-all"
+            >
+              Refresh My Plan
+            </button>
           </div>
         )}
         {tierConfirmed && (
