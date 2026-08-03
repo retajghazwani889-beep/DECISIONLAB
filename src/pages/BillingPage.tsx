@@ -70,11 +70,19 @@ export default function BillingPage() {
     pollingRef.current = true;
     setWaitingForTier(true);
     let attempts = 0;
+    // Read expected tier from localStorage at poll time so it's always fresh.
+    const getExpected = () => {
+      try { return JSON.parse(localStorage.getItem('pending_upgrade') || '{}').tier || ''; } catch { return ''; }
+    };
     const poll = async () => {
       attempts += 1;
       // After 15 s with no webhook, actively query Gumroad's sales API.
       const freshTier = attempts > 8 ? await callSync() : await fetchFreshTier();
-      if (freshTier && freshTier !== 'free' && freshTier !== previousTier) {
+      const expected = getExpected();
+      // Confirm if tier is paid AND either matches expected or differs from previous.
+      const upgraded = freshTier && freshTier !== 'free' &&
+        (freshTier !== previousTier || (expected && freshTier === expected));
+      if (upgraded) {
         await confirmTier(freshTier);
         return;
       }
@@ -96,12 +104,20 @@ export default function BillingPage() {
     if (upgraded) setSearchParams({}, { replace: true });
 
     let previousTier = 'free';
+    let expectedTier = '';
     try {
       const raw = localStorage.getItem('pending_upgrade');
       if (raw) {
-        const p = JSON.parse(raw);
-        if (Date.now() - p.ts < 30 * 60 * 1000) {
-          previousTier = p.previousTier || 'free';
+        const pending = JSON.parse(raw);
+        if (Date.now() - pending.ts < 30 * 60 * 1000) {
+          previousTier = pending.previousTier || 'free';
+          expectedTier = pending.tier || '';
+          // If the profile already shows the expected paid tier, confirm immediately.
+          const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
+          if (expectedTier && currentTierKey === expectedTier) {
+            confirmTier(expectedTier);
+            return;
+          }
           startPolling(previousTier);
           return;
         } else {
