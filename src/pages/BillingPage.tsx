@@ -8,6 +8,7 @@ import {
   FileText, Users, Handshake, XCircle, Receipt,
 } from 'lucide-react';
 import { ecommerce } from '../lib/analytics';
+import { getTier } from '../lib/tiers';
 
 const WELCOME_INFO: Record<string, { title: string; subtitle: string; perks: string[] }> = {
   founder: {
@@ -233,11 +234,9 @@ export default function BillingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, searchParams]);
 
-  const tierKey = (p.subscriptionStatus || 'free').toString().toLowerCase();
+  // Use getTier() so legacy 'premium' values normalize to 'founder' correctly.
+  const tierKey = getTier(p);
   const plan = PLAN_INFO[tierKey] || PLAN_INFO.free;
-  // Only REAL paid tiers count as paid. Early test accounts can carry legacy
-  // values in subscriptionStatus (from the old simulated checkout); anything
-  // unrecognized behaves as the free plan — no Cancel button, free limits.
   const isPaid = ['founder', 'growth', 'investor_pro'].includes(tierKey);
   // Set by the server when a cancellation is scheduled with Paddle; cleared
   // by the webhook when the subscription actually ends.

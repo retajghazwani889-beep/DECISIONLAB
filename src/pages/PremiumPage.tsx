@@ -300,6 +300,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Risk Analysis",
             "Improvement Tips",
             "Growth Roadmap",
+            "Growth Opportunities",
           ]}
           cta="Choose Validation"
         />
@@ -315,7 +316,6 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Pitch Decks",
             "Executive Reports",
             "Compare Startups",
-            "Growth Opportunities",
             "Priority Support",
           ]}
           cta="Choose Grow"
