@@ -7,6 +7,8 @@ import {
   CreditCard, Zap, ArrowRight, Loader2, Rocket, BarChart3, Presentation,
   FileText, Users, Handshake, XCircle, Receipt,
 } from 'lucide-react';
+import { ecommerce } from '../lib/analytics';
+import { getTier } from '../lib/tiers';
 
 const WELCOME_INFO: Record<string, { title: string; subtitle: string; perks: string[] }> = {
   founder: {
@@ -108,6 +110,18 @@ export default function BillingPage() {
   }, []);
 
   const confirmTier = async (tier: string) => {
+    // Read transaction_id from pending_upgrade before clearing it.
+    // Falls back to a timestamp so the dedup key is always unique per purchase.
+    let transactionId = `txn_${Date.now()}`;
+    try {
+      const raw = localStorage.getItem('pending_upgrade');
+      if (raw) {
+        const pending = JSON.parse(raw);
+        if (pending.saleId) transactionId = pending.saleId;
+        else if (pending.ts)  transactionId = `txn_${pending.ts}`;
+      }
+    } catch {}
+
     localStorage.removeItem('pending_upgrade');
     // Broadcast to other tabs so they refresh too (Scenario 6, 37).
     localStorage.setItem('tier_confirmed', Date.now().toString());
@@ -117,7 +131,8 @@ export default function BillingPage() {
     await refreshProfile();
     setWaitingForTier(false);
     setConfirmedTier(tier);
-    try { (window as any).gtag?.('event', 'purchase', { tier }); } catch {}
+    // Fire purchase ONLY here — after backend confirmed the tier change.
+    ecommerce.purchase(tier, transactionId);
   };
 
   const fetchFreshTier = async (): Promise<string> => {
@@ -146,14 +161,13 @@ export default function BillingPage() {
     setWaitingForTier(true);
     setTimedOut(false);
 
-    // Poll server endpoint every 2s — uses Admin SDK so Firestore rules don't apply.
     let attempts = 0;
     const poll = async () => {
       if (!waitingRef.current) return;
       attempts += 1;
-      // First 3 attempts: fast check via /api/profile/tier (webhook result).
-      // After that: active Gumroad sales sync as fallback.
-      const tier = attempts <= 3 ? await fetchFreshTier() : await callSync();
+      // Attempts 1–5: hit /api/profile/tier (Admin SDK, no cache, fast).
+      // Attempts 6+: fall back to /api/gumroad/sync (queries Gumroad sales API).
+      const tier = attempts <= 5 ? await fetchFreshTier() : await callSync();
       const isPaidTier = ['founder', 'growth', 'investor_pro'].includes(tier);
       if (isPaidTier && tier !== previousTier) {
         await confirmTier(tier);
@@ -166,9 +180,13 @@ export default function BillingPage() {
         setTimedOut(true);
         return;
       }
-      timeoutRef.current = setTimeout(poll, attempts <= 3 ? 1500 : 2500);
+      // Retry cadence: immediate first check, then every 1s for first 5 attempts,
+      // then every 2s for the sync fallback.
+      timeoutRef.current = setTimeout(poll, attempts < 5 ? 1000 : 2000);
     };
-    timeoutRef.current = setTimeout(poll, 1500);
+    // Start immediately — by the time the user lands here from the popup,
+    // the Gumroad webhook has usually already updated Firestore.
+    poll();
   };
 
   // Trigger waiting whenever ?upgraded=1 or pending_upgrade in localStorage.
@@ -190,10 +208,16 @@ export default function BillingPage() {
         if (Date.now() - pending.ts < 30 * 60 * 1000) {
           previousTier = pending.previousTier || 'free';
           const expectedTier = pending.tier || '';
-          // Instant-confirm if webhook already updated the tier before we landed here.
-          const currentTierKey = ((profile as any)?.subscriptionStatus || 'free').toString().toLowerCase();
-          if (expectedTier && currentTierKey === expectedTier && currentTierKey !== previousTier) {
-            confirmTier(expectedTier);
+          // Instant-confirm: fetch fresh from server (not stale React state) so
+          // we detect a webhook that already landed before this page mounted.
+          if (expectedTier) {
+            fetchFreshTier().then(freshTier => {
+              if (freshTier === expectedTier && freshTier !== previousTier) {
+                confirmTier(freshTier);
+              } else {
+                startWaiting(previousTier);
+              }
+            }).catch(() => startWaiting(previousTier));
             return;
           }
         } else {
@@ -210,11 +234,9 @@ export default function BillingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, searchParams]);
 
-  const tierKey = (p.subscriptionStatus || 'free').toString().toLowerCase();
+  // Use getTier() so legacy 'premium' values normalize to 'founder' correctly.
+  const tierKey = getTier(p);
   const plan = PLAN_INFO[tierKey] || PLAN_INFO.free;
-  // Only REAL paid tiers count as paid. Early test accounts can carry legacy
-  // values in subscriptionStatus (from the old simulated checkout); anything
-  // unrecognized behaves as the free plan — no Cancel button, free limits.
   const isPaid = ['founder', 'growth', 'investor_pro'].includes(tierKey);
   // Set by the server when a cancellation is scheduled with Paddle; cleared
   // by the webhook when the subscription actually ends.

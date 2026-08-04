@@ -5,6 +5,7 @@ import { UserProfile, AnalysisReport } from '../types';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, deleteDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { generateCompanyAnalysis } from '../services/geminiService';
+import { isFounderOrAbove, isGrowth } from '../lib/tiers';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -58,7 +59,8 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
     navigate(`/compare?ids=${selectedIds.join(',')}`);
   };
 
-  const isPremium = ['founder', 'growth', 'investor_pro', 'premium'].includes(profile?.subscriptionStatus || '');
+  const isPremium = isFounderOrAbove(profile);
+  const isGrowthTier = isGrowth(profile);
 
   const riskData = profile?.companyAnalysis?.scores ? [
     { subject: 'Market', A: (profile.companyAnalysis.scores.marketFit as any)?.score || profile.companyAnalysis.scores.marketFit || 0, fullMark: 100 },
@@ -1049,12 +1051,22 @@ export default function DashboardPage({ user, profile }: DashboardPageProps) {
                       <Wand2 size={16} /> Generate with DLAB <span className="text-[9px] border border-amber-400/40 text-amber-400 px-2 py-0.5 rounded-full">PAID</span>
                     </Link>
                   )}
-                  <Link
-                    to="/pitch-deck"
-                    className="px-10 py-5 bg-brand-accent text-brand-text-primary text-sm font-black uppercase tracking-widest rounded-3xl hover:bg-brand-accent shadow-huge hover:scale-105 active:scale-95 transition-all flex items-center gap-4 animate-pulse hover:animate-none"
-                  >
-                    Open Architect <Presentation size={18} strokeWidth={3} />
-                  </Link>
+                  {isGrowthTier ? (
+                    <Link
+                      to="/pitch-deck"
+                      className="px-10 py-5 bg-brand-accent text-brand-text-primary text-sm font-black uppercase tracking-widest rounded-3xl hover:bg-brand-accent shadow-huge hover:scale-105 active:scale-95 transition-all flex items-center gap-4 animate-pulse hover:animate-none"
+                    >
+                      Open Architect <Presentation size={18} strokeWidth={3} />
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/pricing"
+                      className="px-10 py-5 bg-brand-section border border-white/10 text-white/40 text-sm font-black uppercase tracking-widest rounded-3xl flex items-center gap-4 cursor-pointer hover:border-brand-accent/30 hover:text-brand-accent/60 transition-all"
+                      title="Upgrade to Startup Grow to unlock Pitch Deck Architect"
+                    >
+                      Open Architect <span className="text-[9px] border border-amber-400/40 text-amber-400 px-2 py-0.5 rounded-full">GROW</span>
+                    </Link>
+                  )}
                 </div>
               </div>
 

@@ -8,6 +8,7 @@ import { auth } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { getTier, Tier } from '../lib/tiers';
 import { openGumroadCheckout, GUMROAD_PRODUCTS } from '../lib/gumroad';
+import { ecommerce } from '../lib/analytics';
 
 interface PremiumPageProps {
   user: User | null;
@@ -52,6 +53,12 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   // The user's current tier comes ONLY from their stored profile — no backdoor.
   const currentTier = getTier(profile);
 
+  // Fire view_item once per session for each paid plan visible on this page.
+  useEffect(() => {
+    ecommerce.viewItem('founder');
+    ecommerce.viewItem('growth');
+  }, []);
+
 
   // REAL checkout via Gumroad. The card form is Gumroad's — card data
   // never touches our code. After payment, Gumroad Pings our server, and
@@ -93,6 +100,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       const previousTier = currentTier;
       localStorage.setItem('pending_upgrade', JSON.stringify({ tier: targetTier, previousTier, ts: Date.now() }));
       setLoadingTier(targetTier);
+      ecommerce.beginCheckout(targetTier);
 
       openGumroadCheckout({
         productPermalink: targetTier === 'growth' ? GUMROAD_PRODUCTS.growth : GUMROAD_PRODUCTS.founder,
@@ -292,6 +300,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Risk Analysis",
             "Improvement Tips",
             "Growth Roadmap",
+            "Growth Opportunities",
           ]}
           cta="Choose Validation"
         />
@@ -307,7 +316,6 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Pitch Decks",
             "Executive Reports",
             "Compare Startups",
-            "Growth Opportunities",
             "Priority Support",
           ]}
           cta="Choose Grow"
