@@ -1864,7 +1864,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
                       <div key={idx} className="bg-[#0c1421] rounded-2xl p-5 border border-white/5 flex gap-3">
                         <span className="text-[10px] font-black text-brand-accent tabular-nums">{String(idx + 1).padStart(2, '0')}</span>
-                        <span className="text-sm text-brand-text-secondary font-medium leading-relaxed">{insight}</span>
+                        <span className="text-base text-brand-text-secondary font-medium leading-relaxed">{insight}</span>
                       </div>
                     ))}
                   </div>
@@ -1980,7 +1980,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
                         <div key={idx} className="bg-[#0b1320] border border-brand-border/10 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all">
                           <span className="text-xs font-mono text-brand-accent font-black font-semibold">0{idx + 1}</span>
-                          <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">{insight}</p>
+                          <p className="text-sm text-slate-300 leading-relaxed font-sans font-medium">{insight}</p>
                         </div>
                       ))}
                     </div>
