@@ -557,7 +557,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.immediate || [],
       icon: <Target size={20} />,
       title: 'Test Your Idea',
-      desc: 'Make sure real people need what you are building. Talk to potential customers and confirm the problem exists before spending money.'
+      desc: 'Make sure real people need what you are building — talk to potential customers and confirm the problem exists before spending money'
     },
     {
       id: 'launch',
@@ -565,7 +565,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.oneToThreeMonths || [],
       icon: <Rocket size={20} />,
       title: 'Get Your First Customers',
-      desc: 'Put your product in front of real users for the first time. Focus on getting feedback and your first paying customers.'
+      desc: 'Put your product in front of real users for the first time and focus on getting feedback and your first paying customers'
     },
     {
       id: 'traction',
@@ -573,7 +573,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.threeToSixMonths || [],
       icon: <Activity size={20} />,
       title: 'Build Momentum',
-      desc: 'Grow your customer base consistently. Focus on what is working and cut what is not. This is where word-of-mouth starts.'
+      desc: 'Grow your customer base consistently, focus on what is working, cut what is not — this is where word-of-mouth starts'
     },
     {
       id: 'scale',
@@ -581,7 +581,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.growthStage?.length ? roadmap.growthStage : roadmap?.sixToTwelveMonths?.length ? roadmap.sixToTwelveMonths : ['Expand into new segments and regions', 'Make sales and onboarding repeatable', 'Grow the team to support scale'],
       icon: <TrendingUp size={20} />,
       title: 'Grow the Business',
-      desc: 'Expand into new markets and customer groups. Build a repeatable system for sales and grow your team to handle more demand.'
+      desc: 'Expand into new markets and customer groups, build a repeatable system for sales and grow your team to handle more demand'
     },
     {
       id: 'readiness',
@@ -589,7 +589,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.investorReadiness || [],
       icon: <ShieldCheck size={20} />,
       title: 'Get Investor Ready',
-      desc: 'Prepare your numbers, sharpen your pitch, and build the proof investors want to see before they write a check.'
+      desc: 'Prepare your numbers, sharpen your pitch and build the proof investors want to see before they write a check'
     },
   ];
 
