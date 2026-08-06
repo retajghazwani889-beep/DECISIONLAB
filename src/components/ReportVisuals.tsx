@@ -628,8 +628,8 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                 className="flex flex-col md:grid md:grid-cols-11 items-center w-full relative group mb-[60px]"
               >
                 <div className={cn(
-                  "w-full flex justify-end md:col-span-5 transition-all duration-500 pb-4 md:pb-0",
-                  isLeft ? "md:justify-end text-right pr-0 md:pr-10" : "md:opacity-20 group-hover:opacity-100 md:order-last pl-0 md:pl-10 text-left"
+                  "w-full flex md:col-span-5 transition-all duration-500 pb-4 md:pb-0",
+                  isLeft ? "md:justify-end pr-0 md:pr-10" : "md:opacity-20 group-hover:opacity-100 md:order-last pl-0 md:pl-10"
                 )}>
                   {isLeft ? (
                     <motion.div
@@ -637,34 +637,34 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                       onMouseLeave={() => setActiveStep(null)}
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
-                        "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 cursor-pointer w-full max-w-md ml-auto",
+                        "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 cursor-pointer w-full max-w-md ml-auto text-left",
                         isActive
                           ? "bg-brand-section/90 border-brand-accent/50 shadow-[0_0_30px_rgba(93,169,255,0.15)]"
                           : "bg-brand-card/45 border-white/5 hover:border-white/15 hover:bg-brand-card/85"
                       )}
                     >
-                      <div className="flex items-center justify-end gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
                         <span>Milestone {idx + 1}</span>
                       </div>
-                      <h4 className="text-lg md:text-xl font-black text-brand-text-primary uppercase tracking-tight leading-tight">{step.label}</h4>
-                      <p className="text-[11px] font-black text-brand-text-muted uppercase tracking-wider leading-none">{step.title}</p>
-                      <p className="text-xs md:text-sm text-brand-text-secondary leading-relaxed opacity-90 max-w-sm ml-auto">
-                        "{step.desc}"
+                      <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{step.label}</h4>
+                      <p className="text-xs font-black text-brand-accent uppercase tracking-wider leading-none">{step.title}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed max-w-sm">
+                        {step.desc}
                       </p>
 
                       <AnimatePresence>
                         {isActive && step.items.length > 0 && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mt-4 pt-4 border-t border-white/5 space-y-2.5 text-right overflow-hidden"
+                            className="mt-4 pt-4 border-t border-white/10 space-y-2.5 overflow-hidden"
                           >
-                            <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.4em] mb-2">Strategic Focus Units</p>
+                            <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.4em] mb-2">What to focus on</p>
                             {step.items.map((item: string, i: number) => (
-                              <div key={i} className="flex gap-2.5 items-center justify-end text-xs font-bold text-brand-text-muted">
+                              <div key={i} className="flex gap-2.5 items-start text-sm font-medium text-slate-200">
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 mt-1.5 shadow-glow animate-pulse" />
                                 <span>{item}</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 shadow-glow animate-pulse" />
                               </div>
                             ))}
                           </motion.div>
@@ -706,7 +706,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
 
                 <div className={cn(
                   "w-full flex md:col-span-5 transition-all duration-500",
-                  !isLeft ? "md:justify-start text-left pl-0 md:pl-10" : "md:opacity-20 group-hover:opacity-100 md:order-first pr-0 md:pr-10 text-right"
+                  !isLeft ? "md:justify-start pl-0 md:pl-10" : "md:opacity-20 group-hover:opacity-100 md:order-first pr-0 md:pr-10"
                 )}>
                   {!isLeft ? (
                     <motion.div
@@ -715,32 +715,32 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
                         "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 text-left cursor-pointer w-full max-w-md mr-auto md:ml-0",
-                        isActive 
-                          ? "bg-brand-section/90 border-brand-accent/50 shadow-[0_0_30px_rgba(93,169,255,0.15)]" 
+                        isActive
+                          ? "bg-brand-section/90 border-brand-accent/50 shadow-[0_0_30px_rgba(93,169,255,0.15)]"
                           : "bg-brand-card/45 border-white/5 hover:border-white/15 hover:bg-brand-card/85"
                       )}
                     >
-                      <div className="flex items-center justify-start gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
                         <span>Milestone {idx + 1}</span>
                       </div>
-                      <h4 className="text-lg md:text-xl font-black text-brand-text-primary uppercase tracking-tight leading-tight">{step.label}</h4>
-                      <p className="text-[11px] font-black text-brand-text-muted uppercase tracking-wider leading-none">{step.title}</p>
-                      <p className="text-xs md:text-sm text-brand-text-secondary leading-relaxed opacity-90 max-w-sm">
-                        "{step.desc}"
+                      <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{step.label}</h4>
+                      <p className="text-xs font-black text-brand-accent uppercase tracking-wider leading-none">{step.title}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed max-w-sm">
+                        {step.desc}
                       </p>
 
                       <AnimatePresence>
                         {isActive && step.items.length > 0 && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mt-4 pt-4 border-t border-white/5 space-y-2.5 text-left overflow-hidden"
+                            className="mt-4 pt-4 border-t border-white/10 space-y-2.5 overflow-hidden"
                           >
-                            <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.4em] mb-2">Strategic Focus Units</p>
+                            <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.4em] mb-2">What to focus on</p>
                             {step.items.map((item: string, i: number) => (
-                              <div key={i} className="flex gap-2.5 items-center text-xs font-bold text-brand-text-muted">
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 shadow-glow animate-pulse" />
+                              <div key={i} className="flex gap-2.5 items-start text-sm font-medium text-slate-200">
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 mt-1.5 shadow-glow animate-pulse" />
                                 <span>{item}</span>
                               </div>
                             ))}
