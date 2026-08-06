@@ -632,13 +632,14 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                   isLeft ? "md:justify-end text-right pr-0 md:pr-10" : "md:opacity-20 group-hover:opacity-100 md:order-last pl-0 md:pl-10 text-left"
                 )}>
                   {isLeft ? (
-                    <motion.div 
-                      onClick={() => setActiveStep(isActive ? null : idx)}
+                    <motion.div
+                      onMouseEnter={() => setActiveStep(idx)}
+                      onMouseLeave={() => setActiveStep(null)}
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
                         "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 cursor-pointer w-full max-w-md ml-auto",
-                        isActive 
-                          ? "bg-brand-section/90 border-brand-accent/50 shadow-[0_0_30px_rgba(93,169,255,0.15)]" 
+                        isActive
+                          ? "bg-brand-section/90 border-brand-accent/50 shadow-[0_0_30px_rgba(93,169,255,0.15)]"
                           : "bg-brand-card/45 border-white/5 hover:border-white/15 hover:bg-brand-card/85"
                       )}
                     >
@@ -674,8 +675,9 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                 </div>
 
                 <div className="flex md:col-span-1 justify-center z-20 my-4 md:my-0">
-                  <motion.div 
-                    onClick={() => setActiveStep(isActive ? null : idx)}
+                  <motion.div
+                    onMouseEnter={() => setActiveStep(idx)}
+                    onMouseLeave={() => setActiveStep(null)}
                     whileHover={{ scale: 1.15 }}
                     className={cn(
                       "w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center border-2 shadow-huge transition-all duration-500 cursor-pointer relative",
@@ -707,8 +709,9 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                   !isLeft ? "md:justify-start text-left pl-0 md:pl-10" : "md:opacity-20 group-hover:opacity-100 md:order-first pr-0 md:pr-10 text-right"
                 )}>
                   {!isLeft ? (
-                    <motion.div 
-                      onClick={() => setActiveStep(isActive ? null : idx)}
+                    <motion.div
+                      onMouseEnter={() => setActiveStep(idx)}
+                      onMouseLeave={() => setActiveStep(null)}
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
                         "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 text-left cursor-pointer w-full max-w-md mr-auto md:ml-0",
