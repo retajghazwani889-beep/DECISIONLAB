@@ -2682,8 +2682,23 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
         {/* Executive Summary */}
         <div>
           <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Executive Summary</h2>
-          <p style={{ color: '#404040' }} className="text-sm leading-relaxed">{displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
+          <p style={{ color: '#404040' }} className="text-sm leading-relaxed">{cleanAiText(currentAnalysis.summary) || displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
         </div>
+
+        {/* Key Insights */}
+        {Array.isArray(currentAnalysis.keyInsights) && currentAnalysis.keyInsights.length > 0 && (
+          <div>
+            <h2 style={{ color: '#171717' }} className="text-lg font-black uppercase tracking-tight mb-3">Key Insights</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {currentAnalysis.keyInsights.slice(0, 6).map((insight: string, i: number) => (
+                <div key={i} style={{ border: '1px solid #e5e5e5', borderRadius: '0.5rem', padding: '0.75rem', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                  <span style={{ color: '#2563eb', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>0{i + 1}</span>
+                  <p style={{ color: '#404040', fontSize: '12px', lineHeight: 1.5 }}>{cleanAiText(insight)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Market & Competition */}
         <div className="grid grid-cols-2 gap-6">
@@ -2767,7 +2782,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
         </div>
 
         <div style={{ borderTop: '1px solid #e5e5e5', color: '#a3a3a3' }} className="pt-6 text-[10px] uppercase tracking-widest text-center">
-          Produced by DecisionLab • Validated by VC Command Hub
+          Produced by DecisionLab
         </div>
       </div>
     </div>
