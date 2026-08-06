@@ -2539,15 +2539,6 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                       {isExporting ? 'Generating Report...' : 'Download Executive PDF'}
                     </button>
-                    <button
-                      onClick={() => window.print()}
-                      className="px-8 py-5 bg-brand-card text-brand-text-secondary border border-brand-border/20 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-brand-hover active:scale-95 transition-all w-full sm:w-auto"
-                    >
-                      Print Layout Dossier
-                    </button>
-                  </div>
-                  <div className="text-[10px] text-brand-text-muted font-bold font-mono tracking-widest uppercase">
-                    PRODUCED BY DECISIONLAB • VALIDATED BY VC COMMAND HUB
                   </div>
                 </div>
               </section>
