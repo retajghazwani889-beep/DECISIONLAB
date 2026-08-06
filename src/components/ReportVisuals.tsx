@@ -623,9 +623,11 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
             const isActive = activeStep === idx;
 
             return (
-              <div 
-                key={step.id} 
+              <div
+                key={step.id}
                 className="flex flex-col md:grid md:grid-cols-11 items-center w-full relative group mb-[60px]"
+                onMouseEnter={() => setActiveStep(idx)}
+                onMouseLeave={() => setActiveStep(null)}
               >
                 <div className={cn(
                   "w-full flex md:col-span-5 transition-all duration-500 pb-4 md:pb-0",
@@ -633,8 +635,6 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                 )}>
                   {isLeft ? (
                     <motion.div
-                      onMouseEnter={() => setActiveStep(idx)}
-                      onMouseLeave={() => setActiveStep(null)}
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
                         "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 cursor-pointer w-full max-w-md ml-auto text-left",
@@ -676,8 +676,6 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
 
                 <div className="flex md:col-span-1 justify-center z-20 my-4 md:my-0">
                   <motion.div
-                    onMouseEnter={() => setActiveStep(idx)}
-                    onMouseLeave={() => setActiveStep(null)}
                     whileHover={{ scale: 1.15 }}
                     className={cn(
                       "w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center border-2 shadow-huge transition-all duration-500 cursor-pointer relative",
@@ -710,8 +708,6 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                 )}>
                   {!isLeft ? (
                     <motion.div
-                      onMouseEnter={() => setActiveStep(idx)}
-                      onMouseLeave={() => setActiveStep(null)}
                       whileHover={{ scale: 1.02, y: -2 }}
                       className={cn(
                         "p-6 rounded-3xl backdrop-blur-xl border flex flex-col gap-3 transition-all duration-500 text-left cursor-pointer w-full max-w-md mr-auto md:ml-0",
