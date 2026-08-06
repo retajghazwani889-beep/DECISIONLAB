@@ -756,18 +756,6 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
         </div>
       </div>
 
-      <div className="mt-12 md:mt-24 max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 opacity-40">
-         <div className="flex items-center gap-4">
-            <div className="flex gap-1">
-               {[...Array(5)].map((_, i) => <div key={i} className="w-4 h-1 rounded-full bg-brand-accent/20" />)}
-            </div>
-            <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-[0.3em]">Expansion Velocity: Stable</span>
-         </div>
-         <div className="flex items-center gap-3">
-            <Info size={12} />
-            <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-[0.3em]">Founders Journey Analysis Engine</span>
-         </div>
-      </div>
     </div>
   );
 };
