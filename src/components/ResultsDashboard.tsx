@@ -1920,8 +1920,8 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                 <div className="relative">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-14">
                     <div>
-                      <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Startup Overview</h3>
-                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Overall evaluation of your startup idea</p>
+                      <h3 className="text-4xl font-black text-white uppercase tracking-tight font-display mb-3 drop-shadow-[0_0_18px_rgba(255,255,255,0.25)]">Startup Overview</h3>
+                      <p className="text-xl text-white font-semibold tracking-[0.02em]">Overall evaluation of your startup idea</p>
                     </div>
                     <div className="text-right">
                       <h4 className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2">Startup Score</h4>
@@ -1978,21 +1978,21 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   {currentAnalysis.keyInsights && currentAnalysis.keyInsights.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
-                        <div key={idx} className="bg-[#0b1320] border border-brand-border/10 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all">
-                          <span className="text-xs font-mono text-brand-accent font-black font-semibold">0{idx + 1}</span>
-                          <p className="text-sm text-slate-300 leading-relaxed font-sans font-medium">{insight}</p>
+                        <div key={idx} className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                          <span className="text-sm font-mono text-brand-accent font-black shrink-0">0{idx + 1}</span>
+                          <p className="text-base text-white leading-relaxed font-sans font-medium">{insight}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
-                      <div className="bg-[#0b1320] border border-brand-border/15 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all text-xs">
-                        <span className="text-xs font-mono text-brand-accent font-black">01</span>
-                        <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">Defensive Concept Capability: Excellent foundational business logic with robust early stage proof elements.</p>
+                      <div className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                        <span className="text-sm font-mono text-brand-accent font-black shrink-0">01</span>
+                        <p className="text-base text-white leading-relaxed font-sans font-medium">Defensive Concept Capability: Excellent foundational business logic with robust early stage proof elements.</p>
                       </div>
-                      <div className="bg-[#0b1320] border border-brand-border/15 p-5 rounded-xl flex items-start gap-4 hover:border-brand-accent/30 transition-all text-xs">
-                        <span className="text-xs font-mono text-brand-accent font-black">02</span>
-                        <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">Strategic Market Signals: Initial target sectors demonstrate major expansion trends over standard VC benchmarks.</p>
+                      <div className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                        <span className="text-sm font-mono text-brand-accent font-black shrink-0">02</span>
+                        <p className="text-base text-white leading-relaxed font-sans font-medium">Strategic Market Signals: Initial target sectors demonstrate major expansion trends over standard VC benchmarks.</p>
                       </div>
                     </div>
                   )}
