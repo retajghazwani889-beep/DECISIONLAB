@@ -240,15 +240,13 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
     { id: 'Financial', aliases: ['financial', 'Financial'], label: 'Financial', icon: <DollarSign size={20} />, angle: 90 },
   ];
 
-  const handleNodeClick = (nodeId: string) => {
-    if (selectedNode === nodeId) {
-      setSelectedNode(null);
-      return;
-    }
-    
-    setIsProcessing(true);
+  const handleNodeHover = (nodeId: string | null) => {
+    setHoveredNode(nodeId);
     setSelectedNode(nodeId);
-    setTimeout(() => setIsProcessing(false), 800);
+    if (nodeId) {
+      setIsProcessing(true);
+      setTimeout(() => setIsProcessing(false), 500);
+    }
   };
 
   const getRiskStyles = (score: number) => {
@@ -302,9 +300,8 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              onClick={() => handleNodeClick(m.id)}
-              onMouseEnter={() => setHoveredNode(m.id)}
-              onMouseLeave={() => setHoveredNode(null)}
+              onMouseEnter={() => handleNodeHover(m.id)}
+              onMouseLeave={() => handleNodeHover(null)}
               className={cn(
                 "relative rounded-3xl backdrop-blur-3xl border flex flex-col items-center justify-between text-center transition-all duration-500 shadow-huge group/node cursor-pointer p-6 md:p-8 min-h-[180px] md:min-h-[220px] h-full",
                 isSelected || hoveredNode === m.id 
@@ -353,6 +350,8 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ type: "spring", damping: 25, stiffness: 120 }}
             className="relative z-10 w-full border-t border-brand-border/10 overflow-hidden"
+            onMouseEnter={() => handleNodeHover(selectedNode)}
+            onMouseLeave={() => handleNodeHover(null)}
           >
             <div className="p-8 md:p-10 flex flex-col gap-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-brand-border/10">
@@ -383,15 +382,7 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setSelectedNode(null)}
-                    className="px-5 py-2.5 rounded-xl border border-brand-border/20 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-brand-text-muted hover:text-brand-accent hover:border-brand-accent/40 hover:bg-brand-card/40 transition-all group relative overflow-hidden"
-                  >
-                    <span className="relative z-10">Close Detail</span>
-                    <X size={14} className="text-brand-text-muted group-hover:text-brand-accent transition-colors relative z-10" />
-                  </button>
-                </div>
+                <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50">Hover a card to explore</div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
