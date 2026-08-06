@@ -272,7 +272,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           tier="free"
           title="Startup at a Glance"
           price="0"
-          subtitle="Free forever · Validate your idea"
+          subtitle="Free · Validate your idea"
           features={[
             "1 Startup",
             "Startup Profile",
