@@ -7,6 +7,7 @@ import {
   User as UserIcon, MapPin, Calendar, Rocket, Pencil, Check, Loader2,
   Mail, Phone, Linkedin, Globe, CalendarClock, Shield, Award, ArrowRight, X,
 } from 'lucide-react';
+import { getCalculatedVentureScore } from '../components/ResultsDashboard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PersonalProfilePage — every user's personal profile, separate from startups.
@@ -86,7 +87,7 @@ export default function PersonalProfilePage() {
         const map: Record<string, number> = {};
         analyses.forEach((a) => {
           if (!a.startupId) return;
-          const v = Number(a.overallScore ?? a.shareScore ?? a.scores?.overall ?? NaN);
+          const v = a.scores ? getCalculatedVentureScore(a.scores) : Number(a.overallScore ?? a.shareScore ?? NaN);
           if (!isNaN(v) && v > 0) map[a.startupId] = v;
         });
         setScores(map);

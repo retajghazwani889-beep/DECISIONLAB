@@ -8,6 +8,7 @@ import {
   Users, LayoutDashboard, Pencil, MapPin, FileText, Target, TrendingUp,
   AlertTriangle, Sparkles, FolderOpen, Pencil as PencilIcon,
 } from 'lucide-react';
+import { getCalculatedVentureScore } from '../components/ResultsDashboard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StartupWorkspacePage — the permanent home of one startup.
@@ -84,9 +85,9 @@ export default function StartupWorkspacePage() {
     );
   }
 
-  const score = Number(
-    analysis?.overallScore ?? analysis?.shareScore ?? analysis?.scores?.overall ?? analysis?.readinessScore ?? NaN
-  );
+  const score = analysis?.scores
+    ? getCalculatedVentureScore(analysis.scores)
+    : Number(analysis?.overallScore ?? analysis?.shareScore ?? analysis?.readinessScore ?? NaN);
   const hasScore = !isNaN(score) && score > 0;
 
   const teamCount = (startup.members || []).length;
