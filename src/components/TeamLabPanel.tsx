@@ -460,7 +460,7 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                           </div>
 
                           {(a.applicantSkills || []).length > 0 && (
-                            <p {A}
+                            <p className="text-sm text-slate-300 mt-1">
                               <span className="font-black uppercase tracking-widest text-[9px]">Skills:</span>{' '}
                               {Array.isArray(a.applicantSkills) ? a.applicantSkills.join(', ') : a.applicantSkills}
                             </p>
