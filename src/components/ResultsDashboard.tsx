@@ -2203,20 +2203,6 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                 </div>
               </div>
 
-              {/* Investor Readiness & Business Model Analysis */}
-              <div className="bg-brand-section/40 p-10 rounded-[2.5rem] border border-brand-border/20 flex flex-col md:flex-row items-center gap-12 justify-between">
-                <div>
-                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">Investor Readiness and Business Model</h4>
-                  <p className="text-sm text-brand-text-muted font-bold leading-relaxed max-w-2xl">
-                    Model: {displayProfile.businessType || 'B2B'} with {displayProfile.productType || 'SaaS Platform'}
-                    <span className="block mt-1">Next step: {(currentAnalysis as any).investorReadinessRouting || 'Start with angels'}</span>
-                  </p>
-                </div>
-                <div className="bg-[#0f1d2d] border border-white/5 rounded-2xl px-8 py-5 flex items-center gap-4 text-xs font-black font-mono">
-                  <ShieldCheck className="text-emerald-400" />
-                  <span className="uppercase tracking-widest text-[#5ce1e6]">STARTUP READY</span>
-                </div>
-              </div>
             </div>
           )}
 
