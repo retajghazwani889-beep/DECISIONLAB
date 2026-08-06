@@ -557,7 +557,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.immediate || [],
       icon: <Target size={20} />,
       title: 'Test Your Idea',
-      desc: 'Make sure real people need what you are building — talk to potential customers and confirm the problem exists before spending money'
+      desc: 'Make sure real people need what you are building, talk to potential customers and confirm the problem exists before spending money'
     },
     {
       id: 'launch',
@@ -573,7 +573,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.threeToSixMonths || [],
       icon: <Activity size={20} />,
       title: 'Build Momentum',
-      desc: 'Grow your customer base consistently, focus on what is working, cut what is not — this is where word-of-mouth starts'
+      desc: 'Grow your customer base consistently, focus on what is working, cut what is not and this is where word-of-mouth starts'
     },
     {
       id: 'scale',
