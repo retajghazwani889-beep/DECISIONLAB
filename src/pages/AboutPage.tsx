@@ -183,7 +183,7 @@ const AboutPage: React.FC = () => {
                 <h3 className="text-2xl md:text-3xl font-black text-white uppercase mb-4 tracking-tight">
                   {module.title}
                 </h3>
-                <p className="text-base md:text-lg font-medium text-white leading-relaxed tracking-[0.02em] opacity-100">
+                <p className="text-base md:text-lg font-medium text-white leading-relaxed tracking-[0.02em] opacity-100 whitespace-nowrap">
                   {module.desc}
                 </p>
               </motion.div>
