@@ -2228,10 +2228,10 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <div className="mt-12 pt-12 border-t border-white/5">
                       <div className="flex items-center gap-4 mb-8">
                         <div className="w-px h-8 bg-brand-accent" />
-                        <h4 className="text-xs font-black text-brand-accent uppercase tracking-[0.3em]">Investor Perspective</h4>
+                        <h4 className="text-base font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_12px_rgba(77,163,255,0.6)]">What Investors Think</h4>
                       </div>
-                      <div className="bg-brand-card/50 p-8 rounded-[2.5rem] border border-brand-border/20 shadow-inner">
-                        <p className="text-lg font-bold text-brand-text-primary leading-relaxed opacity-70">
+                      <div className="bg-brand-card/50 p-8 rounded-[2.5rem] border border-brand-accent/30 shadow-[0_0_24px_rgba(77,163,255,0.08)]">
+                        <p className="text-lg font-bold text-white leading-relaxed">
                           "{currentAnalysis.topInvestorTakeaway}"
                         </p>
                       </div>
