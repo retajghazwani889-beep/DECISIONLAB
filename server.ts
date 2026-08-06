@@ -1070,10 +1070,11 @@ async function startServer() {
         Your goal is to build an executive presentation that translates virtual analysis results directly into a 15-slide narrative.
 
         Strictly follow these requirements:
-        1. Permanently ban generic AI buzzwords: "disruptive", "hyper-scale", "ecosystem", "paradigm shift", "revolutionary", "game-changing", "synergistic", "unbeatable", "excruciating". Replace them with standard, clean, authoritative business terminology.
-        2. Strictly apply the 2-Second Rule for all slide titles. Titles must be instantly clear to professional investors.
-        3. Do not include periods, full stops, or trailing punctuation anywhere. Every slide title, bullet list item, content block, and metric label must have ZERO trailing punctuation.
-        4. No "lorem ipsum" or generic filler text is allowed. Focus content strictly on the actual startup profile metrics and sector-specific data points.
+        1. Ban all jargon and buzzwords. Write so a first-time entrepreneur with no business degree can understand every word.
+        2. Slide titles must be instantly clear — plain English, no acronyms. A 16-year-old should understand the title.
+        3. Do not include periods, full stops, or trailing punctuation anywhere.
+        4. No "lorem ipsum" or generic filler text. Use only real data from the startup profile.
+        5. Replace any technical terms: TAM→"total market size", CAC→"cost to get one customer", LTV→"value per customer", SaaS→"software subscription", B2B→"business customers", MVP→"first version", KPIs→"key goals", ROI→"profit on investment", churn→"customers leaving", runway→"months of money left".
       `;
 
       const slideSchema = {
@@ -1318,8 +1319,33 @@ async function startServer() {
           - \`why\`: 1-2 full sentences explaining WHY it matters to an investor — the concrete consequence, risk, or advantage. For weaknesses and threats, explain plainly why it is a problem and what it could cost. Base every item on the actual analysis (scores, market, competitors, stage, risks) — not boilerplate.
 
 
-        ### LATENCY & SPEED OPTIMIZATION DIRECTIVE:
-        - Keep descriptions punchy, conciseness-optimized, and VC-styled. Avoid generic business boilerplate.
+        ### LANGUAGE & TONE RULES (CRITICAL):
+        - Write like you are explaining to a first-time founder, NOT a Wall Street investor.
+        - Use simple, everyday English. No jargon, acronyms, or technical terms without explanation.
+        - Replace terms like "TAM/SAM/SOM" → "total market size / your reachable slice / your realistic first customers"
+        - Replace "CAGR" → "yearly growth rate"
+        - Replace "unit economics" → "profit per customer"
+        - Replace "CAC" → "cost to get one customer"
+        - Replace "LTV" → "lifetime value per customer"
+        - Replace "burn rate" → "monthly spending"
+        - Replace "runway" → "months of money left"
+        - Replace "churn" → "customers leaving"
+        - Replace "pivot" → "change direction"
+        - Replace "go-to-market" → "how you reach customers"
+        - Replace "moat" → "what makes you hard to copy"
+        - Replace "exit potential" → "chance of being sold or going public"
+        - Replace "Series A / Seed" → "early investment round"
+        - Replace "scalable" → "can grow without huge extra costs"
+        - Replace "traction" → "early proof customers want this"
+        - Replace "founder-market fit" → "does the founder understand this industry well"
+        - Replace "SME" → "small business"
+        - Replace "B2B / B2C" → "selling to businesses / selling to regular people"
+        - Replace "SaaS" → "software subscription"
+        - Replace "MVP" → "first basic version"
+        - Replace "KPIs" → "key goals to track"
+        - Replace "ROI" → "return on investment / profit from money spent"
+        - Write all Key Insights as plain sentences a teenager could understand.
+        - Keep descriptions short, clear, and encouraging — not cold or corporate.
       `;
 
       const responseSchema = {
@@ -1593,6 +1619,8 @@ async function startServer() {
         - Max 5-10 words per line.
         - No paragraphs.
         - No generic placeholder advice.
+        - Write in plain, simple English. Avoid jargon, acronyms, and complex business terms.
+        - Any first-time founder should understand every word without Googling it.
         
         SPECIAL ANALYSIS DIRECTIVES based on DecisionLab Dynamic Rules:
         1. Country-Specific Context: Perform dynamic calculations adjusted to local GDP per capita, internet penetration, smartphone adoption, and regulatory/investment climate of the suggested region.
@@ -1607,11 +1635,14 @@ async function startServer() {
         10. Growth Roadmap: Outline actionable 30-day, 90-day, 6-month, and 12-month plans aligned with weaknesses.
         
         KEY INSIGHTS:
-        - Provide 3-5 insights.
+        - Provide 4 insights.
         - Format: "[Priority] Short Insight".
         - Priority must be High, Medium, or Low.
-        - Max 8 words per insight.
-        - Be sharp and opinionated.
+        - Max 10 words per insight.
+        - Write in plain English — no jargon, no acronyms.
+        - Each insight must be something any non-expert founder immediately understands.
+        - Example good: "[High] Small businesses struggle to afford legal help."
+        - Example bad: "[High] SME legal budget constraints limit addressable market penetration."
     
         STRATEGIC ROADMAP:
         - Provide specific and measurable actions.
