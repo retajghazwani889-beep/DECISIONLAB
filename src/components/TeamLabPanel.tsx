@@ -234,9 +234,9 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
     } catch (e) { console.warn(e); }
   };
 
-  const field = 'w-full bg-brand-card border border-white/5 rounded-2xl px-5 py-3.5 text-sm text-brand-text-primary placeholder:text-brand-text-muted focus:border-brand-accent/40 focus:outline-none transition-colors';
-  const label = 'text-[11px] font-black text-brand-text-secondary uppercase tracking-widest mb-2 block';
-  const chip = (active: boolean) => `px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all active:scale-95 ${active ? 'bg-brand-accent text-brand-bg border-brand-accent' : 'bg-brand-card text-brand-text-secondary border-white/5 hover:text-white'}`;
+  const field = 'w-full bg-brand-card border border-white/5 rounded-2xl px-5 py-3.5 text-base text-brand-text-primary placeholder:text-brand-text-muted focus:border-brand-accent/40 focus:outline-none transition-colors';
+  const label = 'text-xs font-black text-brand-text-secondary uppercase tracking-widest mb-2 block';
+  const chip = (active: boolean) => `px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all active:scale-95 ${active ? 'bg-brand-accent text-brand-bg border-brand-accent' : 'bg-brand-card text-brand-text-secondary border-white/5 hover:text-white'}`;
 
   if (loading) {
     return <div className="py-20 flex justify-center"><Loader2 size={24} className="animate-spin text-brand-accent" /></div>;
@@ -246,8 +246,8 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
     <div className="space-y-8">
       <div>
         <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.35em] block mb-3">TeamLab</span>
-        <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-2">Build Your Team</h3>
-        <p className="text-sm text-brand-text-secondary font-medium">Add your existing team and publish open positions for this startup.</p>
+        <h3 className="text-3xl font-black text-white uppercase tracking-tight font-display mb-2 drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]">Build Your Team</h3>
+        <p className="text-base text-slate-300 font-medium">Add your existing team members and post open positions for people to apply.</p>
       </div>
 
       {error && <p className="text-xs font-bold text-brand-coral bg-brand-coral/10 border border-brand-coral/20 rounded-xl px-4 py-3">{error}</p>}
@@ -255,7 +255,7 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
       {/* ── Current Team ─────────────────────────────────────────────────── */}
       <section className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8">
         <div className="flex items-center justify-between mb-6">
-          <h4 className="text-lg font-black uppercase tracking-tight font-display flex items-center gap-3"><Users size={20} className="text-brand-accent" /> Current Team</h4>
+          <h4 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-3"><Users size={22} className="text-brand-accent" /> Current Team</h4>
           {canEdit && (
             <button onClick={() => { setShowMemberForm((v) => !v); setError(''); }} className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2">
               {showMemberForm ? <X size={13} /> : <Plus size={13} />} {showMemberForm ? 'Cancel' : 'Add Member'}
@@ -278,7 +278,7 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
         )}
 
         {team.length === 0 ? (
-          <p className="text-sm text-brand-text-muted font-medium py-4">No team members yet.</p>
+          <p className="text-base text-brand-text-muted font-medium py-4">No team members added yet.</p>
         ) : (
           <div className="space-y-2">
             {team.map((m) => (
@@ -287,13 +287,13 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                   <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent font-black text-sm shrink-0">{(m.fullName || '?').slice(0, 2).toUpperCase()}</div>
                   <div className="min-w-0">
                     {m.applicantId ? (
-                      <button onClick={() => navigate(`/profile/${m.applicantId}`)} className="text-sm font-black text-brand-text-primary truncate hover:text-brand-accent hover:underline transition-colors text-left">
+                      <button onClick={() => navigate(`/profile/${m.applicantId}`)} className="text-base font-black text-white truncate hover:text-brand-accent hover:underline transition-colors text-left">
                         {m.fullName}
                       </button>
                     ) : (
-                      <div className="text-sm font-black text-brand-text-primary truncate">{m.fullName}</div>
+                      <div className="text-base font-black text-white truncate">{m.fullName}</div>
                     )}
-                    <div className="text-xs text-brand-text-muted font-medium">{m.position}</div>
+                    <div className="text-sm text-slate-400 font-medium">{m.position}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
@@ -310,10 +310,10 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
       {/* ── Team Gaps ────────────────────────────────────────────────────── */}
       {lookingFor.length > 0 && (
         <section className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8">
-          <h4 className="text-lg font-black uppercase tracking-tight font-display flex items-center gap-3 mb-2">
+          <h4 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-3 mb-2">
             <Target size={20} className="text-brand-accent" /> Team Gaps
           </h4>
-          <p className="text-sm text-brand-text-secondary font-medium mb-6">The roles you said you're looking for — filled, open, or still missing.</p>
+          <p className="text-base text-slate-300 font-medium mb-6">The roles you said you're looking for — filled, open, or still missing.</p>
           <div className="space-y-2">
             <div className="flex items-center justify-between bg-brand-card rounded-2xl px-5 py-3.5 border border-emerald-500/10">
               <span className="text-sm font-black text-brand-text-primary">Founder</span>
@@ -348,7 +348,7 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
       {/* ── Open Positions ───────────────────────────────────────────────── */}
       <section className="bg-brand-section border border-brand-border rounded-[2.5rem] p-8">
         <div className="flex items-center justify-between mb-6">
-          <h4 className="text-lg font-black uppercase tracking-tight font-display flex items-center gap-3"><Briefcase size={20} className="text-brand-accent" /> Open Positions</h4>
+          <h4 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-3"><Briefcase size={20} className="text-brand-accent" /> Open Positions</h4>
           {canEdit && (
             <button onClick={() => { setShowPositionForm((v) => !v); setError(''); }} className="px-4 py-2.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-brand-accent/40 active:scale-95 transition-all flex items-center gap-2">
               {showPositionForm ? <X size={13} /> : <Plus size={13} />} {showPositionForm ? 'Cancel' : 'Add Position'}
@@ -407,16 +407,16 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                 <div key={p.id} className="bg-brand-card rounded-2xl p-6 border border-white/5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h5 className="text-base font-black text-brand-text-primary uppercase tracking-tight">{p.title}</h5>
+                      <h5 className="text-lg font-black text-white uppercase tracking-tight">{p.title}</h5>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {p.employmentType && <span className="text-[9px] font-black uppercase text-brand-accent tracking-widest bg-brand-accent/5 px-2.5 py-1 rounded-lg border border-brand-accent/10">{p.employmentType}</span>}
-                        {p.workType && <span className="text-[9px] font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-2.5 py-1 rounded-lg border border-[#5da9ff]/10">{p.workType}</span>}
-                        {p.experienceLevel && <span className="text-[9px] font-black uppercase text-amber-400 tracking-widest bg-amber-400/5 px-2.5 py-1 rounded-lg border border-amber-400/10">{p.experienceLevel}</span>}
+                        {p.employmentType && <span className="text-xs font-black uppercase text-brand-accent tracking-widest bg-brand-accent/5 px-3 py-1.5 rounded-lg border border-brand-accent/10">{p.employmentType}</span>}
+                        {p.workType && <span className="text-xs font-black uppercase text-[#5da9ff] tracking-widest bg-[#5da9ff]/5 px-3 py-1.5 rounded-lg border border-[#5da9ff]/10">{p.workType}</span>}
+                        {p.experienceLevel && <span className="text-xs font-black uppercase text-amber-400 tracking-widest bg-amber-400/5 px-3 py-1.5 rounded-lg border border-amber-400/10">{p.experienceLevel}</span>}
                       </div>
                     </div>
                     <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${p.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/5 text-brand-text-muted border-white/10'}`}>{p.status === 'open' ? 'Open' : 'Closed'}</span>
                   </div>
-                  {p.description && <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed">{p.description}</p>}
+                  {p.description && <p className="text-base text-slate-300 font-medium mt-3 leading-relaxed">{p.description}</p>}
 
                   <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-white/5">
                     <button
@@ -445,13 +445,13 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                               </div>
                               <div className="min-w-0">
                                 {a.applicantId ? (
-                                  <button onClick={() => navigate(`/profile/${a.applicantId}`)} className="text-sm font-black text-brand-text-primary truncate hover:text-brand-accent hover:underline transition-colors text-left">
+                                  <button onClick={() => navigate(`/profile/${a.applicantId}`)} className="text-base font-black text-white truncate hover:text-brand-accent hover:underline transition-colors text-left">
                                     {a.applicantName || 'Applicant'}
                                   </button>
                                 ) : (
-                                  <div className="text-sm font-black text-brand-text-primary truncate">{a.applicantName || 'Applicant'}</div>
+                                  <div className="text-base font-black text-white truncate">{a.applicantName || 'Applicant'}</div>
                                 )}
-                                {a.applicantHeadline && <div className="text-xs text-brand-text-muted font-medium">{a.applicantHeadline}</div>}
+                                {a.applicantHeadline && <div className="text-sm text-slate-400 font-medium">{a.applicantHeadline}</div>}
                               </div>
                             </div>
                             <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${APP_STATUS_STYLE[a.status] || APP_STATUS_STYLE.pending}`}>
@@ -460,13 +460,13 @@ export default function TeamLabPanel({ startupId, founderId, startupName, indust
                           </div>
 
                           {(a.applicantSkills || []).length > 0 && (
-                            <p className="text-xs text-brand-text-muted font-medium mt-3">
+                            <p {A}
                               <span className="font-black uppercase tracking-widest text-[9px]">Skills:</span>{' '}
                               {Array.isArray(a.applicantSkills) ? a.applicantSkills.join(', ') : a.applicantSkills}
                             </p>
                           )}
                           {a.message && (
-                            <p className="text-sm text-brand-text-secondary font-medium mt-3 leading-relaxed">"{a.message}"</p>
+                            <p className="text-base text-slate-200 font-medium mt-3 leading-relaxed">"{a.message}"</p>
                           )}
 
                           <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-white/5">

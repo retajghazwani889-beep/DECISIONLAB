@@ -2513,7 +2513,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   <FileText size={56} className="text-brand-accent mx-auto" strokeWidth={1} />
                   <div>
                     <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tight font-display">Download & Export Reports</h3>
-                    <p className="text-base text-slate-400 mt-2 font-medium">Compile the complete validated startup analytical dossier to present to institutional stakeholders and angels</p>
+                    <p className="text-lg text-slate-300 mt-2 font-medium">Download a complete PDF report of your startup analysis — ready to share with investors and advisors.</p>
                   </div>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button
