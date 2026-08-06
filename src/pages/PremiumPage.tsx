@@ -217,7 +217,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">Investor Pro</h3>
       <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10 whitespace-nowrap">Discover · Evaluate · Invest</p>
       <div className="mb-12 flex items-baseline gap-2">
-        <span className="text-3xl font-black font-display tracking-tighter text-brand-accent">Coming Soon</span>
+        <span className="text-3xl font-black font-display tracking-tighter" style={{ color: '#3B82F6' }}>Coming Soon</span>
       </div>
       <ul className="space-y-4 mb-12 flex-1">
         {INVESTOR_FEATURES.map((f, i) => (
