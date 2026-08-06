@@ -2334,7 +2334,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               startupName={currentAnalysis.startupProfile?.companyName || currentAnalysis.ideaDescription}
               industry={currentAnalysis.startupProfile?.industry}
               stage={currentAnalysis.startupProfile?.stage}
-              canEdit={!investorView && (currentAnalysis as any).userId === ((profile as any)?.uid || (profile as any)?.userId)}
+              canEdit={!investorView && !!(user?.uid && (currentAnalysis as any).userId === user.uid)}
             />
           )}
 
