@@ -1978,7 +1978,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   {currentAnalysis.keyInsights && currentAnalysis.keyInsights.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
-                        <div key={idx} className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                        <div key={idx} className="bg-brand-card/30 border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
                           <span className="text-sm font-mono text-brand-accent font-black shrink-0">0{idx + 1}</span>
                           <p className="text-base text-white leading-relaxed font-sans font-medium">{insight}</p>
                         </div>
@@ -1986,11 +1986,11 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
-                      <div className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                      <div className="bg-brand-card/30 border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
                         <span className="text-sm font-mono text-brand-accent font-black shrink-0">01</span>
                         <p className="text-base text-white leading-relaxed font-sans font-medium">Defensive Concept Capability: Excellent foundational business logic with robust early stage proof elements.</p>
                       </div>
-                      <div className="bg-[#1a2540] border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
+                      <div className="bg-brand-card/30 border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
                         <span className="text-sm font-mono text-brand-accent font-black shrink-0">02</span>
                         <p className="text-base text-white leading-relaxed font-sans font-medium">Strategic Market Signals: Initial target sectors demonstrate major expansion trends over standard VC benchmarks.</p>
                       </div>
