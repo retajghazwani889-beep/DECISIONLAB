@@ -1307,13 +1307,33 @@ async function startServer() {
         - 40–59: Weak pitch with little substance.
         - 0–39: Too thin, generic, or contradictory.
 
+        ### REAL-WORLD BENCHMARKING (CRITICAL FOR FAIR SCORING):
+        Use your knowledge of real startups, markets, and industries to calibrate every score against what actually exists in the world.
+
+        For each idea, before scoring ask:
+        - Does a company already doing this exact thing exist? (e.g., if someone pitches "Uber for X", Uber already exists — competition score must reflect that)
+        - How many funded startups are in this space? A crowded space = lower competition score unless a clear edge is stated.
+        - What do successful startups in this category look like at this stage? Compare the founder's idea to real benchmarks.
+        - Is the market size they're claiming realistic based on actual industry data you know?
+
+        BENCHMARK CALIBRATION EXAMPLES (use these as reference points):
+        - A idea identical or very similar to an already well-funded global company (Airbnb, Uber, Stripe, etc.) with no differentiation stated: competition score 20–35, ideaStrength 30–50.
+        - An idea in a genuinely underserved niche with a specific local angle (e.g., same-day pharmacy delivery in a country with no such service): marketFit 70–85 if evidence provided.
+        - An idea in an oversaturated space (food delivery, social media, generic e-commerce) with no stated differentiation: competition score 15–40.
+        - An idea solving a real, painful, verifiable problem that has no well-known solution: ideaStrength 75–90.
+        - A solo founder at idea stage with no background mentioned: execution 25–45 regardless of idea quality.
+        - A team with directly relevant domain experience stated: execution 65–85.
+
+        Always mention in the explanation which real companies or market conditions you compared this to.
+
         ### SCORING RULES:
-        1. Each score explanation MUST quote or directly reference specific words from the input text to justify the number.
+        1. Each score explanation MUST: (a) quote specific words from the founder's input AND (b) name the real-world comparison or market fact that calibrated the score.
         2. Use exact integers (e.g., 67, 74, 83) — not rounded numbers like 60, 70, 80.
         3. Do NOT give the same score to multiple dimensions unless evidence genuinely supports the same level.
         4. If total input text is under 20 words, cap ALL scores at 45.
+        5. A score above 80 requires BOTH strong founder evidence AND a favorable real-world market position.
 
-        ### SWOT: Each item must reference something the founder actually wrote. No generic items.
+        ### SWOT: Each item must reference something the founder actually wrote AND a real market fact. No generic items.
 
         ### LANGUAGE & TONE:
         - Plain English for first-time founders. No jargon or acronyms.
@@ -1327,18 +1347,18 @@ async function startServer() {
           scores: {
             type: Type.OBJECT,
             properties: {
-              ideaStrength: { 
-                type: Type.OBJECT, 
+              ideaStrength: {
+                type: Type.OBJECT,
                 properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } },
                 required: ["score", "explanation"]
               },
-              marketFit: { 
-                type: Type.OBJECT, 
+              marketFit: {
+                type: Type.OBJECT,
                 properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } },
                 required: ["score", "explanation"]
               },
-              execution: { 
-                type: Type.OBJECT, 
+              execution: {
+                type: Type.OBJECT,
                 properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } },
                 required: ["score", "explanation"]
               },
@@ -1847,27 +1867,45 @@ async function startServer() {
         - 40–59: Weak pitch with little substance to evaluate.
         - 0–39: Too thin, too generic, or contradictory to generate investor interest.
 
+        ### REAL-WORLD BENCHMARKING (CRITICAL FOR FAIR SCORING):
+        Use your knowledge of real startups, funded companies, and actual market conditions to calibrate every score against what truly exists in the world. Do not score in a vacuum.
+
+        For each startup, before scoring ask:
+        - Does a well-funded company already doing this exact thing exist? If yes and no clear differentiation is stated, competition score must be low (20–40).
+        - How crowded is this space? (e.g., food delivery, social media, e-commerce are extremely crowded — low competition scores unless a real edge is described).
+        - What do real startups in this industry look like at this stage? Compare to actual funded examples you know.
+        - Is the market size claim realistic based on actual industry data?
+        - Has this type of idea been tried before and failed? If yes, mention it in the explanation.
+
+        BENCHMARK CALIBRATION EXAMPLES (use as reference points):
+        - Idea identical to a well-funded global company (Airbnb, Uber, Stripe, Shopify, etc.) with no differentiation: competition 15–35, ideaStrength 30–55.
+        - Idea in a genuinely underserved local niche with specific evidence: marketFit 70–85.
+        - Overcrowded space (food delivery, generic social app, generic e-commerce) with no stated edge: competition 15–40.
+        - Real, painful, verifiable problem with no known large-scale solution: ideaStrength 75–90.
+        - Solo founder at idea stage with no background mentioned: execution 25–45 regardless of idea.
+        - Team with directly relevant domain experience: execution 65–85.
+        - Idea in a regulated industry (fintech, healthcare, legal) without mentioning compliance: execution and scalability deducted 10–20 points.
+
+        Always mention in the score explanation which real companies, market conditions, or industry facts you compared this to.
+
         ### SCORING RULES:
-        1. Each score explanation MUST quote or directly reference specific phrases from the founder's input to justify the number.
-        2. Do NOT round all scores to nearby round numbers (60, 70, 80). Use exact integers that reflect the actual evidence level (e.g., 67, 74, 83).
-        3. Do NOT give the same score to two dimensions unless the evidence genuinely supports the same level for both.
-        4. If the founder wrote less than 20 words total, cap ALL scores at 45 maximum.
-        5. A comprehensive, specific brief can earn 80+ but only if the evidence is genuinely there.
+        1. Each score explanation MUST: (a) quote specific words from the founder's input AND (b) name the real-world comparison or market fact that calibrated the score.
+        2. Use exact integers (e.g., 67, 74, 83) — not rounded numbers like 60, 70, 80.
+        3. Do NOT give the same score to two dimensions unless the evidence genuinely supports the same level.
+        4. If the founder wrote less than 20 words total, cap ALL scores at 45.
+        5. A score above 80 requires BOTH strong founder evidence AND a favorable real-world market position.
 
         ### COUNTRY & STAGE ADJUSTMENT:
-        After scoring based on evidence, apply secondary adjustments:
-        - Country: Adjust market size and investor readiness scores based on local startup ecosystem maturity, GDP per capita, and investment climate for the specified country.
-        - Stage: Adjust execution and scalability scoring expectations to match what is realistic for the founder's current stage (idea-stage founders are not penalized for lacking revenue).
+        After benchmarking, apply:
+        - Country: Adjust marketFit and investorAppeal based on local startup ecosystem maturity, investment climate, and GDP per capita.
+        - Stage: Do not penalize idea-stage founders for lacking revenue — evaluate what is realistic for their stage.
 
-        ### SWOT (investor-facing — must be specific to THIS venture):
-        Each SWOT item must reference something the founder actually said. No generic items like "large market opportunity" without tying it to the founder's described market. For each item provide:
-        - point: the specific factor in a short phrase
-        - why: 1-2 plain-English sentences explaining the concrete consequence, risk, or advantage. For weaknesses and threats, state plainly what it could cost.
+        ### SWOT: Each item must reference something the founder actually said AND a real market or competitive fact. No generic items.
 
         ### OUTPUT STYLE:
-        - Write in plain English a first-time founder can understand. No jargon.
+        - Plain English a first-time founder can understand. No jargon.
         - Replace: TAM→"total market size", CAC→"cost to get one customer", LTV→"value per customer", SaaS→"software subscription", B2B→"business customers", MVP→"first version", KPIs→"key goals", ROI→"profit on investment", churn→"customers leaving", runway→"months of money left", scalable→"can grow without huge extra costs", traction→"early proof customers want this".
-        - Be short and specific. Max 10-12 words per bullet.
+        - Short and specific. Max 10-12 words per bullet.
         - Always name the company specifically — never say "your startup".
       `;
 
