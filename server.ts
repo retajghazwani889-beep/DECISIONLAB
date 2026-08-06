@@ -1162,7 +1162,8 @@ async function startServer() {
         config: {
           systemInstruction,
           responseMimeType: "application/json",
-          responseSchema: responseSchema as any
+          responseSchema: responseSchema as any,
+          temperature: 0
         }
       }, key);
 
@@ -1677,7 +1678,8 @@ async function startServer() {
         config: {
           systemInstruction,
           responseMimeType: "application/json",
-          responseSchema: responseSchema as any
+          responseSchema: responseSchema as any,
+          temperature: 0
         }
       }, key);
 
@@ -2131,7 +2133,8 @@ async function startServer() {
         config: {
           systemInstruction,
           responseMimeType: "application/json",
-          responseSchema: responseSchema as any
+          responseSchema: responseSchema as any,
+          temperature: 0
         }
       }, key);
 
