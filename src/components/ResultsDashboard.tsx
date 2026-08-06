@@ -1958,7 +1958,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
               <section className="bg-brand-section/40 p-5 sm:p-10 lg:p-14 rounded-2xl sm:rounded-[3.5rem] border border-brand-border shadow-huge relative">
                 <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-6">Executive Summary</h4>
-                <p className="text-base text-slate-300 leading-relaxed font-sans">{displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
+                <p className="text-base text-slate-300 leading-relaxed font-sans">{cleanAiText(currentAnalysis.summary) || displayProfile.businessDescription || currentAnalysis.ideaDescription}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 pt-10 border-t border-white/5">
                   <div className="space-y-2">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-text-secondary/60">Selected Industry</span>

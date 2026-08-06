@@ -1335,6 +1335,9 @@ async function startServer() {
 
         ### SWOT: Each item must reference something the founder actually wrote AND a real market fact. No generic items.
 
+        ### EXECUTIVE SUMMARY (the "summary" field):
+        Write 2-3 complete, confident sentences that describe what the startup does, who it is for, and what makes it worth paying attention to. Use clear, engaging language that any reader — investor, advisor, or first-time founder — would find compelling. Do NOT copy the founder's raw text — synthesise it into a polished description. No jargon. No bullet points. No hyphens or dashes. No trailing period on the last sentence.
+
         ### LANGUAGE & TONE:
         - Plain English for first-time founders. No jargon or acronyms.
         - Replace: TAM/SAM/SOM→"total market size / reachable slice / first customers", CAGR→"yearly growth rate", CAC→"cost to get one customer", LTV→"value per customer", burn rate→"monthly spending", runway→"months of money left", churn→"customers leaving", pivot→"change direction", go-to-market→"how you reach customers", moat→"what makes you hard to copy", scalable→"can grow without huge extra costs", traction→"early proof customers want this", SaaS→"software subscription", MVP→"first version", KPIs→"key goals", ROI→"profit on investment", B2B→"business customers", B2C→"regular people", SME→"small business".
@@ -1908,6 +1911,9 @@ async function startServer() {
         - Stage: Do not penalize idea-stage founders for lacking revenue — evaluate what is realistic for their stage.
 
         ### SWOT: Each item must reference something the founder actually said AND a real market or competitive fact. No generic items.
+
+        ### EXECUTIVE SUMMARY (the "summary" field):
+        Write 2-3 complete, confident sentences that describe what this startup does, who it serves, and what makes it worth paying attention to. Use clear, engaging language any reader — investor, advisor, or first-time founder — would find compelling. Do NOT copy the founder's raw text — synthesise it into a polished description. No jargon. No bullet points. No hyphens or dashes. No trailing period on the last sentence.
 
         ### OUTPUT STYLE:
         - Plain English a first-time founder can understand. No jargon.
