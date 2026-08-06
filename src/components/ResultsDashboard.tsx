@@ -1073,7 +1073,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   // profile === null means it's still loading — don't flash the upgrade card
   // at a paying user for a split second. The server and rules still protect
   // everything; this is purely a UI-politeness guard.
-  const tabLocked = !!requiredTabTier && profile !== null && !hasAccess(profile, requiredTabTier);
+  const tabLocked = !!requiredTabTier && profile !== null && !hasAccess(profile, requiredTabTier, user?.email ?? undefined);
   // When locked, no tab content renders — the upgrade prompt takes its place.
   const effectiveTab = tabLocked ? ('locked' as any) : requestedTab;
 
@@ -1087,7 +1087,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   useEffect(() => {
     const downloadParam = searchParams.get('download');
     // Tier lock: ?download=true must not bypass the Growth-plan PDF export.
-    const canExport = investorView || hasAccess(profile, 'growth');
+    const canExport = investorView || hasAccess(profile, 'growth', user?.email ?? undefined);
     if (downloadParam === 'true' && activeTab === 'reports' && canExport) {
       const timer = setTimeout(() => {
         handleExportExecutiveReport();

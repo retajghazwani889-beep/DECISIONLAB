@@ -51,8 +51,9 @@ export function getTier(profile: ProfileLike): Tier {
 const OWNER_EMAILS = ['decisionlab00@gmail.com'];
 
 // The main check. Example: hasAccess(profile, 'growth')
-export function hasAccess(profile: ProfileLike, required: Tier): boolean {
-  if (profile?.email && OWNER_EMAILS.includes(profile.email.toLowerCase())) return true;
+export function hasAccess(profile: ProfileLike, required: Tier, userEmail?: string): boolean {
+  const emailToCheck = (profile?.email || userEmail || '').toLowerCase();
+  if (emailToCheck && OWNER_EMAILS.includes(emailToCheck)) return true;
   return TIER_RANK[getTier(profile)] >= TIER_RANK[required];
 }
 
