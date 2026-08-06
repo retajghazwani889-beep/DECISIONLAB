@@ -296,7 +296,7 @@ function AppContent() {
                Requires login — redirects to home if not authenticated. */}
           <Route
             path="/pitch-deck"
-            element={<RequireTier tier="founder" featureName="Pitch Deck Architect"><PitchDeckArchitectEngine /></RequireTier>}
+            element={<RequireTier tier="growth" featureName="Pitch Deck Architect"><PitchDeckArchitectEngine /></RequireTier>}
           />
           {/* Catch-all: any unknown URL gets a proper 404 instead of a blank page */}
           <Route path="*" element={<NotFoundPage />} />

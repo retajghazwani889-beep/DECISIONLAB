@@ -1055,7 +1055,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
     team: 'growth',
     investors: 'growth',
     reports: 'growth',
-    architect: 'founder',
+    architect: 'growth',
   };
   const TAB_FEATURE_NAMES: Partial<Record<typeof activeTab, string>> = {
     analysis: 'Key Insights: Market, Competition and SWOT',
