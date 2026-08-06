@@ -164,7 +164,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
               <div className="mt-1.5 p-0.5 rounded-full shrink-0 bg-brand-accent text-brand-text-primary shadow-[0_0_10px_rgba(77,163,255,0.3)]">
                 <Check size={14} strokeWidth={4} />
               </div>
-              <span className="text-base font-medium text-neutral-300">
+              <span className="text-base font-medium text-neutral-300 whitespace-nowrap">
                 {f}
               </span>
             </li>
@@ -210,31 +210,28 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
   ];
 
   const InvestorProCard = () => (
-    <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-card border-[#5da9ff]/30 h-full flex flex-col">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5da9ff] text-brand-bg text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest whitespace-nowrap">
+    <div className="relative p-8 rounded-3xl border-2 transition-all duration-500 bg-brand-section border-brand-accent shadow-2xl shadow-brand-accent/20 z-10 h-full flex flex-col">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-accent text-brand-text-primary text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest shadow-[0_0_15px_rgba(77,163,255,0.5)] whitespace-nowrap">
         Early Access
       </div>
       <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">Investor Pro</h3>
-      <p className="text-[#5da9ff] text-sm font-bold uppercase tracking-wider mb-6">Discover · Evaluate · Invest</p>
-      <div className="mb-6 flex items-baseline gap-2">
-        <span className="text-4xl font-black font-display tracking-tighter text-brand-text-primary">Coming Soon</span>
+      <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10">Discover · Evaluate · Invest</p>
+      <div className="mb-12 flex items-baseline gap-2">
+        <span className="text-5xl font-black font-display tracking-tighter text-brand-text-primary">Coming Soon</span>
       </div>
-      <p className="text-sm text-brand-text-muted font-medium leading-relaxed mb-8">
-        Discover validated startups and connect with founders, all in one dashboard
-      </p>
-      <ul className="space-y-3 mb-12 flex-1">
+      <ul className="space-y-4 mb-12 flex-1">
         {INVESTOR_FEATURES.map((f, i) => (
-          <li key={i} className="flex items-start gap-3">
-            <div className="mt-1 p-0.5 rounded-full shrink-0 bg-[#5da9ff]/20 text-[#5da9ff]">
-              <Check size={13} strokeWidth={4} />
+          <li key={i} className="flex items-center gap-4">
+            <div className="p-0.5 rounded-full shrink-0 bg-brand-accent text-brand-text-primary shadow-[0_0_10px_rgba(77,163,255,0.3)]">
+              <Check size={14} strokeWidth={4} />
             </div>
-            <span className="text-sm font-medium text-neutral-300">{f}</span>
+            <span className="text-base font-medium text-neutral-300 whitespace-nowrap">{f}</span>
           </li>
         ))}
       </ul>
       <button
         onClick={handleInvestorPro}
-        className="w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 bg-[#5da9ff] text-brand-bg hover:bg-[#5da9ff]/90 shadow-lg shadow-[#5da9ff]/20"
+        className="w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 bg-brand-accent text-brand-text-primary hover:bg-brand-accent/90 shadow-lg shadow-brand-accent/20"
       >
         {investorProActive ? 'Current Plan' : 'Join the Waitlist'}
       </button>
