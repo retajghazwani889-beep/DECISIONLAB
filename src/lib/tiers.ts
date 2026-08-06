@@ -47,8 +47,12 @@ export function getTier(profile: ProfileLike): Tier {
   return 'free';
 }
 
+// TEMPORARY OWNER OVERRIDE — remove after testing
+const OWNER_EMAILS = ['decisionlab00@gmail.com'];
+
 // The main check. Example: hasAccess(profile, 'growth')
 export function hasAccess(profile: ProfileLike, required: Tier): boolean {
+  if (profile?.email && OWNER_EMAILS.includes(profile.email.toLowerCase())) return true;
   return TIER_RANK[getTier(profile)] >= TIER_RANK[required];
 }
 
