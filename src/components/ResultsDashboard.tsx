@@ -2105,18 +2105,18 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* S */}
-                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-emerald-500/10 hover:border-emerald-500/30 transition-all">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black text-xs font-mono">S</div>
-                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Strengths</h5>
+                  <div className="bg-brand-card/30 p-8 rounded-[2rem] border border-emerald-500/20 hover:border-emerald-500/40 transition-all">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black text-sm font-mono">S</div>
+                      <h5 className="text-base font-black text-white uppercase tracking-widest">Strengths</h5>
                     </div>
-                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                    <ul className="space-y-5 text-sm text-brand-text-secondary leading-relaxed">
                       {(currentAnalysis.swot?.strengths && currentAnalysis.swot.strengths.length > 0) ? (
                         currentAnalysis.swot.strengths.map((it: any, i: number) => (
-                          <li key={i} className="pl-4 border-l-2 border-white/10">
-                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                          <li key={i} className="pl-4 border-l-2 border-emerald-500/30">
+                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
                             )}
                           </li>
                         ))
@@ -2129,18 +2129,18 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </ul>
                   </div>
                   {/* W */}
-                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-coral/10 hover:border-brand-coral/30 transition-all">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-brand-coral/10 flex items-center justify-center text-brand-coral font-black text-xs font-mono">W</div>
-                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Weaknesses</h5>
+                  <div className="bg-brand-card/30 p-8 rounded-[2rem] border border-brand-coral/20 hover:border-brand-coral/40 transition-all">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-9 h-9 rounded-lg bg-brand-coral/10 flex items-center justify-center text-brand-coral font-black text-sm font-mono">W</div>
+                      <h5 className="text-base font-black text-white uppercase tracking-widest">Weaknesses</h5>
                     </div>
-                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                    <ul className="space-y-5 text-sm text-brand-text-secondary leading-relaxed">
                       {(currentAnalysis.swot?.weaknesses && currentAnalysis.swot.weaknesses.length > 0) ? (
                         currentAnalysis.swot.weaknesses.map((it: any, i: number) => (
-                          <li key={i} className="pl-4 border-l-2 border-white/10">
-                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                          <li key={i} className="pl-4 border-l-2 border-brand-coral/30">
+                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
                             )}
                           </li>
                         ))
@@ -2153,18 +2153,18 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </ul>
                   </div>
                   {/* O */}
-                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-accent/10 hover:border-brand-accent/30 transition-all">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent font-black text-xs font-mono">O</div>
-                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Opportunities</h5>
+                  <div className="bg-brand-card/30 p-8 rounded-[2rem] border border-brand-accent/20 hover:border-brand-accent/40 transition-all">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-9 h-9 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent font-black text-sm font-mono">O</div>
+                      <h5 className="text-base font-black text-white uppercase tracking-widest">Opportunities</h5>
                     </div>
-                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                    <ul className="space-y-5 text-sm text-brand-text-secondary leading-relaxed">
                       {(currentAnalysis.swot?.opportunities && currentAnalysis.swot.opportunities.length > 0) ? (
                         currentAnalysis.swot.opportunities.map((it: any, i: number) => (
-                          <li key={i} className="pl-4 border-l-2 border-white/10">
-                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                          <li key={i} className="pl-4 border-l-2 border-brand-accent/30">
+                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
                             )}
                           </li>
                         ))
@@ -2177,18 +2177,18 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </ul>
                   </div>
                   {/* T */}
-                  <div className="bg-[#0c1421] p-8 rounded-[2rem] border border-brand-amber/10 hover:border-brand-amber/30 transition-all">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-brand-amber/10 flex items-center justify-center text-brand-amber font-black text-xs font-mono">T</div>
-                      <h5 className="text-xs font-black text-slate-100 uppercase tracking-widest">Threats</h5>
+                  <div className="bg-brand-card/30 p-8 rounded-[2rem] border border-amber-500/20 hover:border-amber-500/40 transition-all">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 font-black text-sm font-mono">T</div>
+                      <h5 className="text-base font-black text-white uppercase tracking-widest">Threats</h5>
                     </div>
-                    <ul className="space-y-4 text-xs text-brand-text-secondary leading-relaxed">
+                    <ul className="space-y-5 text-sm text-brand-text-secondary leading-relaxed">
                       {(currentAnalysis.swot?.threats && currentAnalysis.swot.threats.length > 0) ? (
                         currentAnalysis.swot.threats.map((it: any, i: number) => (
-                          <li key={i} className="pl-4 border-l-2 border-white/10">
-                            <span className="block text-slate-100 font-black">{typeof it === 'string' ? it : it.point}</span>
+                          <li key={i} className="pl-4 border-l-2 border-amber-500/30">
+                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1 text-brand-text-muted font-medium">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
                             )}
                           </li>
                         ))
