@@ -109,6 +109,22 @@ export function withOklchHtml2CanvasPatch<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
+// Strip AI-style trailing periods and leading hyphens/dashes from display text
+export function cleanAiText(text: string | undefined | null): string {
+  if (!text) return '';
+  return text
+    .replace(/^[\s\-–—]+/gm, '')          // leading hyphens/dashes per line
+    .replace(/\.(\s*)$/gm, '$1')           // trailing period at end of each line
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+// Clean an array of strings
+export function cleanAiList(items: string[] | undefined | null): string[] {
+  if (!items) return [];
+  return items.map(cleanAiText).filter(Boolean);
+}
+
 export function formatAuthError(error: any): string {
   if (!error) return 'Authentication failed. Please check your credentials and try again.';
   

@@ -1339,6 +1339,13 @@ async function startServer() {
         - Plain English for first-time founders. No jargon or acronyms.
         - Replace: TAM/SAM/SOM→"total market size / reachable slice / first customers", CAGR→"yearly growth rate", CAC→"cost to get one customer", LTV→"value per customer", burn rate→"monthly spending", runway→"months of money left", churn→"customers leaving", pivot→"change direction", go-to-market→"how you reach customers", moat→"what makes you hard to copy", scalable→"can grow without huge extra costs", traction→"early proof customers want this", SaaS→"software subscription", MVP→"first version", KPIs→"key goals", ROI→"profit on investment", B2B→"business customers", B2C→"regular people", SME→"small business".
         - Keep it short and clear. Any first-time founder should understand every word.
+
+        ### FORMATTING RULES (STRICT):
+        - Do NOT end any bullet point or list item with a period or full stop.
+        - Do NOT use hyphens (-, –, —) at the start of sentences or as bullet markers in text fields.
+        - Do NOT use em-dashes or en-dashes inside sentences unless absolutely required for meaning.
+        - Write list items as short natural phrases, not punctuated sentences.
+        - No trailing punctuation on list items at all.
       `;
 
       const responseSchema = {
@@ -1907,6 +1914,13 @@ async function startServer() {
         - Replace: TAM→"total market size", CAC→"cost to get one customer", LTV→"value per customer", SaaS→"software subscription", B2B→"business customers", MVP→"first version", KPIs→"key goals", ROI→"profit on investment", churn→"customers leaving", runway→"months of money left", scalable→"can grow without huge extra costs", traction→"early proof customers want this".
         - Short and specific. Max 10-12 words per bullet.
         - Always name the company specifically — never say "your startup".
+
+        ### FORMATTING RULES (STRICT):
+        - Do NOT end any bullet point or list item with a period or full stop.
+        - Do NOT use hyphens (-, –, —) at the start of sentences or as bullet markers in text fields.
+        - Do NOT use em-dashes or en-dashes inside sentences unless absolutely required for meaning.
+        - Write list items as short natural phrases, not punctuated sentences.
+        - No trailing punctuation on list items at all.
       `;
 
       const healthScoreSchema = {

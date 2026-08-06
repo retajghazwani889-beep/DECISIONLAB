@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, cleanAiText, cleanAiList } from '../lib/utils';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip 
@@ -25,7 +25,7 @@ const RadarTooltip = ({ active, payload }: any) => {
         <span className="text-lg font-black text-brand-accent font-mono">{point.value}%</span>
       </div>
       <p className="text-xs text-brand-text-secondary leading-relaxed font-medium">
-        {point.explanation || `Our study suggests ${point.value >= 60 ? 'strong' : 'variable'} position in ${point.metric.toLowerCase()}.`}
+        {cleanAiText(point.explanation) || `Our study suggests ${point.value >= 60 ? 'strong' : 'variable'} position in ${point.metric.toLowerCase()}`}
       </p>
     </div>
   );
@@ -212,7 +212,7 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
                       </div>
                     </div>
                     <p className="text-xs text-brand-text-secondary leading-relaxed font-medium line-clamp-4">
-                      {item.data.explanation || item.data.note}
+                      {cleanAiText(item.data.explanation || item.data.note)}
                     </p>
                   </div>
                 </div>
@@ -664,7 +664,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                             {step.items.map((item: string, i: number) => (
                               <div key={i} className="flex gap-2.5 items-start text-sm font-medium text-slate-200">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 mt-1.5 shadow-glow animate-pulse" />
-                                <span>{item}</span>
+                                <span>{cleanAiText(item)}</span>
                               </div>
                             ))}
                           </motion.div>
@@ -741,7 +741,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                             {step.items.map((item: string, i: number) => (
                               <div key={i} className="flex gap-2.5 items-start text-sm font-medium text-slate-200">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 mt-1.5 shadow-glow animate-pulse" />
-                                <span>{item}</span>
+                                <span>{cleanAiText(item)}</span>
                               </div>
                             ))}
                           </motion.div>

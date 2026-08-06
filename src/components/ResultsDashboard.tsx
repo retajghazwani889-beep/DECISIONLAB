@@ -9,7 +9,7 @@ import {
   ChevronRight, X, Edit3, CheckCircle2, Globe, Rocket, Info, ShieldAlert,
   Wand2, Image as ImageIcon, Loader2, BarChart3, PieChart, TrendingUp,
   Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users, Lock} from 'lucide-react';
-import { cn, withOklchHtml2CanvasPatch } from '../lib/utils';
+import { cn, withOklchHtml2CanvasPatch, cleanAiText, cleanAiList } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -1939,7 +1939,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <div className="flex-1">
                       <h4 className="text-xs font-black text-brand-accent uppercase tracking-widest mb-4">Final Verdict</h4>
                       <p className="text-lg font-bold text-brand-text-primary leading-relaxed italic opacity-90">
-                        "{typeof currentAnalysis.finalVerdict === 'object' ? currentAnalysis.finalVerdict.description : (currentAnalysis.finalVerdict || 'Analysis in progress...')}"
+                        "{cleanAiText(typeof currentAnalysis.finalVerdict === 'object' ? currentAnalysis.finalVerdict.description : currentAnalysis.finalVerdict) || 'Analysis in progress...'}"
                       </p>
                     </div>
                     <div className="shrink-0 pt-4 md:pt-0">
@@ -1980,7 +1980,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {currentAnalysis.keyInsights.map((insight: string, idx: number) => (
                         <div key={idx} className="bg-brand-card/30 border border-brand-border/20 p-6 rounded-xl flex items-start gap-4 hover:border-brand-accent/40 transition-all">
                           <span className="text-sm font-mono text-brand-accent font-black shrink-0">0{idx + 1}</span>
-                          <p className="text-base text-white leading-relaxed font-sans font-medium">{insight}</p>
+                          <p className="text-base text-white leading-relaxed font-sans font-medium">{cleanAiText(insight)}</p>
                         </div>
                       ))}
                     </div>
@@ -2114,16 +2114,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {(currentAnalysis.swot?.strengths && currentAnalysis.swot.strengths.length > 0) ? (
                         currentAnalysis.swot.strengths.map((it: any, i: number) => (
                           <li key={i} className="pl-4 border-l-2 border-emerald-500/30">
-                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
+                            <span className="block text-white font-black text-base">{cleanAiText(typeof it === 'string' ? it : it.point)}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{cleanAiText(it.why)}</span>
                             )}
                           </li>
                         ))
                       ) : (
                         <>
-                        <li>Strong core concept and defensible technology.</li>
-                        <li>Validated execution under demanding conditions.</li>
+                        <li>Strong core concept and defensible technology</li>
+                        <li>Validated execution under demanding conditions</li>
                         </>
                       )}
                     </ul>
@@ -2138,16 +2138,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {(currentAnalysis.swot?.weaknesses && currentAnalysis.swot.weaknesses.length > 0) ? (
                         currentAnalysis.swot.weaknesses.map((it: any, i: number) => (
                           <li key={i} className="pl-4 border-l-2 border-brand-coral/30">
-                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
+                            <span className="block text-white font-black text-base">{cleanAiText(typeof it === 'string' ? it : it.point)}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{cleanAiText(it.why)}</span>
                             )}
                           </li>
                         ))
                       ) : (
                         <>
-                        <li>Early operational stage with limited traction.</li>
-                        <li>Requires capital to scale the team.</li>
+                        <li>Early operational stage with limited traction</li>
+                        <li>Requires capital to scale the team</li>
                         </>
                       )}
                     </ul>
@@ -2162,16 +2162,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {(currentAnalysis.swot?.opportunities && currentAnalysis.swot.opportunities.length > 0) ? (
                         currentAnalysis.swot.opportunities.map((it: any, i: number) => (
                           <li key={i} className="pl-4 border-l-2 border-brand-accent/30">
-                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
+                            <span className="block text-white font-black text-base">{cleanAiText(typeof it === 'string' ? it : it.point)}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{cleanAiText(it.why)}</span>
                             )}
                           </li>
                         ))
                       ) : (
                         <>
-                        <li>Expansion into adjacent high-growth markets.</li>
-                        <li>Partnerships and integrations to accelerate adoption.</li>
+                        <li>Expansion into adjacent high-growth markets</li>
+                        <li>Partnerships and integrations to accelerate adoption</li>
                         </>
                       )}
                     </ul>
@@ -2186,16 +2186,16 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       {(currentAnalysis.swot?.threats && currentAnalysis.swot.threats.length > 0) ? (
                         currentAnalysis.swot.threats.map((it: any, i: number) => (
                           <li key={i} className="pl-4 border-l-2 border-amber-500/30">
-                            <span className="block text-white font-black text-base">{typeof it === 'string' ? it : it.point}</span>
+                            <span className="block text-white font-black text-base">{cleanAiText(typeof it === 'string' ? it : it.point)}</span>
                             {typeof it !== 'string' && it.why && (
-                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{it.why}</span>
+                              <span className="block mt-1.5 text-slate-300 font-medium text-sm">{cleanAiText(it.why)}</span>
                             )}
                           </li>
                         ))
                       ) : (
                         <>
-                        <li>Incumbent pricing pressure on early market capture.</li>
-                        <li>Regulatory and talent-availability risks.</li>
+                        <li>Incumbent pricing pressure on early market capture</li>
+                        <li>Regulatory and talent-availability risks</li>
                         </>
                       )}
                     </ul>
@@ -2276,7 +2276,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   </div>
                   <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Growth Strategy</h4>
                   <p className="text-sm text-slate-200 leading-relaxed">
-                    {currentAnalysis.growthPotential?.scaling || 'No growth strategy provided yet.'}
+                    {cleanAiText(currentAnalysis.growthPotential?.scaling) || 'No growth strategy provided yet'}
                   </p>
                 </div>
                 <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-[#5ce1e6]/40 shadow-[0_0_30px_rgba(92,225,230,0.12)] overflow-hidden">
@@ -2287,7 +2287,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   </div>
                   <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Revenue Opportunities</h4>
                   <p className="text-sm text-slate-200 leading-relaxed">
-                    {currentAnalysis.growthPotential?.revenue || 'No revenue strategy provided yet.'}
+                    {cleanAiText(currentAnalysis.growthPotential?.revenue) || 'No revenue strategy provided yet'}
                   </p>
                 </div>
               </div>
