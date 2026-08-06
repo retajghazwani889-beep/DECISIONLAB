@@ -2554,7 +2554,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                     <div>
                       <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tight font-display mb-3">Pitch Deck Architect</h3>
-                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Integrated access to synchronize validated findings directly into editable vector slides</p>
+                      <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">Build and export your startup pitch deck using your real analysis data</p>
                     </div>
                     <Link
                       to={`/pitch-deck?projectId=${currentAnalysis.id}`}

@@ -83,7 +83,7 @@ export function RequireTier({
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (!hasAccess(profile, tier)) {
+  if (!hasAccess(profile, tier, user?.email ?? undefined)) {
     return <UpgradePrompt requiredTier={tier} featureName={featureName} />;
   }
 
