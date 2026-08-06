@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, Link2, ArrowLeftRight } from 'lucide-react';
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Rocket, Plus, Loader2, ArrowRight, Pencil, X, Sparkles, Building2, FileText, Presentation, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { hasAccess } from '../lib/tiers';
 import { UpgradePrompt } from '../components/UpgradeGate';
 import { getCalculatedVentureScore } from '../components/ResultsDashboard';
@@ -28,6 +28,8 @@ export default function MyStartupsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateChoice, setShowCreateChoice] = useState(false);
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [quickIdea, setQuickIdea] = useState('');
   const [showQuickIdea, setShowQuickIdea] = useState(false);
 
@@ -53,6 +55,24 @@ export default function MyStartupsPage() {
       if (a) setAnalysesByStartup((m: any) => ({ ...m, [target]: m[target] || { ...a, startupId: target } }));
     } catch (e) { console.warn('Link failed:', e); }
     finally { setLinkingId(''); }
+  };
+
+  const deleteStartup = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteDoc(doc(db, 'startups', id));
+      setStartups((arr) => arr.filter((s) => s.id !== id));
+    } catch (e) { console.warn('Delete startup failed:', e); }
+    finally { setDeletingId(null); setConfirmDeleteId(null); }
+  };
+
+  const deleteAnalysis = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteDoc(doc(db, 'analyses', id));
+      setLegacy((arr) => arr.filter((a) => a.id !== id));
+    } catch (e) { console.warn('Delete analysis failed:', e); }
+    finally { setDeletingId(null); setConfirmDeleteId(null); }
   };
 
   useEffect(() => {
@@ -116,9 +136,8 @@ export default function MyStartupsPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
-            <span className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] block mb-3">Founder Workspace</span>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/30 text-brand-accent text-xs font-black uppercase tracking-[0.25em] mb-4 shadow-[0_0_12px_rgba(77,163,255,0.15)]">Founder Workspace</span>
             <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight font-display">My Startups</h1>
-            <p className="text-sm text-brand-text-secondary font-medium mt-2">Manage and grow all your startups from one place.</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <button
@@ -168,9 +187,18 @@ export default function MyStartupsPage() {
                       )}
                       <h3 className="text-base font-black uppercase tracking-tight truncate">{s.name || 'Untitled'}</h3>
                     </div>
-                    <span className={`shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${isDraft ? 'bg-amber-400/10 text-amber-400 border-amber-400/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
-                      {isDraft ? 'Draft' : 'Active'}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${isDraft ? 'bg-amber-400/10 text-amber-400 border-amber-400/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                        {isDraft ? 'Draft' : 'Active'}
+                      </span>
+                      <button
+                        onClick={() => setConfirmDeleteId(s.id)}
+                        className="p-1.5 rounded-lg text-brand-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                        title="Delete startup"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   {isDraft ? (
@@ -225,9 +253,18 @@ export default function MyStartupsPage() {
                       </div>
                       <h3 className="text-base font-black uppercase tracking-tight truncate">{name}</h3>
                     </div>
-                    <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border bg-[#5da9ff]/10 text-[#5da9ff] border-[#5da9ff]/20">
-                      Analysis
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border bg-[#5da9ff]/10 text-[#5da9ff] border-[#5da9ff]/20">
+                        Analysis
+                      </span>
+                      <button
+                        onClick={() => setConfirmDeleteId(a.id)}
+                        className="p-1.5 rounded-lg text-brand-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                        title="Delete analysis"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -257,28 +294,45 @@ export default function MyStartupsPage() {
                       <Presentation size={13} /> Open Deck
                     </button>
                   )}
-                  {startups.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <select
-                        value={linkTargets[a.id] || ''}
-                        onChange={(e) => setLinkTargets((m) => ({ ...m, [a.id]: e.target.value }))}
-                        className="flex-1 bg-brand-card border border-white/10 rounded-xl px-3 py-2.5 text-[11px] text-brand-text-primary focus:outline-none appearance-none"
-                      >
-                        <option value="" className="bg-[#102434]">Link to startup…</option>
-                        {startups.map((s) => <option key={s.id} value={s.id} className="bg-[#102434]">{s.name || 'Untitled'}</option>)}
-                      </select>
-                      <button onClick={() => linkLegacy(a.id)} disabled={!linkTargets[a.id] || linkingId === a.id}
-                        className="px-3 py-2.5 bg-brand-accent text-brand-bg text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5">
-                        {linkingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setConfirmDeleteId(null)}>
+          <div className="bg-brand-section border border-rose-500/20 rounded-[2rem] max-w-sm w-full p-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-5">
+              <Trash2 size={20} className="text-rose-400" />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-tight font-display mb-2">Delete this?</h3>
+            <p className="text-sm text-brand-text-secondary font-medium mb-8">This action cannot be undone. All data for this startup will be permanently removed.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-white/20 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const isStartup = startups.some((s) => s.id === confirmDeleteId);
+                  if (isStartup) deleteStartup(confirmDeleteId);
+                  else deleteAnalysis(confirmDeleteId);
+                }}
+                disabled={deletingId === confirmDeleteId}
+                className="flex-1 py-3.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-400 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deletingId === confirmDeleteId ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Free plan limit reached → upgrade prompt */}
       {showLimitPrompt && (
