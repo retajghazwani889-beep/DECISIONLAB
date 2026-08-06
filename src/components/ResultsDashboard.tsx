@@ -1058,12 +1058,12 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
     architect: 'growth',
   };
   const TAB_FEATURE_NAMES: Partial<Record<typeof activeTab, string>> = {
-    analysis: 'Key Insights — Market, Competition & SWOT',
+    analysis: 'Key Insights: Market, Competition and SWOT',
     risk: 'Risk Analysis',
-    growth: 'Growth Opportunities & Validation Roadmap',
-    team: 'TeamLab — Recruit & Choose Team Members',
-    investors: 'Investor Matching & Fit Analysis',
-    reports: 'Executive Reports + PDF Export',
+    growth: 'Growth Opportunities and Validation Roadmap',
+    team: 'TeamLab: Recruit and Choose Team Members',
+    investors: 'Investor Matching and Fit Analysis',
+    reports: 'Executive Reports and PDF Export',
     architect: 'Pitch Deck Architect',
   };
 

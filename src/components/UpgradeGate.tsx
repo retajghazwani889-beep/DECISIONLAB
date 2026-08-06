@@ -49,7 +49,7 @@ export function UpgradePrompt({
         </h2>
         <p className="text-sm text-slate-300 font-medium leading-relaxed mb-8">
           {description ||
-            `${featureName} is part of the ${plan.name} plan (${plan.price}). Upgrade to unlock it — everything you've already built stays exactly where it is.`}
+            `${featureName} is part of the ${plan.name} plan (${plan.price}). Upgrade to unlock it and everything you have already built stays exactly where it is.`}
         </p>
         <button
           onClick={() => navigate('/pricing')}
