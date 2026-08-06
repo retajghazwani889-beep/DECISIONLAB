@@ -557,7 +557,7 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
       items: roadmap?.immediate || [],
       icon: <Target size={20} />,
       title: 'Test Your Idea',
-      desc: 'Make sure real people need what you are building — talk to potential customers and confirm the problem exists before spending money.'
+      desc: 'Make sure real people need what you are building. Talk to potential customers and confirm the problem exists before spending money.'
     },
     {
       id: 'launch',
