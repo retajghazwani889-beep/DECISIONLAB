@@ -146,7 +146,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           </div>
         )}
 
-        <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">
+        <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary whitespace-nowrap">
           {title}
         </h3>
         <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10 whitespace-nowrap">{subtitle}</p>
