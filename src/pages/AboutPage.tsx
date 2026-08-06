@@ -79,7 +79,7 @@ const AboutPage: React.FC = () => {
                 About Us
               </span>
               <h2 className="text-4xl md:text-5xl font-black text-brand-text-primary mb-8 tracking-tight font-display leading-[1.15]">
-                Why DecisionLab <br /> exists
+                Why DecisionLab exists
               </h2>
               <div className="space-y-6 text-xl text-slate-200 leading-[1.8] font-medium opacity-95 tracking-[0.02em]">
                 <p>
