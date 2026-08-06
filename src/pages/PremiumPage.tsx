@@ -310,6 +310,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           features={[
             "Validation Features",
             "Team Building",
+            "Potential Investors",
             "Pitch Decks",
             "Executive Reports",
             "Compare Startups",

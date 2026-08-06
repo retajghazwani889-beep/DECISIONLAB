@@ -2378,8 +2378,8 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                   <div className="relative">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
                       <div>
-                        <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Investors</span>
-                        <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3 font-semibold">Which investors fit my startup</h3>
+                        <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Potential Investors</span>
+                        <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3 font-semibold">Which potential investors fit my startup</h3>
                         <p className="text-base text-slate-300 font-medium tracking-[0.2px] max-w-2xl">
                           Matching you with people who fund your industry
                         </p>
