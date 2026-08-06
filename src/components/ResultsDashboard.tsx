@@ -2267,20 +2267,26 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                 </div>
               </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
-                  <p className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] mb-2">How you grow</p>
-                  <h4 className="text-xl font-black text-white uppercase tracking-tight mb-3 drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">Growth and Expansion Strategy</h4>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-4">This explains how your startup can get bigger over time — what steps to take and which markets to enter next.</p>
-                  <p className="text-base text-slate-200 leading-relaxed font-medium">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-brand-accent/20 shadow-[0_0_30px_rgba(93,169,255,0.06)] overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-accent via-brand-accent/40 to-transparent rounded-l-2xl" />
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
+                    <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em]">How you grow</span>
+                  </div>
+                  <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Growth Strategy</h4>
+                  <p className="text-sm text-slate-200 leading-relaxed">
                     {currentAnalysis.growthPotential?.scaling || 'No growth strategy provided yet.'}
                   </p>
                 </div>
-                <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
-                  <p className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] mb-2">How you make money</p>
-                  <h4 className="text-xl font-black text-white uppercase tracking-tight mb-3 drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">Revenue and Market Entry Opportunities</h4>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-4">This shows the best ways to start making money and which customer groups to target first when entering the market.</p>
-                  <p className="text-base text-slate-200 leading-relaxed font-medium">
+                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-[#5ce1e6]/20 shadow-[0_0_30px_rgba(92,225,230,0.06)] overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#5ce1e6] via-[#5ce1e6]/40 to-transparent rounded-l-2xl" />
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-[#5ce1e6] animate-pulse" />
+                    <span className="text-[10px] font-black text-[#5ce1e6] uppercase tracking-[0.3em]">How you make money</span>
+                  </div>
+                  <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Revenue Opportunities</h4>
+                  <p className="text-sm text-slate-200 leading-relaxed">
                     {currentAnalysis.growthPotential?.revenue || 'No revenue strategy provided yet.'}
                   </p>
                 </div>
