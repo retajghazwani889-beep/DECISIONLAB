@@ -2019,29 +2019,29 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <div className="w-8 h-8 bg-brand-accent/10 border border-brand-accent/20 text-brand-accent rounded-lg flex items-center justify-center shrink-0">
                       <Globe size={16} />
                     </div>
-                    <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Market Opportunity</h4>
+                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Market Opportunity</h4>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Market Size</p>
-                      <p className="text-lg font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</p>
+                    <div className="p-4 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-xs font-black text-brand-text-muted uppercase tracking-wider mb-1">Market Size</p>
+                      <p className="text-2xl font-black text-white">{formatMarketSize(currentAnalysis.marketAnalysis?.sizeEstimate)}</p>
                     </div>
-                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Demand</p>
-                      <p className="text-lg font-black text-[#5ce1e6]">{extractStatusWord(currentAnalysis.marketAnalysis?.demandSignals, 'Moderate')}</p>
+                    <div className="p-4 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-xs font-black text-brand-text-muted uppercase tracking-wider mb-1">Demand</p>
+                      <p className="text-2xl font-black text-[#5ce1e6]">{extractStatusWord(currentAnalysis.marketAnalysis?.demandSignals, 'Moderate')}</p>
                     </div>
-                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5 col-span-2">
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Growth</p>
-                      <p className="text-lg font-black text-emerald-400">{extractStatusWord(currentAnalysis.marketAnalysis?.growthTrends, 'Steady')}</p>
+                    <div className="p-4 bg-brand-card/40 rounded-xl border border-white/5 col-span-2">
+                      <p className="text-xs font-black text-brand-text-muted uppercase tracking-wider mb-1">Growth</p>
+                      <p className="text-2xl font-black text-emerald-400">{extractStatusWord(currentAnalysis.marketAnalysis?.growthTrends, 'Steady')}</p>
                     </div>
                   </div>
 
                   <div className="pt-4 border-t border-white/5">
-                    <p className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-2.5">Why It Matters</p>
-                    <ul className="space-y-1.5">
+                    <p className="text-sm font-black text-brand-accent uppercase tracking-wider mb-3">Why It Matters</p>
+                    <ul className="space-y-2">
                       {summarizeToBullets(currentAnalysis.marketAnalysis?.overview || 'Large active market with room for focused solutions', 3).map((bullet, i) => (
-                        <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                        <li key={i} className="flex gap-2 text-sm text-slate-200 leading-snug">
                           <span className="text-brand-accent shrink-0">•</span>
                           <span>{bullet}</span>
                         </li>
@@ -2056,26 +2056,26 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     <div className="w-8 h-8 bg-brand-coral/10 border border-brand-coral/20 text-brand-coral rounded-lg flex items-center justify-center shrink-0">
                       <Shield size={16} />
                     </div>
-                    <h4 className="text-sm font-black text-brand-text-primary uppercase tracking-tight">Competition & Revenue</h4>
+                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Competition & Revenue</h4>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Competition</p>
-                      <p className="text-lg font-black text-amber-400">{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium', /low|medium|high/i)}</p>
+                    <div className="p-4 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-xs font-black text-brand-text-muted uppercase tracking-wider mb-1">Competition</p>
+                      <p className="text-2xl font-black text-amber-400">{extractStatusWord(currentAnalysis.competitorAnalysis?.saturationLevel, 'Medium', /low|medium|high/i)}</p>
                     </div>
-                    <div className="p-3.5 bg-brand-card/40 rounded-xl border border-white/5">
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-1">Revenue Potential</p>
-                      <p className="text-lg font-black text-emerald-400">High</p>
+                    <div className="p-4 bg-brand-card/40 rounded-xl border border-white/5">
+                      <p className="text-xs font-black text-brand-text-muted uppercase tracking-wider mb-1">Revenue Potential</p>
+                      <p className="text-2xl font-black text-emerald-400">High</p>
                     </div>
                   </div>
 
                   <div className="pt-4 border-t border-white/5 space-y-4">
                     <div>
-                      <p className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider mb-2.5">Biggest Gap</p>
-                      <ul className="space-y-1.5">
+                      <p className="text-sm font-black text-brand-coral uppercase tracking-wider mb-3">Biggest Gap</p>
+                      <ul className="space-y-2">
                         {summarizeToBullets(currentAnalysis.competitorAnalysis?.marketGaps || 'No clear leader on trust and pricing', 2).map((bullet, i) => (
-                          <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                          <li key={i} className="flex gap-2 text-sm text-slate-200 leading-snug">
                             <span className="text-brand-coral shrink-0">•</span>
                             <span>{bullet}</span>
                           </li>
@@ -2083,10 +2083,10 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       </ul>
                     </div>
                     <div>
-                      <p className="text-[9px] font-black text-brand-accent uppercase tracking-wider mb-2.5">Your Edge</p>
-                      <ul className="space-y-1.5">
+                      <p className="text-sm font-black text-brand-accent uppercase tracking-wider mb-3">Your Edge</p>
+                      <ul className="space-y-2">
                         {summarizeToBullets(currentAnalysis.competitorAnalysis?.competitiveAdvantages || 'Better customer experience', 2).map((bullet, i) => (
-                          <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+                          <li key={i} className="flex gap-2 text-sm text-slate-200 leading-snug">
                             <span className="text-brand-accent shrink-0">•</span>
                             <span>{bullet}</span>
                           </li>
