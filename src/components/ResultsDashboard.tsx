@@ -2268,22 +2268,22 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               </section>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-brand-accent/20 shadow-[0_0_30px_rgba(93,169,255,0.06)] overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-accent via-brand-accent/40 to-transparent rounded-l-2xl" />
+                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-brand-accent/40 shadow-[0_0_30px_rgba(93,169,255,0.12)] overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-accent via-brand-accent/60 to-transparent rounded-l-2xl" />
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-                    <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em]">How you grow</span>
+                    <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse shadow-[0_0_6px_rgba(93,169,255,0.8)]" />
+                    <span className="text-xs font-black text-brand-accent uppercase tracking-[0.3em] drop-shadow-[0_0_6px_rgba(93,169,255,0.6)]">How you grow</span>
                   </div>
                   <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Growth Strategy</h4>
                   <p className="text-sm text-slate-200 leading-relaxed">
                     {currentAnalysis.growthPotential?.scaling || 'No growth strategy provided yet.'}
                   </p>
                 </div>
-                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-[#5ce1e6]/20 shadow-[0_0_30px_rgba(92,225,230,0.06)] overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#5ce1e6] via-[#5ce1e6]/40 to-transparent rounded-l-2xl" />
+                <div className="relative bg-brand-card/30 p-8 rounded-2xl border border-[#5ce1e6]/40 shadow-[0_0_30px_rgba(92,225,230,0.12)] overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#5ce1e6] via-[#5ce1e6]/60 to-transparent rounded-l-2xl" />
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 rounded-full bg-[#5ce1e6] animate-pulse" />
-                    <span className="text-[10px] font-black text-[#5ce1e6] uppercase tracking-[0.3em]">How you make money</span>
+                    <div className="w-2 h-2 rounded-full bg-[#5ce1e6] animate-pulse shadow-[0_0_6px_rgba(92,225,230,0.8)]" />
+                    <span className="text-xs font-black text-[#5ce1e6] uppercase tracking-[0.3em] drop-shadow-[0_0_6px_rgba(92,225,230,0.6)]">How you make money</span>
                   </div>
                   <h4 className="text-2xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-[0_0_16px_rgba(255,255,255,0.25)]">Revenue Opportunities</h4>
                   <p className="text-sm text-slate-200 leading-relaxed">

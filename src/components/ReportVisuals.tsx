@@ -551,45 +551,45 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
   const [activeStep, setActiveStep] = useState<number | null>(0);
 
   const steps = [
-    { 
-      id: 'validation', 
-      label: 'Validation', 
-      items: roadmap?.immediate || [], 
-      icon: <Target size={20} />, 
-      title: 'Structural Validation',
-      desc: 'Ground-truth refinement of core value hypothesis.'
+    {
+      id: 'validation',
+      label: 'Validation',
+      items: roadmap?.immediate || [],
+      icon: <Target size={20} />,
+      title: 'Test Your Idea',
+      desc: 'Make sure real people need what you are building — talk to potential customers and confirm the problem exists before spending money.'
     },
-    { 
-      id: 'launch', 
-      label: 'Launch', 
-      items: roadmap?.oneToThreeMonths || [], 
-      icon: <Rocket size={20} />, 
-      title: 'Market Entry',
-      desc: 'Alpha signal capture and initial sector penetration.'
+    {
+      id: 'launch',
+      label: 'Launch',
+      items: roadmap?.oneToThreeMonths || [],
+      icon: <Rocket size={20} />,
+      title: 'Get Your First Customers',
+      desc: 'Put your product in front of real users for the first time. Focus on getting feedback and your first paying customers.'
     },
-    { 
-      id: 'traction', 
-      label: 'Traction', 
-      items: roadmap?.threeToSixMonths || [], 
-      icon: <Activity size={20} />, 
-      title: 'Velocity Build',
-      desc: 'Scalable data acquisition and network effects initialization.'
+    {
+      id: 'traction',
+      label: 'Traction',
+      items: roadmap?.threeToSixMonths || [],
+      icon: <Activity size={20} />,
+      title: 'Build Momentum',
+      desc: 'Grow your customer base consistently. Focus on what is working and cut what is not. This is where word-of-mouth starts.'
     },
-    { 
-      id: 'scale', 
-      label: 'Scale', 
-      items: roadmap?.growthStage?.length ? roadmap.growthStage : roadmap?.sixToTwelveMonths?.length ? roadmap.sixToTwelveMonths : ['Expand into new segments and regions', 'Make sales and onboarding repeatable', 'Grow the team to support scale'], 
-      icon: <TrendingUp size={20} />, 
-      title: 'Expansion Phase',
-      desc: 'Elite operational compounding.'
+    {
+      id: 'scale',
+      label: 'Scale',
+      items: roadmap?.growthStage?.length ? roadmap.growthStage : roadmap?.sixToTwelveMonths?.length ? roadmap.sixToTwelveMonths : ['Expand into new segments and regions', 'Make sales and onboarding repeatable', 'Grow the team to support scale'],
+      icon: <TrendingUp size={20} />,
+      title: 'Grow the Business',
+      desc: 'Expand into new markets and customer groups. Build a repeatable system for sales and grow your team to handle more demand.'
     },
-    { 
-      id: 'readiness', 
-      label: 'Ready', 
-      items: roadmap?.investorReadiness || [], 
-      icon: <ShieldCheck size={20} />, 
-      title: 'Venture Maturity',
-      desc: 'Strategic positioning for high-conviction capital.'
+    {
+      id: 'readiness',
+      label: 'Ready',
+      items: roadmap?.investorReadiness || [],
+      icon: <ShieldCheck size={20} />,
+      title: 'Get Investor Ready',
+      desc: 'Prepare your numbers, sharpen your pitch, and build the proof investors want to see before they write a check.'
     },
   ];
 
@@ -643,8 +643,8 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                           : "bg-brand-card/45 border-white/5 hover:border-white/15 hover:bg-brand-card/85"
                       )}
                     >
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
-                        <span>Milestone {idx + 1}</span>
+                      <div className="flex items-center gap-2 leading-none">
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-brand-accent drop-shadow-[0_0_8px_rgba(93,169,255,0.7)]">Milestone {idx + 1}</span>
                       </div>
                       <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{step.label}</h4>
                       <p className="text-xs font-black text-brand-accent uppercase tracking-wider leading-none">{step.title}</p>
@@ -720,8 +720,8 @@ export const StrategicExpansionJourney = ({ roadmap }: { roadmap: any }) => {
                           : "bg-brand-card/45 border-white/5 hover:border-white/15 hover:bg-brand-card/85"
                       )}
                     >
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-brand-accent italic leading-none">
-                        <span>Milestone {idx + 1}</span>
+                      <div className="flex items-center gap-2 leading-none">
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-brand-accent drop-shadow-[0_0_8px_rgba(93,169,255,0.7)]">Milestone {idx + 1}</span>
                       </div>
                       <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{step.label}</h4>
                       <p className="text-xs font-black text-brand-accent uppercase tracking-wider leading-none">{step.title}</p>
