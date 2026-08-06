@@ -1336,7 +1336,11 @@ async function startServer() {
         ### SWOT: Each item must reference something the founder actually wrote AND a real market fact. No generic items.
 
         ### EXECUTIVE SUMMARY (the "summary" field):
-        Write 2-3 complete, confident sentences that describe what the startup does, who it is for, and what makes it worth paying attention to. Use clear, engaging language that any reader — investor, advisor, or first-time founder — would find compelling. Do NOT copy the founder's raw text — synthesise it into a polished description. No jargon. No bullet points. No hyphens or dashes. No trailing period on the last sentence.
+        Write exactly 3 complete, rich sentences about the startup being analysed. Each sentence must end with a period. Rules:
+        - Sentence 1: What the startup does and what problem it solves, in plain language.
+        - Sentence 2: Who the target customers are and why this matters to them.
+        - Sentence 3: What makes this startup worth paying attention to — the key opportunity or edge.
+        Use confident, clear language any person can understand. Do NOT mention DecisionLab, the platform, or any analysis tool. Do NOT say "created by" or "built on". Do NOT copy the founder's raw words — synthesise them into a polished description. No jargon. No bullet points. No hyphens or dashes at the start of sentences.
 
         ### LANGUAGE & TONE:
         - Plain English for first-time founders. No jargon or acronyms.
@@ -1913,7 +1917,11 @@ async function startServer() {
         ### SWOT: Each item must reference something the founder actually said AND a real market or competitive fact. No generic items.
 
         ### EXECUTIVE SUMMARY (the "summary" field):
-        Write 2-3 complete, confident sentences that describe what this startup does, who it serves, and what makes it worth paying attention to. Use clear, engaging language any reader — investor, advisor, or first-time founder — would find compelling. Do NOT copy the founder's raw text — synthesise it into a polished description. No jargon. No bullet points. No hyphens or dashes. No trailing period on the last sentence.
+        Write exactly 3 complete, rich sentences about the startup being analysed. Each sentence must end with a period. Rules:
+        - Sentence 1: What the startup does and what problem it solves, in plain language.
+        - Sentence 2: Who the target customers are and why this matters to them.
+        - Sentence 3: What makes this startup worth paying attention to — the key opportunity or edge.
+        Use confident, clear language any person can understand. Do NOT mention DecisionLab, the platform, or any analysis tool. Do NOT say "created by" or "built on". Do NOT copy the founder's raw words — synthesise them into a polished description. No jargon. No bullet points. No hyphens or dashes at the start of sentences.
 
         ### OUTPUT STYLE:
         - Plain English a first-time founder can understand. No jargon.

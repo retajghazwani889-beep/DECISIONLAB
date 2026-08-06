@@ -1108,7 +1108,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   // Auto-refresh stale analyses — bump CURRENT_ANALYSIS_VERSION whenever the
   // AI prompts or scoring rubric changes so every saved analysis gets updated
   // automatically the next time that user opens their dashboard.
-  const CURRENT_ANALYSIS_VERSION = 3;
+  const CURRENT_ANALYSIS_VERSION = 4;
   useEffect(() => {
     if (!user || !currentAnalysis?.id) return;
     if ((currentAnalysis as any).analysisVersion === CURRENT_ANALYSIS_VERSION) return;
