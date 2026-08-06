@@ -2261,10 +2261,6 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-3">Growth Opportunities</h3>
                       <p className="text-lg text-slate-300 font-medium tracking-[0.02em] opacity-95">How can it grow</p>
                     </div>
-                    <div className="px-6 py-4 bg-brand-card/50 border border-brand-border rounded-2xl flex items-center gap-4 shadow-lg shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full bg-brand-accent animate-ping" />
-                      <span className="text-xs font-black text-brand-text-primary uppercase tracking-widest leading-none">Trajectory Locked</span>
-                    </div>
                   </div>
 
                   <StrategicExpansionJourney roadmap={currentAnalysis.roadmap} />
