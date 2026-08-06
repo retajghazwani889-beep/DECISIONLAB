@@ -47,10 +47,6 @@ export function UpgradePrompt({
         <h2 className="text-2xl sm:text-3xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4 leading-tight">
           {featureName}
         </h2>
-        <p className="text-sm text-slate-300 font-medium leading-relaxed mb-8">
-          {description ||
-            `${featureName} is part of the ${plan.name} plan (${plan.price}). Upgrade to unlock it and everything you have already built stays exactly where it is.`}
-        </p>
         <button
           onClick={() => navigate('/pricing')}
           className="inline-flex items-center gap-3 px-10 py-5 bg-brand-accent text-brand-bg text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
