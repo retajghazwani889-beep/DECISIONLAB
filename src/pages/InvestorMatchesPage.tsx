@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCalculatedVentureScore } from '../components/ResultsDashboard';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -37,7 +38,7 @@ const PREF_STAGES = ['Idea Stage', 'Research Phase', 'Prototype', 'MVP', 'Beta L
 
 // Best-effort extraction across analysis shapes.
 const scoreOf = (a: any): number | null => {
-  const v = Number(a.shareScore ?? a.overallScore ?? a.scores?.overall ?? a.readinessScore ?? NaN);
+  const v = a.scores ? getCalculatedVentureScore(a.scores) : Number(a.shareScore ?? a.overallScore ?? a.readinessScore ?? NaN);
   return !isNaN(v) && v > 0 ? Math.round(v) : null;
 };
 const nameOf = (a: any) => a.projectName || a.startupProfile?.companyName || a.ideaDescription?.slice(0, 40) || 'Startup';

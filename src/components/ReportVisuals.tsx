@@ -55,13 +55,13 @@ export const StartupScoreRadar = ({ scores }: { scores: any }) => {
   ];
 
   return (
-    <div className="w-full h-[420px] md:h-[500px] bg-brand-section/40 rounded-[3rem] border border-brand-border/20 p-6 md:p-10">
+    <div className="w-full h-[520px] md:h-[640px] bg-brand-section/40 rounded-[3rem] border border-brand-border/20 p-6 md:p-10">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} outerRadius="75%">
+        <RadarChart data={data} outerRadius="72%">
           <PolarGrid stroke="var(--color-brand-border)" strokeOpacity={0.25} />
           <PolarAngleAxis
             dataKey="metric"
-            tick={{ fill: 'var(--color-brand-text-secondary)', fontSize: 11, fontWeight: 700 }}
+            tick={{ fill: '#e2e8f0', fontSize: 14, fontWeight: 700 }}
           />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
           <Radar

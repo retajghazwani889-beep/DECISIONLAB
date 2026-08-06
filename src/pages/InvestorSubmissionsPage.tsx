@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getCalculatedVentureScore } from '../components/ResultsDashboard';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
@@ -24,7 +25,7 @@ function SubmissionCard({ r, user, profile, navigate }: any) {
 
   const name = (r.startupProfile?.companyName || r.projectName || r.ideaDescription || 'Startup').toString().replace(/\./g, '');
   const industry = (r.startupProfile?.industry || r.projectIndustry || r.industry || '').toString().replace(/\./g, '');
-  const score = Number(r.overallScore ?? r.scores?.overall ?? r.shareScore ?? r.analysisScore ?? 0);
+  const score = r.scores ? getCalculatedVentureScore(r.scores) : Number(r.overallScore ?? r.shareScore ?? r.analysisScore ?? 0);
 
   // The founder's full pitch deck lives on the analysis doc (same slides the
   // Architect edits). Read the primary location, fall back to the alternate key.
