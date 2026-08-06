@@ -370,14 +370,14 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                      </motion.div>
                   </div>
                   <div className="space-y-1.5">
-                    <h4 className="text-xl md:text-2xl font-black text-brand-text-primary uppercase tracking-tight leading-none">{selectedNode} Analysis</h4>
+                    <h4 className="text-xl md:text-2xl font-black text-brand-text-primary uppercase tracking-tight leading-none">{selectedNode} Risk</h4>
                     <div className="flex items-center gap-3">
                       <div className="flex gap-1">
                         {[...Array(5)].map((_, i) => (
                           <div key={i} className={cn("w-5 h-2 rounded-full transition-all duration-1000", i < 4 ? "bg-brand-accent/60 shadow-[0_0_15px_rgba(93,169,255,0.4)]" : "bg-brand-accent/10")} />
                         ))}
                       </div>
-                      <p className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] italic leading-none">Confidence Rating: 94%</p>
+                      <p className="text-[11px] font-black text-brand-accent uppercase tracking-[0.4em] italic leading-none">Analysis Accuracy: 94%</p>
                     </div>
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                     </div>
                     <div className="flex items-center gap-3 mb-3">
                        <div className={cn("w-3 h-3 rounded-full shadow-huge", getRiskStyles(risks[selectedNode.toLowerCase()]?.impact * risks[selectedNode.toLowerCase()]?.likelihood || 0).fill)} />
-                       <h5 className="text-[11px] font-black uppercase tracking-[0.6em] text-brand-accent leading-none">Notes</h5>
+                       <h5 className="text-[11px] font-black uppercase tracking-[0.6em] text-brand-accent leading-none">What This Means</h5>
                     </div>
                     <p className="text-base md:text-lg text-brand-text-primary leading-relaxed font-semibold italic opacity-95 tracking-tight group-hover/memo:text-white transition-colors duration-500">
                       "{risks[selectedNode.toLowerCase()]?.explanation || risks[selectedNode.toLowerCase()]?.note}"
@@ -408,7 +408,7 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                         <div className="w-9 h-9 rounded-xl bg-brand-blue/10 flex items-center justify-center border border-brand-blue/20 shadow-glow">
                           <Zap size={18} className="text-brand-blue" />
                         </div>
-                        <h5 className="text-sm font-black uppercase tracking-[0.4em] text-brand-text-primary leading-none">Fix</h5>
+                        <h5 className="text-sm font-black uppercase tracking-[0.4em] text-brand-text-primary leading-none">How to Reduce This Risk</h5>
                       </div>
                     </div>
 
@@ -420,8 +420,8 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
                        
                        <div className="mt-6 pt-4 border-t border-brand-border/10">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.5em] leading-none">Fix Rating</span>
-                            <span className="text-base font-black text-brand-accent uppercase tracking-widest italic leading-none">85% Safety</span>
+                            <span className="text-[11px] font-black text-brand-text-muted uppercase tracking-[0.5em] leading-none">How Safe This Makes You</span>
+                            <span className="text-base font-black text-brand-accent uppercase tracking-widest italic leading-none">85% Safer</span>
                           </div>
                           <div className="h-3 w-full bg-brand-accent/10 rounded-full overflow-hidden p-0.5 shadow-inner">
                             <motion.div 
@@ -463,14 +463,14 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
 
                   <div className="grid grid-cols-2 gap-4">
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
-                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Impact Radius</p>
+                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">How Bad If It Happens</p>
                         <div className="flex items-baseline gap-2">
                            <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.impact; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>
                         </div>
                      </div>
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
-                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Probability</p>
+                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Chance It Happens</p>
                         <div className="flex items-baseline gap-2">
                            <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.likelihood; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>

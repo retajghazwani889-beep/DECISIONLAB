@@ -2243,7 +2243,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
               <section className="bg-brand-section/80 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
                 <div className="flex items-center gap-4 mb-8">
                   <ShieldAlert className="text-brand-coral" size={24} />
-                  <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight">Things to Fix</h4>
+                  <h4 className="text-xl font-black text-brand-text-primary uppercase tracking-tight">What You Should Improve</h4>
                 </div>
                 <RiskHeatmap risks={currentAnalysis.riskMatrix || currentAnalysis.risks} />
               </section>
