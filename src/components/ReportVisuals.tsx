@@ -463,14 +463,14 @@ export const RiskEcosystemMap = ({ risks }: { risks: any }) => {
 
                   <div className="grid grid-cols-2 gap-4">
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
-                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">How Bad If It Happens</p>
+                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none whitespace-nowrap">Severity</p>
                         <div className="flex items-baseline gap-2">
                            <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.impact; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>
                         </div>
                      </div>
                      <div className="p-5 rounded-2xl bg-brand-card/40 border border-brand-border/10 hover:border-brand-accent/30 transition-all group/stat hover:scale-[1.02] duration-500">
-                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none">Chance It Happens</p>
+                        <p className="text-[10px] font-black text-brand-text-muted uppercase tracking-[0.3em] mb-2 group-hover/stat:text-brand-accent transition-colors leading-none whitespace-nowrap">Likelihood</p>
                         <div className="flex items-baseline gap-2">
                            <p className="text-3xl md:text-4xl font-black text-brand-text-primary italic tracking-tighter tabular-nums leading-none">{(() => { const v = risks[selectedNode.toLowerCase()]?.likelihood; return v > 10 ? (v/10).toFixed(1) : v; })()}</p>
                            <span className="text-xs font-black text-brand-text-muted opacity-30 leading-none">/ 10</span>
