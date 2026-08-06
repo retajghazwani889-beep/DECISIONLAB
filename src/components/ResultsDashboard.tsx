@@ -2567,23 +2567,23 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
                   {!investorView && getCalculatedVentureScore(currentAnalysis.scores) >= 80 && <FounderTimeline analysis={currentAnalysis} scoreOverride={getCalculatedVentureScore(currentAnalysis.scores)} canEdit={true} />}
                   <div className="p-8 bg-brand-card/40 border border-brand-border/20 rounded-[2.5rem] space-y-6">
-                    <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Startup Data Overview</h4>
+                    <h4 className="text-xs font-black text-brand-accent uppercase tracking-widest">Startup Data Overview</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs">
-                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                      <div className="p-5 bg-brand-section border border-brand-border rounded-2xl space-y-2">
                         <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Hypothesis Sync</span>
-                        <p className="text-white font-bold truncate">{displayProfile.companyName || 'Validated Venture'}</p>
+                        <p className="text-brand-text-primary font-black text-sm truncate">{displayProfile.companyName || 'Validated Venture'}</p>
                       </div>
-                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                      <div className="p-5 bg-brand-section border border-brand-accent/30 rounded-2xl space-y-2">
                         <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Startup Score Sync</span>
-                        <p className="text-emerald-400 font-bold">{(currentAnalysis.scores as any)?.overall || (currentAnalysis.scores as any)?.ideaStrength?.score || 85}% locked</p>
+                        <p className="text-brand-accent font-black text-sm">{getCalculatedVentureScore(currentAnalysis.scores)}% Venture Score</p>
                       </div>
-                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                      <div className="p-5 bg-brand-section border border-brand-border rounded-2xl space-y-2">
                         <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">SWOT Matrix Sync</span>
-                        <p className="text-[#5ce1e6] font-bold">4 Categories bound</p>
+                        <p className="text-brand-accent font-black text-sm">4 Categories Bound</p>
                       </div>
-                      <div className="p-5 bg-[#0a1120] border border-slate-800 rounded-xl space-y-1">
+                      <div className="p-5 bg-brand-section border border-brand-border rounded-2xl space-y-2">
                         <span className="text-brand-text-muted uppercase text-[9px] tracking-wider block font-black">Expansion Journey</span>
-                        <p className="text-white font-bold">{currentAnalysis.roadmap ? 'Linked roadmap active' : 'Default roadmap active'}</p>
+                        <p className="text-brand-text-primary font-black text-sm">{currentAnalysis.roadmap ? 'Linked Roadmap Active' : 'Default Roadmap Active'}</p>
                       </div>
                     </div>
                   </div>
