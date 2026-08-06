@@ -109,32 +109,32 @@ export const RiskHeatmap = ({ risks }: { risks: any }) => {
           column) so "HIGH IMPACT" / "LOW IMPACT" read normally instead of
           breaking one letter per line. */}
       <div className="absolute left-0 top-0 h-full w-28 flex flex-col justify-between py-10 pl-4 pr-3 pointer-events-none">
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50 leading-tight text-right">High Impact</span>
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50 leading-tight text-right">Low Impact</span>
+        <span className="text-xs font-black text-white uppercase tracking-widest leading-tight text-right drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">High Impact</span>
+        <span className="text-xs font-black text-white uppercase tracking-widest leading-tight text-right drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">Low Impact</span>
       </div>
 
       {/* Horizontal axis labels — full words along the bottom. */}
       <div className="absolute left-28 right-8 bottom-0 h-14 flex justify-between items-center px-2 pointer-events-none">
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50">Less Likely</span>
-        <span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest opacity-50">More Likely</span>
+        <span className="text-xs font-black text-white uppercase tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">Less Likely</span>
+        <span className="text-xs font-black text-white uppercase tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">More Likely</span>
       </div>
 
       <div className="relative w-full h-full flex items-center justify-center">
-        <div className="absolute inset-4 grid grid-cols-5 grid-rows-5 gap-1 opacity-20 pointer-events-none">
+        <div className="absolute inset-4 grid grid-cols-5 grid-rows-5 gap-1 pointer-events-none">
           {[...Array(25)].map((_, i) => {
             const row = Math.floor(i / 5);
             const col = i % 5;
             const intensity = (4 - row + col) / 8;
             return (
-              <div 
-                key={i} 
-                className="rounded-sm" 
-                style={{ 
-                  backgroundColor: intensity > 0.7 ? RISK_RED : 
-                                   intensity > 0.4 ? RISK_AMBER : 
+              <div
+                key={i}
+                className="rounded-sm"
+                style={{
+                  backgroundColor: intensity > 0.7 ? RISK_RED :
+                                   intensity > 0.4 ? RISK_AMBER :
                                    RISK_GREEN,
-                  opacity: intensity + 0.1
-                }} 
+                  opacity: (intensity * 0.7) + 0.25
+                }}
               />
             );
           })}
