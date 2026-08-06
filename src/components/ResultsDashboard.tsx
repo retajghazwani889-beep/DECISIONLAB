@@ -2269,15 +2269,19 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
-                  <h4 className="text-lg font-black text-brand-text-primary uppercase tracking-tight mb-4">Growth and Expansion Strategy</h4>
-                  <p className="text-sm text-brand-text-secondary leading-relaxed font-medium">
-                    {currentAnalysis.growthPotential?.scaling || 'Venture scalability focused on expanding node configurations across enterprise private database clusters.'}
+                  <p className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] mb-2">How you grow</p>
+                  <h4 className="text-xl font-black text-white uppercase tracking-tight mb-3 drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">Growth and Expansion Strategy</h4>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-4">This explains how your startup can get bigger over time — what steps to take and which markets to enter next.</p>
+                  <p className="text-base text-slate-200 leading-relaxed font-medium">
+                    {currentAnalysis.growthPotential?.scaling || 'No growth strategy provided yet.'}
                   </p>
                 </div>
                 <div className="bg-brand-section/60 p-10 rounded-[2.5rem] border border-brand-border shadow-huge">
-                  <h4 className="text-lg font-black text-[#5ce1e6] uppercase tracking-tight mb-4">Revenue and Market Entry Opportunities</h4>
-                  <p className="text-sm text-brand-text-secondary leading-relaxed font-medium">
-                    {currentAnalysis.growthPotential?.revenue || 'Target monetization via multi-tiered SaaS subscription volume modules, launching early accelerator sandboxes.'}
+                  <p className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] mb-2">How you make money</p>
+                  <h4 className="text-xl font-black text-white uppercase tracking-tight mb-3 drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">Revenue and Market Entry Opportunities</h4>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-4">This shows the best ways to start making money and which customer groups to target first when entering the market.</p>
+                  <p className="text-base text-slate-200 leading-relaxed font-medium">
+                    {currentAnalysis.growthPotential?.revenue || 'No revenue strategy provided yet.'}
                   </p>
                 </div>
               </div>
