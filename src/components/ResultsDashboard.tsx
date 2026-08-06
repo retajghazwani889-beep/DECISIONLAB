@@ -2339,23 +2339,6 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
           )}
 
           {effectiveTab === 'investors' && (() => {
-            return (
-              <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="text-center max-w-md px-6">
-                  <div className="w-20 h-20 mx-auto mb-8 rounded-3xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
-                    <Lock size={36} />
-                  </div>
-                  <span className="text-[10px] font-black text-brand-accent uppercase tracking-[0.3em] block mb-3">Coming Soon</span>
-                  <h3 className="text-2xl font-black text-brand-text-primary uppercase tracking-tight font-display mb-4">Investor Network</h3>
-                  <p className="text-sm text-brand-text-secondary font-medium leading-relaxed">
-                    We're building a curated network of verified investors matched to your startup. This feature will be available soon — your analysis will be ready to share the moment it launches.
-                  </p>
-                </div>
-              </div>
-            );
-          })()}
-
-          {effectiveTab === 'investors_disabled' && (() => {
             const ind = (currentAnalysis.startupProfile?.industry || 'Intelligent Systems').trim();
             const stage = (currentAnalysis.startupProfile?.stage || 'Idea Stage').trim();
             const region = (currentAnalysis.startupProfile?.country || 'GCC').trim();
@@ -2591,7 +2574,7 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                     </Link>
                   </div>
 
-                  {!investorView && <FounderTimeline analysis={currentAnalysis} scoreOverride={getCalculatedVentureScore(currentAnalysis.scores)} canEdit={true} />}
+                  {!investorView && getCalculatedVentureScore(currentAnalysis.scores) >= 80 && <FounderTimeline analysis={currentAnalysis} scoreOverride={getCalculatedVentureScore(currentAnalysis.scores)} canEdit={true} />}
                   <div className="p-8 bg-brand-card/40 border border-brand-border/20 rounded-[2.5rem] space-y-6">
                     <h4 className="text-xs font-black text-[#5ce1e6] uppercase tracking-widest">Startup Data Overview</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-xs">
