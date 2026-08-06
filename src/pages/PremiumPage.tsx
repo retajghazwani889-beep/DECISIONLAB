@@ -149,7 +149,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">
           {title}
         </h3>
-        <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10">{subtitle}</p>
+        <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10 whitespace-nowrap">{subtitle}</p>
 
         <div className="mb-12 flex items-baseline gap-2">
           <span className="text-5xl font-black font-display tracking-tighter text-brand-text-primary">
@@ -215,7 +215,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         Early Access
       </div>
       <h3 className="text-2xl font-black mb-2 font-display tracking-tight text-brand-text-primary">Investor Pro</h3>
-      <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10">Discover · Evaluate · Invest</p>
+      <p className="text-brand-accent text-sm font-bold uppercase tracking-wider mb-10 whitespace-nowrap">Discover · Evaluate · Invest</p>
       <div className="mb-12 flex items-baseline gap-2">
         <span className="text-5xl font-black font-display tracking-tighter text-brand-text-primary">Coming Soon</span>
       </div>
