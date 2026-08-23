@@ -143,7 +143,7 @@ export default function StartupForm({ user, profile, onOpenAccess }: StartupForm
               <Sparkles size={28} className="relative z-10" />
             </div>
             <div>
-              <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tighter font-display">Start Now</h3>
+              <h3 className="text-3xl font-black text-brand-text-primary uppercase tracking-tighter font-display">Validate My Idea</h3>
             </div>
           </div>
         </div>
