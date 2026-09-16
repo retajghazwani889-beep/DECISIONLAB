@@ -12,6 +12,7 @@ import crypto from "crypto";
 import fs from "fs";
 import rateLimit from "express-rate-limit";
 import { runNurtureCycle, NURTURE_EMAILS, type NurtureProfile, type NurtureEmail } from "./server/nurture";
+import { GUIDE_TOPICS } from "./scripts/generate-guides.mjs";
 
 dotenv.config();
 
@@ -2360,7 +2361,8 @@ async function startServer() {
 
     app.get('/sitemap.xml', (_req, res) => {
       const now = new Date().toISOString().split('T')[0];
-      const pages = ['', 'about', 'pricing', 'contact', 'guides/validate-startup-idea/', 'guides/how-to-make-a-pitch-deck/'];
+      const guidePages = ['validate-startup-idea', ...GUIDE_TOPICS.map((t) => t.slug)].map((slug) => `guides/${slug}/`);
+      const pages = ['', 'about', 'pricing', 'contact', ...guidePages];
       const urls = pages.map(p =>
         `<url><loc>https://decisionlabhub.com/${p}</loc><lastmod>${now}</lastmod><changefreq>${p === '' ? 'daily' : 'weekly'}</changefreq><priority>${p === '' ? '1.0' : '0.7'}</priority></url>`
       ).join('\n  ');
