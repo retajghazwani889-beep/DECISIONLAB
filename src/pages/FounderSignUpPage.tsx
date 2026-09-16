@@ -49,6 +49,8 @@ export default function FounderSignUpPage() {
             roleType: 'Founder',
             subscriptionStatus: 'free',
             onboardingCompleted: true,
+            signupAt: serverTimestamp(),
+            emailStage: 0,
             createdAt: serverTimestamp(),
           });
           await refreshProfile();

@@ -11,6 +11,7 @@ import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import crypto from "crypto";
 import fs from "fs";
 import rateLimit from "express-rate-limit";
+import { runNurtureCycle, NURTURE_EMAILS, type NurtureProfile, type NurtureEmail } from "./server/nurture";
 
 dotenv.config();
 
@@ -326,6 +327,100 @@ async function startServer() {
     }
     console.error(`CRITICAL: Firestore write failed after ${retries} retries for uid=${uid}. Data:`, JSON.stringify(fields));
   }
+
+  // ── Signup nurture email sequence ─────────────────────────────────────────
+  // Fires from an hourly interval below. Decision logic lives in
+  // server/nurture.ts so it can be unit tested without live Firestore/SMTP.
+  function nurtureTransporterIfConfigured() {
+    const host = process.env.SMTP_HOST || "";
+    const user = process.env.SMTP_USER || "";
+    const pass = process.env.SMTP_PASS || "";
+    const from = process.env.SMTP_FROM || user;
+    const isHostEmail = host.includes("@");
+    const isConfigured = host.trim().length > 0 && !isHostEmail && user.trim().length > 0 && pass.trim().length > 0;
+    if (!isConfigured) return null;
+    return {
+      from,
+      transporter: nodemailer.createTransport({
+        host,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: { user, pass },
+      }),
+    };
+  }
+
+  function toDate(value: any): Date | null {
+    if (!value) return null;
+    if (typeof value.toDate === "function") return value.toDate();
+    if (value instanceof Date) return value;
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  async function runNurtureJob() {
+    if (!useAdminSdk || !adminDb) {
+      console.log("Nurture: skipped run — admin SDK unavailable.");
+      return;
+    }
+    const mail = nurtureTransporterIfConfigured();
+    if (!mail) {
+      console.log("Nurture: skipped run — SMTP not configured.");
+      return;
+    }
+
+    const result = await runNurtureCycle({
+      log: (msg) => console.log(msg),
+      fetchEligibleProfiles: async (): Promise<NurtureProfile[]> => {
+        const snap = await adminDb.collection("profiles").where("emailStage", "<", 3).get();
+        return snap.docs.map((d: any) => {
+          const data = d.data() || {};
+          return {
+            id: d.id,
+            email: data.email || "",
+            fullName: data.fullName || data.displayName || null,
+            signupAt: toDate(data.signupAt),
+            emailStage: typeof data.emailStage === "number" ? data.emailStage : 0,
+            subscriptionStatus: data.subscriptionStatus || "free",
+          };
+        }).filter((p: NurtureProfile) => !!p.email);
+      },
+      updateStage: async (id: string, nextStage: number) => {
+        await adminDb.collection("profiles").doc(id).set({ emailStage: nextStage }, { merge: true });
+      },
+      sendMail: async (profile: NurtureProfile, email: NurtureEmail) => {
+        const firstName = (profile.fullName || "there").split(" ")[0];
+        await mail.transporter.sendMail({
+          from: `"DecisionLab" <${mail.from}>`,
+          to: profile.email,
+          subject: email.subject,
+          text: email.text(firstName),
+          html: email.html(firstName),
+        });
+      },
+    });
+
+    console.log(`Nurture: cycle complete — sent=${result.sent} skipped=${result.skipped} waited=${result.waited}.`);
+    return result;
+  }
+
+  // Run once shortly after boot, then hourly.
+  setTimeout(() => { runNurtureJob().catch(err => console.warn("Nurture job error:", err?.message || err)); }, 15_000);
+  setInterval(() => { runNurtureJob().catch(err => console.warn("Nurture job error:", err?.message || err)); }, 60 * 60 * 1000);
+
+  // Manual trigger for ops/testing — same auth pattern as other /api/admin/* routes.
+  app.post("/api/admin/run-nurture-job", adminLimiter, async (req: any, res: any) => {
+    const adminSecret = (process.env.ADMIN_SECRET || "").trim();
+    if (!adminSecret || req.headers["x-admin-secret"] !== adminSecret) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+    try {
+      const result = await runNurtureJob();
+      res.json({ ok: true, result: result || null });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "nurture job failed" });
+    }
+  });
 
   // Webhook secret token — add ?secret=YOUR_SECRET to the Gumroad Ping URL to reject forgeries.
   const WEBHOOK_SECRET = (process.env.GUMROAD_WEBHOOK_SECRET || "").trim();

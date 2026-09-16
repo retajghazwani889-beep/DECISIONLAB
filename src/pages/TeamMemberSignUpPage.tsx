@@ -44,6 +44,8 @@ export default function TeamMemberSignUpPage() {
             accountType: 'teamMember',
             roleType: 'Team Member',
             onboardingCompleted: true,
+            signupAt: serverTimestamp(),
+            emailStage: 0,
             createdAt: serverTimestamp(),
           });
           await refreshProfile();

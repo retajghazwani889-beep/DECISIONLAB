@@ -153,6 +153,8 @@ const UserOnboarding: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       roleType: (formData.roleType as any) || 'Founder',
       onboardingCompleted: true,
       ...(formData.roleType === 'Team Member' ? { accountType: 'teamMember' } : {}),
+      signupAt: serverTimestamp(),
+      emailStage: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };

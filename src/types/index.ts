@@ -27,6 +27,10 @@ export interface UserProfile {
   createdAt?: any;
   updatedAt?: any;
 
+  // Email nurture sequence tracking
+  signupAt?: any;
+  emailStage?: number;
+
   // Additional dashboard profile fields
   founderInfo?: any;
   teamMembers?: any;
