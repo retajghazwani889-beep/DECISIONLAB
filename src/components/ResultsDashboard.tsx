@@ -5,10 +5,10 @@ import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  Zap, Download, Target, Shield, MapPin, Briefcase, Activity, 
+  Zap, Download, Target, Shield, MapPin, Briefcase, Activity,
   ChevronRight, X, Edit3, CheckCircle2, Globe, Rocket, Info, ShieldAlert,
   Wand2, Image as ImageIcon, Loader2, BarChart3, PieChart, TrendingUp,
-  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users, Lock} from 'lucide-react';
+  Layers, Presentation, FileText, LayoutGrid, ShieldCheck, Building2, Handshake, User, Users, Lock, Share2} from 'lucide-react';
 import { cn, withOklchHtml2CanvasPatch, cleanAiText, cleanAiList } from '../lib/utils';
 import { StartupScoreRadar, RiskEcosystemMap, StrategicExpansionJourney, InvestorRelationshipNetwork, RiskHeatmap } from './ReportVisuals';
 import { doc, updateDoc, serverTimestamp, getDoc, query, collection, where, orderBy, getDocs } from 'firebase/firestore';
@@ -579,6 +579,39 @@ export const getCalculatedVentureScore = (scores: any) => {
   return calculateFinalScore(matrixMetrics, countryFactor, ideaScore, riskDeductions);
 };
 
+// Top-scoring dimensions for the "Share my score" card — same score keys as
+// StartupScoreRadar, ranked so the card highlights whatever the idea is
+// strongest on.
+const SHARE_SCORE_DIMENSIONS: Array<{ key: string; altKey?: string; label: string }> = [
+  { key: 'ideaStrength', label: 'Idea Strength' },
+  { key: 'marketFit', label: 'Market Fit' },
+  { key: 'execution', altKey: 'executionReadiness', label: 'Execution' },
+  { key: 'scalability', label: 'Scalability' },
+  { key: 'competition', altKey: 'competitiveAdvantage', label: 'Competition' },
+  { key: 'investorAppeal', altKey: 'investorAttractiveness', label: 'Investor Appeal' },
+];
+
+const getTopScoreDimensions = (scores: any, count = 2): Array<{ label: string; value: number }> => {
+  if (!scores) return [];
+  const getVal = (key: string, altKey?: string): number | null => {
+    const val = scores[key] ?? (altKey ? scores[altKey] : undefined);
+    if (val === undefined || val === null) return null;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'object' && typeof val.score === 'number') return val.score;
+    if (typeof val === 'string') {
+      const parsed = parseInt(val, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return null;
+  };
+
+  return SHARE_SCORE_DIMENSIONS
+    .map((d) => ({ label: d.label, value: getVal(d.key, d.altKey) }))
+    .filter((d): d is { label: string; value: number } => typeof d.value === 'number')
+    .sort((a, b) => b.value - a.value)
+    .slice(0, count);
+};
+
 const recalculateVentureSuite = (profile: any) => {
   const companyName = (profile.companyName || 'Custom Venture').replace(/\./g, '');
   const industry = (profile.industry || 'Technology').replace(/\./g, '');
@@ -992,11 +1025,13 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSharingScore, setIsSharingScore] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState(analysis);
   const [savedProjects, setSavedProjects] = useState<AnalysisReport[]>([]);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const exportContainerRef = useRef<HTMLDivElement>(null);
   const reportPrintRef = useRef<HTMLDivElement>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
   
   const defaultProfile = {
     companyName: '',
@@ -1442,6 +1477,80 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
       alert("Failed to export report. Please try again.");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // "Share my score" — renders the hidden branded card below into a PNG,
+  // then hands it to the Web Share API (mobile share sheet) when available,
+  // or falls back to a direct download + copying the link to the clipboard.
+  const handleShareScore = async () => {
+    if (!shareCardRef.current || isSharingScore) return;
+    setIsSharingScore(true);
+
+    try {
+      const canvas = await withOklchHtml2CanvasPatch(async () => {
+        return await html2canvas(shareCardRef.current as HTMLElement, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#102434',
+        });
+      });
+
+      if (!canvas || !canvas.width || !canvas.height) {
+        throw new Error('Canvas generation returned an empty or invalid canvas.');
+      }
+
+      const blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/png', 0.95)
+      );
+      if (!blob) throw new Error('Could not generate image blob.');
+
+      const safeName = (displayProfile.companyName || 'my-startup')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const fileName = `${safeName || 'my-startup'}-decisionlab-score.png`;
+      const shareText = 'I scored my startup idea on DecisionLab 👉 https://decisionlabhub.com';
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      const canUseWebShare =
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+
+      if (canUseWebShare) {
+        try {
+          await navigator.share({ files: [file], text: shareText, title: 'My DecisionLab Score' });
+          return;
+        } catch (shareErr: any) {
+          // User dismissed the native share sheet — not an error, just stop.
+          if (shareErr?.name === 'AbortError') return;
+          // Any other failure (e.g. desktop browser claiming support it
+          // doesn't have) falls through to the download fallback below.
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      try {
+        await navigator.clipboard.writeText('https://decisionlabhub.com');
+        alert('Score card downloaded — the DecisionLab link is copied to your clipboard. Share away!');
+      } catch {
+        alert('Score card downloaded! Share it with: https://decisionlabhub.com');
+      }
+    } catch (err) {
+      console.error('Share score error:', err);
+      alert('Could not generate your share card. Please try again.');
+    } finally {
+      setIsSharingScore(false);
     }
   };
 
@@ -1960,6 +2069,14 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
                       <p className="text-4xl font-black text-brand-accent tabular-nums">
                         {getCalculatedVentureScore(currentAnalysis.scores)}%
                       </p>
+                      <button
+                        onClick={handleShareScore}
+                        disabled={isSharingScore}
+                        className="mt-4 inline-flex items-center gap-2 px-5 py-3 bg-[#0c1421] border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest text-brand-accent hover:bg-brand-accent/10 hover:border-brand-accent/30 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {isSharingScore ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                        {isSharingScore ? 'Preparing...' : 'Share my score'}
+                      </button>
                     </div>
                   </div>
 
@@ -2786,6 +2903,64 @@ export default function ResultsDashboard({ analysis, profile, investorView = fal
         </div>
       </div>
     </div>
+
+      {/* Hidden branded "Share my score" card — captured by handleShareScore.
+          Same fixed-width, off-screen, all-inline-hex-color pattern as the
+          Executive Report block above, so html2canvas renders it reliably. */}
+      <div
+        ref={shareCardRef}
+        style={{
+          position: 'absolute', left: '-9999px', top: 0,
+          width: '1080px', height: '1080px',
+          backgroundColor: '#102434', color: '#ebf1f5',
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          padding: '72px', fontFamily: "'Inter', Arial, sans-serif", boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '16px',
+            border: '3px solid #5DA9FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#ffffff', fontWeight: 900, fontSize: '26px', letterSpacing: '-1px',
+            backgroundColor: 'rgba(93,169,255,0.08)',
+          }}>DL</div>
+          <div style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.5px' }}>
+            Decision<span style={{ color: '#5DA9FF' }}>Lab</span>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#5DA9FF', marginBottom: '18px' }}>
+            Startup Readiness Score
+          </div>
+          <div style={{ fontSize: '200px', fontWeight: 900, lineHeight: 1, color: '#5DA9FF', textShadow: '0 0 60px rgba(93,169,255,0.5)' }}>
+            {getCalculatedVentureScore(currentAnalysis.scores)}%
+          </div>
+          <div style={{ fontSize: '38px', fontWeight: 800, marginTop: '22px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>
+            {(displayProfile.companyName || 'My Startup').replace(/\./g, '')}
+          </div>
+
+          {getTopScoreDimensions(currentAnalysis.scores, 2).length > 0 && (
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '44px' }}>
+              {getTopScoreDimensions(currentAnalysis.scores, 2).map((d) => (
+                <div key={d.label} style={{
+                  backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '24px', padding: '22px 34px', minWidth: '220px',
+                }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
+                    {d.label}
+                  </div>
+                  <div style={{ fontSize: '38px', fontWeight: 900, color: '#ffffff' }}>{d.value}%</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ textAlign: 'center', fontSize: '20px', fontWeight: 700, color: 'rgba(255,255,255,0.45)' }}>
+          Scored by DecisionLab · decisionlabhub.com
+        </div>
+      </div>
     </MotionConfig>
   );
 }
