@@ -2265,7 +2265,7 @@ async function startServer() {
 
     app.get('/sitemap.xml', (_req, res) => {
       const now = new Date().toISOString().split('T')[0];
-      const pages = ['', 'about', 'pricing', 'contact', 'guides/validate-startup-idea/'];
+      const pages = ['', 'about', 'pricing', 'contact', 'guides/validate-startup-idea/', 'guides/how-to-make-a-pitch-deck/'];
       const urls = pages.map(p =>
         `<url><loc>https://decisionlabhub.com/${p}</loc><lastmod>${now}</lastmod><changefreq>${p === '' ? 'daily' : 'weekly'}</changefreq><priority>${p === '' ? '1.0' : '0.7'}</priority></url>`
       ).join('\n  ');
