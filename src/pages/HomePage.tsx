@@ -65,11 +65,11 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             className="text-left relative z-10"
           >
             <h1 className="text-center text-4xl sm:text-7xl md:text-[85px] font-extrabold tracking-[-0.02em] text-white mb-8 md:mb-28 leading-[0.95] font-display uppercase max-w-4xl">
-              Turn <span className="text-[#60A5FA] drop-shadow-[0_0_18px_rgba(96,165,250,0.55)]">Vision</span> <br className="hidden md:block" /> Into Reality
+              Is Your <span className="text-[#60A5FA] drop-shadow-[0_0_18px_rgba(96,165,250,0.55)]">Startup Idea</span> <br className="hidden md:block" /> Worth Building?
             </h1>
 
             <p className="text-base md:text-xl text-brand-text-primary max-w-2xl mb-8 md:mb-32 leading-[1.7] font-medium opacity-90">
-              Startup validation, team building, pitch decks, and investor matching — turning your ideas into plans investors trust
+              Type your idea below. Our AI scores it on market fit, execution, and investor appeal — then builds your pitch deck automatically. Free to start, no card needed.
             </p>
           </motion.div>
 

@@ -264,7 +264,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
         <p className="text-lg md:text-xl text-brand-text-muted max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
           Validate your idea, then unlock the tools investors expect. Choose the plan that fits your stage.
         </p>
-        <p className="mt-6 text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">Trusted by founders worldwide</p>
+        <p className="mt-6 text-[11px] font-black text-[#5da9ff] uppercase tracking-[0.35em] drop-shadow-[0_0_10px_rgba(93,169,255,0.35)]">Free to start · No credit card required · Cancel anytime</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-10 md:gap-10 items-stretch">
