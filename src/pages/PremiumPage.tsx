@@ -142,7 +142,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
       )}>
         {popular && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-accent text-brand-text-primary text-[10px] font-black uppercase px-4 py-1 rounded-full tracking-widest shadow-[0_0_15px_rgba(77,163,255,0.5)]">
-            Most Popular
+            Recommended
           </div>
         )}
 
@@ -287,7 +287,8 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           tier="founder"
           title="Startup Validation"
           price="39"
-          subtitle="Validate before you build"
+          subtitle="Best first step before you build"
+          popular={true}
           features={[
             "Free Features",
             "Unlimited Ideas",
@@ -299,14 +300,13 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
             "Growth Roadmap",
             "Growth Opportunities",
           ]}
-          cta="Choose Validation"
+          cta="Validate my idea"
         />
         <PlanCard
           tier="growth"
           title="Startup Grow"
           price="99"
           subtitle="Investor & growth toolkit"
-          popular={true}
           features={[
             "Validation Features",
             "Team Building",

@@ -135,10 +135,10 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 lg:flex lg:flex-nowrap items-stretch justify-between gap-8 lg:gap-20">
             {[
-              { label: 'Instant Analysis', value: '✓', desc: 'Reports in minutes', color: 'text-[#dbe4ea]', size: '50px' },
-              { label: 'Clear Insights', value: '✓', desc: 'Easy to understand', color: 'text-[#e3e7e9]', size: '50px' },
-              { label: 'Better Pitches', value: '✓', desc: 'Investor-ready decks', color: 'text-[#cfdde6]', size: '50px' },
-              { label: 'Risk Checks', value: '✓', desc: 'Know your weak spots', color: 'text-[#deeaf1]', size: '50px' },
+              { label: 'Free to Start', value: '✓', desc: 'No credit card needed', color: 'text-[#dbe4ea]', size: '50px' },
+              { label: 'Results in Minutes', value: '✓', desc: 'Not days of research', color: 'text-[#e3e7e9]', size: '50px' },
+              { label: 'Investor-Ready', value: '✓', desc: 'Decks built for you', color: 'text-[#cfdde6]', size: '50px' },
+              { label: 'Cancel Anytime', value: '✓', desc: 'No lock-in, ever', color: 'text-[#deeaf1]', size: '50px' },
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
