@@ -69,7 +69,7 @@ export default function HomePage({ user, profile, onOpenAccess }: HomePageProps)
             </h1>
 
             <p className="text-base md:text-xl text-brand-text-primary max-w-2xl mb-8 md:mb-32 leading-[1.7] font-medium opacity-90">
-              Type your idea below. Our AI scores it on market fit, execution, and investor appeal — then builds your pitch deck automatically. Free to start, no card needed.
+              Type your idea below. We score it on market fit, execution, and investor appeal — then build your pitch deck automatically.
             </p>
           </motion.div>
 
