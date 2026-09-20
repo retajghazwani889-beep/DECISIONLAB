@@ -127,7 +127,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
     tier: Tier; title: string; price: string; subtitle: string;
     features: string[]; popular?: boolean; cta: string;
   }) => {
-    const isCurrent = currentTier === tier;
+    const isCurrent = !!user && currentTier === tier;
     const isLoading = loadingTier === tier;
     // A plan button is disabled if it's the user's current plan, or it's the
     // free plan (nothing to buy), or a payment is in progress.
@@ -310,7 +310,7 @@ export default function PremiumPage({ user, profile }: PremiumPageProps) {
           features={[
             "Validation Features",
             "Team Building",
-            "Potential Investors",
+            "Potential Investors (coming soon)",
             "Pitch Decks",
             "Executive Reports",
             "Compare Startups",
