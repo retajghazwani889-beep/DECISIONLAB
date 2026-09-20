@@ -166,3 +166,12 @@ export function formatAuthError(error: any): string {
   }
   return cleanMsg || 'Authentication failed. Please check your details.';
 }
+
+// Detects in-app/embedded webviews (Instagram, Facebook, LinkedIn, Line)
+// where Google blocks OAuth sign-in from a WebView. Callers should hide the
+// Google button and fall back to email/password auth when this is true.
+export function isEmbeddedBrowser(): boolean {
+  if (typeof navigator === 'undefined' || !navigator.userAgent) return false;
+  const ua = navigator.userAgent;
+  return /Instagram|FBAN|FBAV|LinkedIn|Line/i.test(ua);
+}

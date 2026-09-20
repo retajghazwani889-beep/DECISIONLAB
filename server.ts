@@ -11,6 +11,7 @@ import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import crypto from "crypto";
 import fs from "fs";
 import rateLimit from "express-rate-limit";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { runNurtureCycle, NURTURE_EMAILS, type NurtureProfile, type NurtureEmail } from "./server/nurture";
 import { GUIDE_TOPICS } from "./scripts/generate-guides.mjs";
 
@@ -130,6 +131,24 @@ async function geminiGenerateContent(client: any, params: { contents: any; confi
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  // ── Firebase Auth handler proxy ───────────────────────────────────────────
+  // authDomain is set to decisionlabhub.com (firebase-applet-config.json) so
+  // the Google sign-in popup/redirect shows our domain instead of the raw
+  // *.firebaseapp.com one. Firebase's client SDK still expects the actual
+  // auth handler pages to live at /__/auth/* and /__/firebase/* on that
+  // domain, so those paths are proxied straight through to the real Firebase
+  // Hosting project. Registered before express.json/static/catch-all so
+  // nothing else intercepts these paths first.
+  const FIREBASE_AUTH_ORIGIN = `https://${firebaseConfig.projectId}.firebaseapp.com`;
+  app.use(
+    ["/__/auth", "/__/firebase"],
+    createProxyMiddleware({
+      target: FIREBASE_AUTH_ORIGIN,
+      changeOrigin: true,
+      ws: true,
+    })
+  );
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));

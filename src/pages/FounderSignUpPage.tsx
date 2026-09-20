@@ -5,7 +5,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Mail, Lock, User, MapPin, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
-import { formatAuthError } from '../lib/utils';
+import { formatAuthError, isEmbeddedBrowser } from '../lib/utils';
 import { track } from '../lib/analytics';
 
 export default function FounderSignUpPage() {
@@ -20,6 +20,7 @@ export default function FounderSignUpPage() {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [inAppBrowser] = useState(() => isEmbeddedBrowser());
 
   const doSignUp = async () => {
     setErr('');
@@ -200,12 +201,20 @@ export default function FounderSignUpPage() {
               {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} Create Founder Account
             </button>
 
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-white/10" /><span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">or</span><div className="flex-1 h-px bg-white/10" />
-            </div>
-            <button onClick={doGoogle} disabled={busy} className="w-full py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all">
-              Continue with Google
-            </button>
+            {inAppBrowser ? (
+              <p className="text-center text-[11px] text-brand-text-secondary opacity-60 pt-1">
+                For Google sign-in, open this page in your browser.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-white/10" /><span className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest">or</span><div className="flex-1 h-px bg-white/10" />
+                </div>
+                <button onClick={doGoogle} disabled={busy} className="w-full py-3.5 bg-brand-card border border-white/10 text-brand-text-primary text-[11px] font-black uppercase tracking-widest rounded-2xl hover:border-brand-accent/40 active:scale-95 transition-all">
+                  Continue with Google
+                </button>
+              </>
+            )}
 
             <p className="text-center text-xs text-brand-text-secondary font-medium pt-2">
               Already have an account?{' '}
