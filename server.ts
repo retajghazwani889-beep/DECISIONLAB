@@ -140,10 +140,15 @@ async function startServer() {
   // domain, so those paths are proxied straight through to the real Firebase
   // Hosting project. Registered before express.json/static/catch-all so
   // nothing else intercepts these paths first.
+  // Mounted at the app root (no path prefix) and filtered via `pathFilter`
+  // instead of `app.use('/__/auth', ...)`, because Express strips a mount
+  // path from req.url before the middleware ever sees it — which silently
+  // turned "/__/auth/handler" into "/handler" on the way to Firebase and
+  // made every request 404.
   const FIREBASE_AUTH_ORIGIN = `https://${firebaseConfig.projectId}.firebaseapp.com`;
   app.use(
-    ["/__/auth", "/__/firebase"],
     createProxyMiddleware({
+      pathFilter: ["/__/auth", "/__/firebase"],
       target: FIREBASE_AUTH_ORIGIN,
       changeOrigin: true,
       ws: true,
